@@ -1,0 +1,17 @@
+{
+  "name": "seu-cg-lesson",
+  "version": "1.0.0",
+  "description": "",
+  "main": "app.js",
+  "scripts": {
+    "serve": "node app.js",
+    "dev": "nodemon app.js",
+    "tsc": "tsc"
+  },
+  "author": "z0gSh1u",
+  "license": "MIT",
+  "dependencies": {
+    "express": "^4.17.1",
+    "nodemon": "^1.19.3"
+  }
+}
