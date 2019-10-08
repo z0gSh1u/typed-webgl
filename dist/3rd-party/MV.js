@@ -92,7 +92,7 @@ function mat2()
         break;
     }
 
-    // m.matrix = true;
+    m.matrix = true;
 
     return m;
 }
@@ -122,7 +122,7 @@ function mat3()
         break;
     }
 
-    // m.matrix = true;
+    m.matrix = true;
 
     return m;
 }
@@ -154,7 +154,7 @@ function mat4()
         break;
     }
 
-    // m.matrix = true;
+    m.matrix = true;
 
     return m;
 }

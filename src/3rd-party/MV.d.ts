@@ -204,19 +204,19 @@ declare function det(m: Mat): number
 /**
  * Inverse of Mat2.
  */
-declare function inverse2(m: Mat): number
+declare function inverse2(m: Mat): Mat
 /**
  * Inverse of Mat3.
  */
-declare function inverse3(m: Mat): number
+declare function inverse3(m: Mat): Mat
 /**
  * Inverse of Mat4.
  */
-declare function inverse4(m: Mat): number
+declare function inverse4(m: Mat): Mat
 /**
  * Just Inverse of any Mat.
  */
-declare function inverse(m: Mat): number
+declare function inverse(m: Mat): Mat
 /**
  * Normalize a Mat.
  */
