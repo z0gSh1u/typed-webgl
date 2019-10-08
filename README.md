@@ -1,4 +1,4 @@
-## Typed-WebGL
+# Typed-WebGL
 
 本项目为《交互式计算机图形学》（第七版，Edward Angel）自带代码库（`MV.js`，`initShaders.js`，`webgl-utils.js`）撰写了TypeScript类型描述文件（d.ts），并搭建了简单的开发脚手架。
 
