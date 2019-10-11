@@ -21,7 +21,7 @@ declare function radians(degrees: number): number
 declare type Vec2 = [number, number]
 declare type Vec3 = [number, number, number]
 declare type Vec4 = [number, number, number, number]
-declare type Vec = Vec2 | Vec3 | Vec4
+declare type Vec = Array<number>
 /** Generater 2D vector. If args.length > 2, emit from subscript 2. */
 declare function vec2(...arguments: number[]): Vec2
 /** Generater 3D vector. If args.length > 3, emit from subscript 3. */
@@ -172,7 +172,7 @@ declare function scale(s: number, u: Vec): Vec
 /** 
  * Flatten a vector or matrix.
  */
-declare function flatten(v: Vec): Vec
+declare function flatten(v: Mat | Array<Vec>): Float32Array
 /**
  * Constants sizeof. emit.
  */

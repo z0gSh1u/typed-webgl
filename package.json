@@ -6,7 +6,7 @@
   "scripts": {
     "serve": "node app.js",
     "dev": "nodemon app.js",
-    "tsc": "tsc"
+    "tsc:full": "tsc"
   },
   "author": "z0gSh1u",
   "license": "MIT",

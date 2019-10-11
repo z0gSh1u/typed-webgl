@@ -23,6 +23,7 @@
                 alert(gl.getShaderInfoLog(shader));
                 return null;
             }
+
             return shader;
         }
         var vertexShader = getShader(gl, vShaderName, gl.VERTEX_SHADER),

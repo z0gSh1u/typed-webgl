@@ -1,6 +1,10 @@
 # Typed-WebGL
 
-本项目为《交互式计算机图形学》（第七版，Edward Angel）自带代码库（`MV.js`，`initShaders.js`，`webgl-utils.js`）撰写了TypeScript类型描述文件（d.ts），并搭建了简单的开发脚手架。
+本项目为《交互式计算机图形学》（第七版，Edward Angel）自带代码库（`MV.js`，`initShaders.js`）撰写了TypeScript类型描述文件（d.ts），并搭建了简单的开发脚手架。
+
+本项目正在持续更新的部分是东南大学《计算机图形学》课程的实验作业部分。
+
+组员的GitHub地址：[Twileon](https://github.com/Twileon) [LongChen2018](https://github.com/LongChen2018) [z0gSh1u](https://github.com/z0gSh1u)
 
 ### 快速入门
 
@@ -27,6 +31,8 @@
   npm run tsc
   ```
 
+  你也可以使用tsc来自动监视并增量编译
+
 - 脚手架使用AMD模块化标准，所以要借助RequireJS来兼容浏览器
 
   ```html
@@ -45,11 +51,4 @@
 - MV.js, initShaders.js
 
   https://www.cs.unm.edu/~angel/BOOK/INTERACTIVE_COMPUTER_GRAPHICS/SEVENTH_EDITION/
-
-- webgl-utils.js
-
-  ```
-  Copyright 2010, Google Inc.
-  All rights reserved.
-  ```
 
