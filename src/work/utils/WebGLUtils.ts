@@ -36,10 +36,32 @@ export class WebGLHelper2d {
   private gl: WebGLRenderingContext
   private program: WebGLProgram
 
+  private globalVertexBuffer: WebGLBuffer | null
+  private globalColorBuffer: WebGLBuffer | null
+  private globalVertexAttribute: string | null
+  private globalAttributesPerVertex: number | null
+  private globalColorAttribute: string | null
+
   constructor(_canvasDOM: HTMLCanvasElement, _gl: WebGLRenderingContext, _program: WebGLProgram) {
     this.canvasDOM = _canvasDOM
     this.gl = _gl
     this.program = _program
+    this.globalVertexBuffer = null
+    this.globalColorBuffer = null
+    this.globalVertexAttribute = null
+    this.globalAttributesPerVertex = null
+    this.globalColorAttribute = null
+  }
+
+  /**
+   * Set global settings. So that you don't need to pass these arguments every time you call `drawImmediately`.
+   */
+  public setGlobalSettings(vertexBuffer: WebGLBuffer, colorBuffer: WebGLBuffer, vertexAttribute: string, attributePerVertex: number, colorAttribute: string) {
+    this.globalVertexBuffer = vertexBuffer
+    this.globalColorBuffer = colorBuffer
+    this.globalVertexAttribute = vertexAttribute
+    this.globalAttributesPerVertex = attributePerVertex
+    this.globalColorAttribute = colorAttribute
   }
 
   /**
@@ -99,7 +121,7 @@ export class WebGLHelper2d {
    * Set line witdh (thickness). Might not work in Windows.
    */
   public setLineWidth(lw: number) {
-    this.gl.lineWidth(lw);
+    this.gl.lineWidth(lw)
   }
 
   /**
@@ -158,14 +180,18 @@ export class WebGLHelper2d {
     arg1: number,
     arg2: number,
     color: Vec3 | Vec4,
-    vertexBuffer: WebGLBuffer,
-    vertexAttribute: string,
-    attributePerVertex: number,
-    colorBuffer: WebGLBuffer,
-    colorAttribute: string,
+    vertexBuffer: WebGLBuffer = this.globalVertexBuffer as WebGLBuffer,
+    vertexAttribute: string = this.globalVertexAttribute as string,
+    attributePerVertex: number = this.globalAttributesPerVertex as number,
+    colorBuffer: WebGLBuffer = this.globalColorBuffer as WebGLBuffer,
+    colorAttribute: string = this.globalColorAttribute as string,
     dataType: number = this.gl.FLOAT,
     bufferType: number = this.gl.ARRAY_BUFFER,
     drawMode: number = this.gl.STATIC_DRAW) {
+    let globalSet = vertexBuffer && vertexAttribute && attributePerVertex && colorBuffer && colorAttribute
+    if (!globalSet) {
+      throw "[drawImmediately] Global setting not enough."
+    }
     // send color
     let normalizedColor = normalize8bitColor(color)
     let colorToSend: Array<Vec4> = []

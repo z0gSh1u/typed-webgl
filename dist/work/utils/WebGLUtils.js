@@ -42,7 +42,22 @@ define(["require", "exports", "../../3rd-party/MV", "../../3rd-party/initShaders
             this.canvasDOM = _canvasDOM;
             this.gl = _gl;
             this.program = _program;
+            this.globalVertexBuffer = null;
+            this.globalColorBuffer = null;
+            this.globalVertexAttribute = null;
+            this.globalAttributesPerVertex = null;
+            this.globalColorAttribute = null;
         }
+        /**
+         * Set global settings. So that you don't need to pass these arguments every time you call `drawImmediately`.
+         */
+        WebGLHelper2d.prototype.setGlobalSettings = function (vertexBuffer, colorBuffer, vertexAttribute, attributePerVertex, colorAttribute) {
+            this.globalVertexBuffer = vertexBuffer;
+            this.globalColorBuffer = colorBuffer;
+            this.globalVertexAttribute = vertexAttribute;
+            this.globalAttributesPerVertex = attributePerVertex;
+            this.globalColorAttribute = colorAttribute;
+        };
         /**
          * Create a buffer.
          */
@@ -138,9 +153,18 @@ define(["require", "exports", "../../3rd-party/MV", "../../3rd-party/initShaders
          * and flatten then automatically. `color8bit` goes in RGB(A). If A is missing, default 1.0.
          */
         WebGLHelper2d.prototype.drawImmediately = function (data, method, arg1, arg2, color, vertexBuffer, vertexAttribute, attributePerVertex, colorBuffer, colorAttribute, dataType, bufferType, drawMode) {
+            if (vertexBuffer === void 0) { vertexBuffer = this.globalVertexBuffer; }
+            if (vertexAttribute === void 0) { vertexAttribute = this.globalVertexAttribute; }
+            if (attributePerVertex === void 0) { attributePerVertex = this.globalAttributesPerVertex; }
+            if (colorBuffer === void 0) { colorBuffer = this.globalColorBuffer; }
+            if (colorAttribute === void 0) { colorAttribute = this.globalColorAttribute; }
             if (dataType === void 0) { dataType = this.gl.FLOAT; }
             if (bufferType === void 0) { bufferType = this.gl.ARRAY_BUFFER; }
             if (drawMode === void 0) { drawMode = this.gl.STATIC_DRAW; }
+            var globalSet = vertexBuffer && vertexAttribute && attributePerVertex && colorBuffer && colorAttribute;
+            if (!globalSet) {
+                throw "[drawImmediately] Global setting not enough.";
+            }
             // send color
             var normalizedColor = normalize8bitColor(color);
             var colorToSend = [];
