@@ -80,24 +80,14 @@ let main = () => {
   helper.drawImmediately(sharp_left_3, gl.TRIANGLES, 0, sharp_left_3.length, COLORS.GRAY)
 
   // 中央刘海
-  let liusea_1 = generateBezierCurve2dL3([271.33, 149], [271.6, 185], [290.6, 224], [333, 222])
+  let liusea_1 = generateBezierCurve2dL3([271.33, 129], [271.6, 165], [290.6, 204], [333, 202])
   helper.drawImmediately(liusea_1, gl.LINE_STRIP, 0, liusea_1.length, COLORS.BLACK)
   helper.drawImmediately(liusea_1, gl.TRIANGLE_FAN, 0, liusea_1.length, COLORS.GRAY)
-  let liusea_2 = generateBezierCurve2dL3([365.5, 150], [365.6, 131.6], [368.6, 194.6], [328, 224])
+  let liusea_2 = generateBezierCurve2dL3([365.5, 130], [365.6, 111.6], [368.6, 174.6], [328, 204])
   helper.drawImmediately(liusea_2, gl.LINE_STRIP, 0, liusea_2.length, COLORS.BLACK)
   helper.drawImmediately(liusea_2, gl.TRIANGLE_FAN, 0, liusea_2.length, COLORS.GRAY)
-  let liusea_3 = [[330.3, 224], [271.33, 149], [365.5, 150]] as Array<Vec2>
+  let liusea_3 = [[330.3, 204], [271.33, 129], [365.5, 130]] as Array<Vec2>
   helper.drawImmediately(liusea_3, gl.TRIANGLES, 0, liusea_3.length, COLORS.GRAY)
-
-  // 头部轮廓
-  let head_1 = generateBezierCurve2dL3([155, 184], [154, 212], [158, 268], [219, 286])
-  helper.drawImmediately(head_1, gl.LINE_STRIP, 0, head_1.length, COLORS.BLACK)
-  helper.drawImmediately(head_1, gl.TRIANGLE_FAN, 0, head_1.length, COLORS.GRAY)
-  let head_2 = generateBezierCurve2dL3([359, 81.3], [341.3, 79], [495.6, 139.6], [378.3, 282.6])
-  helper.drawImmediately(head_2, gl.LINE_STRIP, 0, head_2.length, COLORS.BLACK)
-  helper.drawImmediately(head_2, gl.TRIANGLE_FAN, 0, head_2.length, COLORS.GRAY)
-  let head_3 = generateStraightLineSegment([225, 75.6], [260.6, 68.6])
-  helper.drawImmediately(head_3, gl.LINE_STRIP, 0, head_3.length, COLORS.BLACK)
 
   // 嘴巴
   let mouth_1 = generateBezierCurve2dL3([277.3, 257.6], [264.6, 244.6], [298.3, 293], [331, 264.6])
@@ -106,7 +96,7 @@ let main = () => {
   // 左眼（正视）
   let eye_left_3 = generateStraightLineSegment([271.5, 225.3], [272, 240.3])
   helper.drawImmediately(eye_left_3, gl.LINE_STRIP, 0, eye_left_3.length, COLORS.BLACK)
-  let eye_left_1 = generateBezierCurve2dL3([233.6, 233.3], [248, 209.33], [287, 193], [296.3, 230.6])
+  let eye_left_1 = generateBezierCurve2dL3([233, 236], [248, 209.33], [287, 193], [294.6, 238])
   helper.drawImmediately(eye_left_1, gl.LINE_STRIP, 0, eye_left_1.length, COLORS.BLACK)
   helper.drawImmediately(eye_left_1, gl.TRIANGLE_FAN, 0, eye_left_1.length, COLORS.WHITE)
   let eye_left_2 = generateBezierCurve2dL3([233, 236], [218, 231], [289.6, 254], [294.6, 235.6])
@@ -116,16 +106,12 @@ let main = () => {
   // 右眼（正视）
   let eye_right_3 = generateStraightLineSegment([347.5, 223], [348, 237])
   helper.drawImmediately(eye_right_3, gl.LINE_STRIP, 0, eye_right_3.length, COLORS.BLACK)
-  let eye_right_1 = generateBezierCurve2dL3([330, 229], [335.3, 209.6], [355.3, 195], [368, 226.6])
+  let eye_right_1 = generateBezierCurve2dL3([330, 229], [335.3, 209.6], [355.3, 195], [368, 228])
   helper.drawImmediately(eye_right_1, gl.LINE_STRIP, 0, eye_right_1.length, COLORS.BLACK)
   helper.drawImmediately(eye_right_1, gl.TRIANGLE_FAN, 0, eye_right_1.length, COLORS.WHITE)
-  let eye_right_2 = generateBezierCurve2dL3([328, 234.6], [318, 229], [350, 250], [367, 230])
+  let eye_right_2 = generateBezierCurve2dL3([331, 229], [318, 229], [350, 250], [368, 226.6])
   helper.drawImmediately(eye_right_2, gl.LINE_STRIP, 0, eye_right_2.length, COLORS.BLACK)
   helper.drawImmediately(eye_right_2, gl.TRIANGLE_FAN, 0, eye_right_2.length, COLORS.WHITE)
-
-  // 脸
-  let face_1 = generateOval([298.6, 209.6], 230 / 2, 179 / 2, 1000)
-  helper.drawImmediately(face_1, gl.TRIANGLE_FAN, 0, face_1.length, COLORS.SKIN)
 
   // 左臂（正视）
   let arm_left_1 = generateBezierCurve2dL3([223, 308.5], [209, 331.5], [263.5, 242], [272, 319])
@@ -140,6 +126,25 @@ let main = () => {
   helper.drawImmediately(hand_left_2, gl.TRIANGLE_FAN, 0, hand_left_2.length, COLORS.SKIN)
   let hand_left_3 = [[174.6, 404.3], [220, 459.6], [237, 431.3]] as Array<Vec2>
   helper.drawImmediately(hand_left_3, gl.TRIANGLES, 0, hand_left_3.length, COLORS.SKIN)
+
+  // 衣服左（正视）
+  let cloth_left_1 = [[210, 271], [295, 358], [298, 289], [210, 271], [295, 358], [144, 468], [144, 468], [295, 358], [273, 497]] as Array<Vec2>
+  helper.drawImmediately(cloth_left_1, gl.TRIANGLE_STRIP, 0, cloth_left_1.length, COLORS.DARK)
+  // 没有勾线，颜色太深，勾了也看不出来
+
+  // 衣服右（正视）
+  let cloth_right_1 = [[277, 330], [346, 275], [319, 388], [347, 370], [391, 488]] as Array<Vec2>
+  helper.drawImmediately(cloth_right_1, gl.TRIANGLE_STRIP, 0, cloth_right_1.length, COLORS.DARK)
+
+  // 脸
+  let face_1 = generateOval([304, 220], 170 / 2, 168 / 2)
+  helper.drawImmediately(face_1, gl.TRIANGLE_FAN, 0, face_1.length, COLORS.SKIN)
+  helper.drawImmediately(face_1, gl.LINE_STRIP, 0, face_1.length, COLORS.BLACK)
+
+  // 头部实体
+  let head_1 = generateOval([290, 180], 274 / 2, 235 / 2)
+  helper.drawImmediately(head_1, gl.TRIANGLE_FAN, 0, head_1.length, COLORS.GRAY)
+  helper.drawImmediately(head_1, gl.LINE_STRIP, 0, head_1.length, COLORS.BLACK)
 
   // 右臂（正视）
   let arm_right_1 = [[347, 361], [390, 401], [365, 417]] as Array<Vec2>
@@ -163,18 +168,9 @@ let main = () => {
   let tail_3 = [[150.6, 472.6], [138, 565], [225.3, 509.6], [150.6, 472.6], [225.3, 509.6], [224, 489]] as Array<Vec2>
   helper.drawImmediately(tail_3, gl.TRIANGLES, 0, tail_3.length, COLORS.GRAY)
 
-  // 衣服左（正视）
-  let cloth_left_1 = [[210, 271], [295, 358], [298, 289], [210, 271], [295, 358], [144, 468], [144, 468], [295, 358], [273, 497]] as Array<Vec2>
-  helper.drawImmediately(cloth_left_1, gl.TRIANGLE_STRIP, 0, cloth_left_1.length, COLORS.DARK)
-  // 没有勾线，颜色太深，勾了也看不出来
-
   // 衣服中间 - Part 1
   let cloth_center_1 = [[298.5, 359.75], [281.5, 463], [360, 448]] as Array<Vec2>
   helper.drawImmediately(cloth_center_1, gl.TRIANGLES, 0, cloth_center_1.length, COLORS.DARK)
-
-  // 衣服右边
-  let cloth_right_1 = [[277, 330], [346, 275], [319, 388], [347, 370], [391, 488]] as Array<Vec2>
-  helper.drawImmediately(cloth_right_1, gl.TRIANGLE_STRIP, 0, cloth_right_1.length, COLORS.DARK)
 
   // 左腿（正视）
   let leg_left_1 = [[226, 489], [227, 505], [272, 497], [196, 588], [254, 598]] as Array<Vec2>
@@ -198,8 +194,6 @@ let main = () => {
   let cloth_center_2 = [[360, 448], [280, 467], [387, 484]] as Array<Vec2>
   helper.drawImmediately(cloth_center_2, gl.TRIANGLES, 0, cloth_center_2.length, COLORS.DARK)
 
-
-
 }
 
 main()
@@ -209,11 +203,12 @@ let listenKeyboard = () => {
   // A, D, Space
 
 
-  // 手臂绕轴转动测试（以左手臂（目视）为例）
-  let arm_left_1 = generateBezierCurve2dL3([223, 308.5], [209, 331.5], [263.5, 242], [272, 319])
-  helper.drawImmediately(arm_left_1, gl.TRIANGLE_FAN, 0, arm_left_1.length, COLORS.LIGHTGRAY)
-  let arm_left_2 = [[162, 395], [225, 306], [247, 429], [270, 315]] as Array<Vec2>
-  helper.drawImmediately(arm_left_2, gl.TRIANGLE_STRIP, 0, arm_left_2.length, COLORS.LIGHTGRAY)
+  // 右脚绕轴转动测试
+  // 右脚（正视）
+  let foot_right_1 = [[377, 596], [300, 598], [397, 662], [297, 665]] as Array<Vec2>
+  helper.drawImmediately(foot_right_1, gl.TRIANGLE_STRIP, 0, foot_right_1.length, COLORS.DARK)
+
+
 
 }
 
