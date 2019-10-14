@@ -43,11 +43,8 @@ export class WebGLDrawingObject {
    * Set a new raw data, and you can cook it again.
    */
   public setData(newData: any, cookAgain: boolean = true): void {
-    if (cookAgain) {
-      this.data = this.preFn(newData)
-    } else {
-      this.data = newData
-    }
+    this.data = newData
+    cookAgain && this.cookData()
   }
 
   /**

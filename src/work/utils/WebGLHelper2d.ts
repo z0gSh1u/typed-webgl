@@ -235,4 +235,18 @@ export class WebGLHelper2d {
     this.gl.clear(this.gl.COLOR_BUFFER_BIT)
   }
 
+  /**
+   * Get the point after rotating theta (DEG) to center.
+   */
+  public getRotatedPoint(point: Vec2, center: Vec2, theta: number): Vec2 {
+    let row = this.canvasDOM.height, col = this.canvasDOM.width
+    let x1 = point[0], y1 = row - point[1], x2 = center[0], y2 = row - center[1]
+    let rt = radians(theta)
+    let x = (x1 - x2) * Math.cos(rt) - (y1 - y2) * Math.sin(rt) + x2;
+    let y = (x1 - x2) * Math.sin(rt) + (y1 - y2) * Math.cos(rt) + y2;
+    x = x;
+    y = row - y;
+    return [x, y]
+  }
+
 }

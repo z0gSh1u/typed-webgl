@@ -33,12 +33,8 @@ define(["require", "exports"], function (require, exports) {
          */
         WebGLDrawingObject.prototype.setData = function (newData, cookAgain) {
             if (cookAgain === void 0) { cookAgain = true; }
-            if (cookAgain) {
-                this.data = this.preFn(newData);
-            }
-            else {
-                this.data = newData;
-            }
+            this.data = newData;
+            cookAgain && this.cookData();
         };
         /**
          * Set a new preprocess function.

@@ -21,11 +21,14 @@ export class WebGLDrawingPackage {
   }
 
   /**
-   * Perform a function to all object's rawData and re-cook it.
+   * Perform a function to all object's rawData and re-cook it. 
+   * Your function should take a parameter=`element` and return the processed value.
    */
   public performToAllObjectData(fn: (arg: any) => any) {
     this.innerList.forEach(ele => {
+      console.log(ele.getCookedData())
       ele.setData(ele.getRawData().map(fn), true)
+      console.log(ele.getCookedData())
     })
   }
 
@@ -33,7 +36,7 @@ export class WebGLDrawingPackage {
    * Calculate the hit box of this package. Returns [xmin, xmax, ymin, ymax] as Vec4 (Rect).
    */
   public calculateHitBox(): Vec4 {
-    let xmin = 99999, xmax = -99999, ymin = 99999, ymax = -9999
+    let xmin = 99999, xmax = -99999, ymin = 99999, ymax = -99999
     this.innerList.forEach(ele => {
       ele.getRawData().forEach(rd => {
         let _rd = rd as Vec2

@@ -81,13 +81,24 @@
     </div>
     <div class="requirement">
       <h4>D、	实现菜单功能</h4>
-      <select name="menu" id="menu">
+      <select name="control" id="control">
         <option value="vow">学狗叫</option>
-        <option value="vow">脸红</option>
+        <option value="red">脸红</option>
       </select>&nbsp;
       <button onclick="execOption()">执行</button>
     </div>
   </div>
+
+  <script>
+    function execOption() {
+      var val = document.querySelector("#control").value
+      if (val == "vow") {
+        var audio = new Audio('./vow.mp3')
+        audio.play()
+      }
+    }
+
+  </script>
 
 </body>
 

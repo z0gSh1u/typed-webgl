@@ -21,17 +21,20 @@ define(["require", "exports"], function (require, exports) {
         };
         /**
          * Perform a function to all object's rawData and re-cook it.
+         * Your function should take a parameter=`element` and return the processed value.
          */
         WebGLDrawingPackage.prototype.performToAllObjectData = function (fn) {
             this.innerList.forEach(function (ele) {
+                console.log(ele.getCookedData());
                 ele.setData(ele.getRawData().map(fn), true);
+                console.log(ele.getCookedData());
             });
         };
         /**
          * Calculate the hit box of this package. Returns [xmin, xmax, ymin, ymax] as Vec4 (Rect).
          */
         WebGLDrawingPackage.prototype.calculateHitBox = function () {
-            var xmin = 99999, xmax = -99999, ymin = 99999, ymax = -9999;
+            var xmin = 99999, xmax = -99999, ymin = 99999, ymax = -99999;
             this.innerList.forEach(function (ele) {
                 ele.getRawData().forEach(function (rd) {
                     var _rd = rd;
