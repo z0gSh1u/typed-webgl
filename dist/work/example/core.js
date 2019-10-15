@@ -5,7 +5,7 @@ var __importStar = (this && this.__importStar) || function (mod) {
     result["default"] = mod;
     return result;
 };
-define(["require", "exports", "../utils/WebGLUtils", "../../3rd-party/MV", "../../3rd-party/initShaders"], function (require, exports, WebGLUtils) {
+define(["require", "exports", "../utils/WebGLHelper2d", "../utils/WebGLUtils", "../../3rd-party/MV", "../../3rd-party/initShaders"], function (require, exports, WebGLHelper2d_1, WebGLUtils) {
     "use strict";
     Object.defineProperty(exports, "__esModule", { value: true });
     WebGLUtils = __importStar(WebGLUtils);
@@ -20,7 +20,7 @@ define(["require", "exports", "../utils/WebGLUtils", "../../3rd-party/MV", "../.
         // initialization
         WebGLUtils.initializeCanvas(gl, canvasDOM);
         program = WebGLUtils.initializeShaders(gl, './vShader.glsl', './fShader.glsl');
-        helper = new WebGLUtils.WebGLHelper2d(canvasDOM, gl, program);
+        helper = new WebGLHelper2d_1.WebGLHelper2d(canvasDOM, gl, program);
         mainBuffer = helper.createBuffer();
         // organize data
         var vertices = [

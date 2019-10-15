@@ -1,13 +1,14 @@
 import '../../3rd-party/MV'
 import '../../3rd-party/initShaders'
 
+import { WebGLHelper2d } from '../utils/WebGLHelper2d'
 import * as WebGLUtils from '../utils/WebGLUtils'
 
 // common variables
 let canvasDOM: HTMLCanvasElement = document.querySelector('#cvs') as HTMLCanvasElement
 let gl: WebGLRenderingContext = canvasDOM.getContext('webgl') as WebGLRenderingContext
 let program: WebGLProgram
-let helper: WebGLUtils.WebGLHelper2d
+let helper: WebGLHelper2d
 let mainBuffer: WebGLBuffer
 
 // bind code to hook `window.onload`
@@ -16,7 +17,7 @@ window.onload = () => {
   // initialization
   WebGLUtils.initializeCanvas(gl, canvasDOM)
   program = WebGLUtils.initializeShaders(gl, './vShader.glsl', './fShader.glsl')
-  helper = new WebGLUtils.WebGLHelper2d(canvasDOM, gl, program)
+  helper = new WebGLHelper2d(canvasDOM, gl, program)
   mainBuffer = helper.createBuffer()
 
   // organize data

@@ -1,5 +1,6 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -13,16 +14,92 @@
       margin: 0;
       padding: 0;
     }
+
     #cvs {
       border: 5px solid gray;
       padding: 15px;
     }
+
+    canvas {
+      float: left;
+    }
+
+    .right {
+      float: right;
+      margin-right: 30px;
+    }
+
+    .colorBlock {
+      height: 40px;
+      width: 40px;
+      display: inline-block;
+      margin: 5px 8px;
+    }
+
+    .requirement {
+      margin: 5px auto;
+      display: inline;
+    }
+
+    .keyBlock {
+      height: 38px;
+      width: 38px;
+      display: inline-block;
+      margin: 5px 8px;
+      border: 3px solid gray;
+      padding: 2px;
+    }
   </style>
 
 </head>
+
 <body>
-  
+
   <canvas id="cvs" height="700px" width="700px"></canvas>
 
+  <div class="right">
+    <h1>《计算机图形学》研讨 01 - Lappland</h1>
+    <h4>组长：沈汉唐&nbsp;&nbsp;组员：高钰铭 卓旭</h4>
+    <hr>
+    <div class="requirement">
+      <h4>A、 窗口背景白色，动物至少有两种颜色</h4>
+      <div class="colorBlock" style="background: #E1E1E2; "></div>GRAY
+      <div class="colorBlock" style="background: #505050; "></div>DARK
+      <div class="colorBlock" style="background: #F4EDED; "></div>SKIN
+      <div class="colorBlock" style="background: #6E6E6E; "></div>LIGHTGRAY
+    </div>
+    <div class="requirement">
+      <h4>B、 可利用鼠标选取动物全部或某一部分，并拖动</h4>
+      <p>尾巴，耳朵可以按轴拖动旋转。</p>
+    </div>
+    <div class="requirement">
+      <h4>C、 利用键盘实现前进、后退、跳跃等功能</h4>
+      <div class="keyBlock">A</div>向左
+      <div class="keyBlock">D</div>向右
+      <div class="keyBlock">空格</div>跳跃
+      <br>行走时手脚会摆动。
+    </div>
+    <div class="requirement">
+      <h4>D、	实现菜单功能</h4>
+      <select name="control" id="control">
+        <option value="vow">学狗叫</option>
+        <option value="red">脸红</option>
+      </select>&nbsp;
+      <button onclick="execOption()">执行</button>
+    </div>
+  </div>
+
+  <script>
+    function execOption() {
+      var val = document.querySelector("#control").value
+      if (val == "vow") {
+        var audio = new Audio('./vow.mp3')
+        audio.play()
+      }
+    }
+
+  </script>
+
 </body>
+
 </html>

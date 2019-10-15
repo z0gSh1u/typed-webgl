@@ -4,7 +4,7 @@
 
 本项目正在持续更新的部分是东南大学《计算机图形学》课程的实验作业部分。
 
-组员的GitHub地址：[Twileon](https://github.com/Twileon) [LongChen2018](https://github.com/LongChen2018) [z0gSh1u](https://github.com/z0gSh1u)
+组员的GitHub地址：[Twileon](https://github.com/Twileon)  [LongChen2018](https://github.com/LongChen2018)  [z0gSh1u](https://github.com/z0gSh1u)
 
 ### 快速入门
 
