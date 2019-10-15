@@ -120,12 +120,28 @@ define(["require", "exports", "../utils/WebGLHelper2d", "../utils/WebGLUtils", "
         helper.drawPackageLater(foot_right);
         helper.drawPackageLater(cloth_center_2);
     };
+    var legStatus = { L: -1, R: 1 }; // -2 left most, -1 left to right, 1 right to left, 2 right most
+    var nextLegStatus = function () {
+        var h;
+        h = function (a) {
+            switch (a) {
+                case -2: return -1;
+                case -1: return 2;
+                case 1: return -2;
+                case 2: return 1;
+                default: return 0;
+            }
+        };
+        legStatus.L = h(legStatus.L);
+        legStatus.R = h(legStatus.R);
+    };
     var processDKey = function () {
+        nextLegStatus();
         // 右脚前进
         [leg_right, foot_right].forEach(function (ele) {
             ele.performToAllObjectData(function (vec) {
                 var _vec = vec;
-                var res = helper.getRotatedPoint(_vec, [318, 444], 15);
+                var res = helper.getRotatedPoint(_vec, [318, 444], 5 * legStatus.L);
                 return res;
             });
         });
@@ -133,7 +149,28 @@ define(["require", "exports", "../utils/WebGLHelper2d", "../utils/WebGLUtils", "
         [leg_left, foot_left].forEach(function (ele) {
             ele.performToAllObjectData(function (vec) {
                 var _vec = vec;
-                var res = helper.getRotatedPoint(_vec, [251, 480], 15);
+                var res = helper.getRotatedPoint(_vec, [251, 480], 5 * legStatus.R);
+                return res;
+            });
+        });
+        prepareDrawLater();
+        helper.reRender();
+    };
+    var processAKey = function () {
+        nextLegStatus();
+        // 右脚前进
+        [leg_right, foot_right].forEach(function (ele) {
+            ele.performToAllObjectData(function (vec) {
+                var _vec = vec;
+                var res = helper.getRotatedPoint(_vec, [318, 444], 5 * legStatus.L);
+                return res;
+            });
+        });
+        // 左脚前进
+        [leg_left, foot_left].forEach(function (ele) {
+            ele.performToAllObjectData(function (vec) {
+                var _vec = vec;
+                var res = helper.getRotatedPoint(_vec, [251, 480], 5 * legStatus.R);
                 return res;
             });
         });
@@ -142,24 +179,6 @@ define(["require", "exports", "../utils/WebGLHelper2d", "../utils/WebGLUtils", "
     };
     var processSpaceKey = function () {
         var step = 9, max = 45, min = -45;
-        var rec = 0;
-        var itv = setInterval(function () {
-            fillingDefault();
-            [leg_right, foot_right].forEach(function (ele) {
-                ele.performToAllObjectData(function (vec) {
-                    var _vec = vec;
-                    var res = helper.getRotatedPoint(_vec, [318, 444], rec + step);
-                    return res;
-                });
-                rec += step;
-                prepareDrawLater();
-                helper.reRender();
-                if (rec > max) {
-                    clearInterval(itv);
-                }
-            });
-        }, 200);
-        rec = 0;
     };
     var listenKeyboard = function () {
         // A, D, Space
@@ -172,6 +191,20 @@ define(["require", "exports", "../utils/WebGLHelper2d", "../utils/WebGLUtils", "
             else if (e && e.keyCode == 32 /*Space*/) {
                 processSpaceKey();
             }
+        };
+        canvasDOM.onmousedown = function (e) {
+            // use offsetX/Y to get click coordinate
+            var mouseX = e.offsetX, mouseY = e.offsetY;
+            // search hitbox
+            [foot_left, foot_right].forEach(function (ele, idx) {
+                var temp = ele.calculateHitBox();
+                if (mouseX >= temp[0] && mouseX <= temp[1]) {
+                    if (mouseY >= temp[2] && mouseY <= temp[3]) {
+                        console.log("Hit " + (idx == 0 ? "Left foot." : "Right foot."));
+                        return;
+                    }
+                }
+            });
         };
     };
     main();

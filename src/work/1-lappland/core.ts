@@ -245,12 +245,29 @@ let prepareDrawLater = () => {
   helper.drawPackageLater(cloth_center_2)
 }
 
+let legStatus = { L: -1, R: 1 } // -2 left most, -1 left to right, 1 right to left, 2 right most
+let nextLegStatus = () => {
+  let h: ((a: number) => number)
+  h = (a: number) => {
+    switch (a) {
+      case -2: return -1
+      case -1: return 2
+      case 1: return -2
+      case 2: return 1
+      default: return 0
+    }
+  }
+  legStatus.L = h(legStatus.L)
+  legStatus.R = h(legStatus.R)
+}
+
 let processDKey = () => {
+  nextLegStatus();
   // 右脚前进
   [leg_right, foot_right].forEach(ele => {
     ele.performToAllObjectData(vec => {
       let _vec = vec as Vec2
-      let res = helper.getRotatedPoint(_vec, [318, 444], 15)
+      let res = helper.getRotatedPoint(_vec, [318, 444], 5 * legStatus.L)
       return res
     })
   });
@@ -258,11 +275,32 @@ let processDKey = () => {
   [leg_left, foot_left].forEach(ele => {
     ele.performToAllObjectData(vec => {
       let _vec = vec as Vec2
-      let res = helper.getRotatedPoint(_vec, [251, 480], 15)
+      let res = helper.getRotatedPoint(_vec, [251, 480], 5 * legStatus.R)
       return res
     })
   });
+  prepareDrawLater()
+  helper.reRender()
+}
 
+let processAKey = () => {
+  nextLegStatus();
+  // 右脚前进
+  [leg_right, foot_right].forEach(ele => {
+    ele.performToAllObjectData(vec => {
+      let _vec = vec as Vec2
+      let res = helper.getRotatedPoint(_vec, [318, 444], 5 * legStatus.L)
+      return res
+    })
+  });
+  // 左脚前进
+  [leg_left, foot_left].forEach(ele => {
+    ele.performToAllObjectData(vec => {
+      let _vec = vec as Vec2
+      let res = helper.getRotatedPoint(_vec, [251, 480], 5 * legStatus.R)
+      return res
+    })
+  });
   prepareDrawLater()
   helper.reRender()
 }
@@ -271,24 +309,6 @@ let processDKey = () => {
 let processSpaceKey = () => {
 
   let step = 9, max = 45, min = -45;
-  let rec = 0
-  let itv = setInterval(() => {
-    fillingDefault();
-    [leg_right, foot_right].forEach(ele => {
-      ele.performToAllObjectData(vec => {
-        let _vec = vec as Vec2
-        let res = helper.getRotatedPoint(_vec, [318, 444], rec + step)
-        return res
-      })
-      rec += step
-      prepareDrawLater()
-      helper.reRender()
-      if (rec > max) {
-        clearInterval(itv)
-      }
-    });
-  }, 200)
-  rec = 0
 
 }
 
@@ -306,8 +326,23 @@ let listenKeyboard = () => {
     }
   }
 
+  canvasDOM.onmousedown = (e: MouseEvent) => {
+    // use offsetX/Y to get click coordinate
+    let mouseX = e.offsetX, mouseY = e.offsetY;
+    // search hitbox
+    [foot_left, foot_right].forEach((ele, idx) => {
+      let temp = ele.calculateHitBox()
+      if (mouseX >= temp[0] && mouseX <= temp[1]) {
+        if (mouseY >= temp[2] && mouseY <= temp[3]) {
+          console.log("Hit " + (idx == 0 ? "Left foot." : "Right foot."))
+          return
+        }
+      }
+    })
+  }
 
 }
 
 main()
 listenKeyboard()
+
