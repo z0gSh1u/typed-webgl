@@ -15,6 +15,8 @@ define(["require", "exports", "./WebGLUtils", "./WebGLDrawingPackage"], function
             this.globalAttributesPerVertex = null;
             this.globalColorAttribute = null;
             this.waitingQueue = new WebGLDrawingPackage_1.WebGLDrawingPackage();
+            this.INTERVAL_MIN = 30;
+            this.lastRenderTick = 0;
         }
         /**
          * Set global settings. So that you don't need to pass these arguments every time you call `drawImmediately`.
@@ -168,11 +170,16 @@ define(["require", "exports", "./WebGLUtils", "./WebGLDrawingPackage"], function
          */
         WebGLHelper2d.prototype.reRender = function () {
             var _this = this;
+            var curTick = new Date().getTime();
+            if (curTick - this.lastRenderTick < this.INTERVAL_MIN) {
+                return;
+            }
             this.clearCanvas();
             this.waitingQueue.getInnerList().forEach(function (ele) {
                 _this.drawImmediately(ele.getCookedData(), ele.getMethod(), ele.getArg1(), ele.getArg2(), ele.getColor());
             });
             this.clearWaitingQueue();
+            this.lastRenderTick = curTick;
         };
         /**
          * Clear `waitingQueue` manually.
