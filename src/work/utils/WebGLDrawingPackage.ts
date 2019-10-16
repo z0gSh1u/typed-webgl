@@ -26,9 +26,9 @@ export class WebGLDrawingPackage {
    */
   public performToAllObjectData(fn: (arg: any) => any) {
     this.innerList.forEach(ele => {
-      console.log(ele.getCookedData())
+      //console.log(ele.getCookedData())
       ele.setData(ele.getRawData().map(fn), true)
-      console.log(ele.getCookedData())
+      //console.log(ele.getCookedData())
     })
   }
 
@@ -47,6 +47,18 @@ export class WebGLDrawingPackage {
       })
     })
     return [xmin, xmax, ymin, ymax] as Vec4
+  }
+
+  /**
+   * Judge a point as Vec2 whether is in the hit box of this package
+   */
+  public judgeInHitBox(point: Vec2){
+    let hitBox = this.calculateHitBox()
+    if(point[0]>=hitBox[0] && point[0]<=hitBox[1] && point[1]>=hitBox[2] && point[1]<=hitBox[3]){
+      return true
+    }else{
+      return false
+    }
   }
 
   /**

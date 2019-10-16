@@ -193,6 +193,14 @@ define(["require", "exports", "./WebGLUtils", "./WebGLDrawingPackage"], function
             this.gl.clear(this.gl.COLOR_BUFFER_BIT);
         };
         /**
+         * 水平对称翻转
+         */
+        WebGLHelper2d.prototype.getTurnedPoint = function (point, axis) {
+            var x = 2 * axis - point[0];
+            var y = point[1];
+            return [x, y];
+        };
+        /**
          * Get the point after rotating theta (DEG) to center.
          */
         WebGLHelper2d.prototype.getRotatedPoint = function (point, center, theta) {
@@ -203,6 +211,14 @@ define(["require", "exports", "./WebGLUtils", "./WebGLDrawingPackage"], function
             var y = (x1 - x2) * Math.sin(rt) + (y1 - y2) * Math.cos(rt) + y2;
             x = x;
             y = row - y;
+            return [x, y];
+        };
+        /**
+         * Get the point after moving deltaX and deltaY
+         */
+        WebGLHelper2d.prototype.getMovedPoint = function (point, delta) {
+            var x = point[0] + delta[0];
+            var y = point[1] + delta[1];
             return [x, y];
         };
         return WebGLHelper2d;

@@ -25,9 +25,9 @@ define(["require", "exports"], function (require, exports) {
          */
         WebGLDrawingPackage.prototype.performToAllObjectData = function (fn) {
             this.innerList.forEach(function (ele) {
-                console.log(ele.getCookedData());
+                //console.log(ele.getCookedData())
                 ele.setData(ele.getRawData().map(fn), true);
-                console.log(ele.getCookedData());
+                //console.log(ele.getCookedData())
             });
         };
         /**
@@ -49,6 +49,18 @@ define(["require", "exports"], function (require, exports) {
                 });
             });
             return [xmin, xmax, ymin, ymax];
+        };
+        /**
+         * Judge a point as Vec2 whether is in the hit box of this package
+         */
+        WebGLDrawingPackage.prototype.judgeInHitBox = function (point) {
+            var hitBox = this.calculateHitBox();
+            if (point[0] >= hitBox[0] && point[0] <= hitBox[1] && point[1] >= hitBox[2] && point[1] <= hitBox[3]) {
+                return true;
+            }
+            else {
+                return false;
+            }
         };
         /**
          * Get `innerList` of package.
