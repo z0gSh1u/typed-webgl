@@ -37,4 +37,20 @@ define(["require", "exports", "../../3rd-party/MV", "../../3rd-party/initShaders
         return __spreadArrays(color8bit.map(function (x) { return x / 255; }), [1.0]).slice(0, 4);
     }
     exports.normalize8bitColor = normalize8bitColor;
+    /**
+     * Get the distance between two points.
+     */
+    function getDistance(pointA, pointB) {
+        var dX2 = Math.pow(pointA[0] - pointB[0], 2);
+        var dY2 = Math.pow(pointA[1] - pointB[1], 2);
+        return Math.sqrt(dX2 + dY2);
+    }
+    exports.getDistance = getDistance;
+    /**
+     * Convert RAD to DEG.
+     */
+    function radToDeg(angle) {
+        return angle * 57.32;
+    }
+    exports.radToDeg = radToDeg;
 });

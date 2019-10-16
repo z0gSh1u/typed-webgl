@@ -70,14 +70,14 @@
     </div>
     <div class="requirement">
       <h4>B、 可利用鼠标选取动物全部或某一部分，并拖动</h4>
-      <p>尾巴，耳朵可以按轴拖动旋转。</p>
+      <p>尾巴可以按轴拖动旋转，左手（正视）可以拆下来（bushi。</p>
     </div>
     <div class="requirement">
       <h4>C、 利用键盘实现前进、后退、跳跃等功能</h4>
       <div class="keyBlock">A</div>向左
       <div class="keyBlock">D</div>向右
       <div class="keyBlock">空格</div>跳跃
-      <br>行走时手脚会摆动。
+      <br>行走时脚会摆动。
     </div>
     <div class="requirement">
       <h4>D、	实现菜单功能</h4>
@@ -85,20 +85,9 @@
         <option value="vow">学狗叫</option>
         <option value="red">脸红</option>
       </select>&nbsp;
-      <button onclick="execOption()">执行</button>
+      <button id="btnExec">执行</button>
     </div>
   </div>
-
-  <script>
-    function execOption() {
-      var val = document.querySelector("#control").value
-      if (val == "vow") {
-        var audio = new Audio('./vow.mp3')
-        audio.play()
-      }
-    }
-
-  </script>
 
 </body>
 

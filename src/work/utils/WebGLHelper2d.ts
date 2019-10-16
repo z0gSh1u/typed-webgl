@@ -236,12 +236,16 @@ export class WebGLHelper2d {
   }
 
   /**
-   * 水平对称翻转
+   * Mirror a point.
    */
-  public getTurnedPoint(point: Vec2, axis: number): Vec2 {
-    let x = 2*axis-point[0]
-    let y = point[1]
-    return [x, y]
+  public getTurnedPoint(point: any, axis: number): Vec2 {
+    // !!! note that there might be something not point Vec2 in data (like Oval)
+    if (point.length == 2) {
+      let x = 2 * axis - point[0]
+      let y = point[1]
+      return [x, y]
+    }
+    return point
   }
 
   /**
@@ -251,20 +255,24 @@ export class WebGLHelper2d {
     let row = this.canvasDOM.height, col = this.canvasDOM.width
     let x1 = point[0], y1 = row - point[1], x2 = center[0], y2 = row - center[1]
     let rt = radians(theta)
-    let x = (x1 - x2) * Math.cos(rt) - (y1 - y2) * Math.sin(rt) + x2;
-    let y = (x1 - x2) * Math.sin(rt) + (y1 - y2) * Math.cos(rt) + y2;
-    x = x;
-    y = row - y;
+    let x = (x1 - x2) * Math.cos(rt) - (y1 - y2) * Math.sin(rt) + x2
+    let y = (x1 - x2) * Math.sin(rt) + (y1 - y2) * Math.cos(rt) + y2
+    x = x
+    y = row - y
     return [x, y]
   }
 
   /**
    * Get the point after moving deltaX and deltaY
    */
-  public getMovedPoint(point: Vec2, delta: Vec2): Vec2 {
-    let x = point[0] + delta[0]
-    let y = point[1] + delta[1]
-    return [x, y]
+  public getMovedPoint(point: any, delta: Vec2): Vec2 {
+    // !!! same as getTurnedPoint
+    if (point.length == 2) {
+      let x = point[0] + delta[0]
+      let y = point[1] + delta[1]
+      return [x, y]
+    }
+    return point
   }
 
 }
