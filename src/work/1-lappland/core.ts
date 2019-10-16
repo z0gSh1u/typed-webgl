@@ -217,6 +217,10 @@ let fillingDefault = () => {
 
 }
 
+let getLappland = () => {
+  return [ear_right, ear_left, cute_left, cute_right, sharp_left, liusea, mouth, eye_left, eye_right, arm_left, arm_right, hand_left, hand_right, cloth_left, cloth_right, face, head, tail, cloth_center_1, cloth_center_2, leg_left, leg_right, foot_left, foot_right]
+}
+
 // buffer current coordinate data to helper
 let prepareDrawLater = () => {
   helper.drawPackageLater(ear_right)
@@ -245,20 +249,26 @@ let prepareDrawLater = () => {
   helper.drawPackageLater(cloth_center_2)
 }
 
-let legStatus = { L: -1, R: 1 } // -2 left most, -1 left to right, 1 right to left, 2 right most
+let legStatus = { L: 5, R: -5 } // new mechanism: positive to right, negative to left, from -10 to 10, no 0
+//old mechanism: -2 left most, -1 left to right, 1 right to left, 2 right most
 let nextLegStatus = () => {
   let h: ((a: number) => number)
   h = (a: number) => {
-    switch (a) {
-      case -2: return -1
-      case -1: return 2
-      case 1: return -2
-      case 2: return 1
-      default: return 0
-    }
+    if(a >= 10) return -1
+    else if(a <= -10) return 1
+    else if(a > 0) return a+1
+    else if(a < 0) return a-1
+    else return 0
   }
   legStatus.L = h(legStatus.L)
   legStatus.R = h(legStatus.R)
+}
+//get rotation angle according to the status turning to
+let rotationAngle: ((status: number) => number)
+rotationAngle = (status: number) => {
+  if(status > 0) return 5
+  else if(status < 0) return -5
+  else return 0
 }
 
 let processDKey = () => {
@@ -267,7 +277,7 @@ let processDKey = () => {
   [leg_right, foot_right].forEach(ele => {
     ele.performToAllObjectData(vec => {
       let _vec = vec as Vec2
-      let res = helper.getRotatedPoint(_vec, [318, 444], 5 * legStatus.L)
+      let res = helper.getRotatedPoint(_vec, [318, 444], rotationAngle(legStatus.L))
       return res
     })
   });
@@ -275,7 +285,7 @@ let processDKey = () => {
   [leg_left, foot_left].forEach(ele => {
     ele.performToAllObjectData(vec => {
       let _vec = vec as Vec2
-      let res = helper.getRotatedPoint(_vec, [251, 480], 5 * legStatus.R)
+      let res = helper.getRotatedPoint(_vec, [251, 480], rotationAngle(legStatus.R))
       return res
     })
   });
@@ -284,6 +294,13 @@ let processDKey = () => {
 }
 
 let processAKey = () => {
+  getLappland().forEach(ele => {
+    ele.performToAllObjectData(vec => {
+      let _vec = vec as Vec2
+      let res = helper.getTurnedPoint(_vec, AXIS)
+      return res
+    })
+  })
   nextLegStatus();
   // 右脚前进
   [leg_right, foot_right].forEach(ele => {
@@ -305,11 +322,47 @@ let processAKey = () => {
   helper.reRender()
 }
 
-
+let isJumping = false
+const JUMP_V = -1000//起跳初速度(每秒)
+const GRAVITY = 2000//重力加速度(每秒)
+const INTEVAL = 40//渲染间隔(毫秒)
+const GROUND = 672//地面Y坐标
+const AXIS = 300//身体中线
+let curV = 0
+let curPos = GROUND
 let processSpaceKey = () => {
-
-  let step = 9, max = 45, min = -45;
-
+  //let step = 9, max = 45, min = -45;
+  isJumping = true
+  curV = JUMP_V
+  let id = setInterval(() => {
+    if(curPos > GROUND){
+      isJumping = false
+      curV = 0
+      getLappland().forEach(ele => {
+        ele.performToAllObjectData(vec => {
+        let _vec = vec as Vec2
+        let res = _vec
+        res = helper.getMovedPoint(_vec, [0, GROUND-curPos])
+        return res
+        })
+      })
+      curPos = GROUND
+      clearInterval(id)
+    }else{
+      getLappland().forEach(ele => {
+        ele.performToAllObjectData(vec => {
+        let _vec = vec as Vec2
+        let res = _vec
+        res = helper.getMovedPoint(_vec, [0, curV*INTEVAL/1000])
+        return res
+        })
+      })
+      curPos += curV*INTEVAL/1000
+      curV += GRAVITY*INTEVAL/1000
+      prepareDrawLater()
+      helper.reRender()
+    }
+  }, INTEVAL)
 }
 
 let listenKeyboard = () => {
@@ -320,15 +373,24 @@ let listenKeyboard = () => {
 
   window.onkeydown = (e: KeyboardEvent) => {
     if (e && e.keyCode == 68 /*D*/) {
-      processDKey()
+      if(!isJumping){
+        processDKey()
+      }
     } else if (e && e.keyCode == 32 /*Space*/) {
-      processSpaceKey()
+      if(!isJumping){
+        processSpaceKey()
+      }
+    } else if (e && e.keyCode == 65 /*A*/) {
+      if(!isJumping){
+        processAKey()
+      }
     }
   }
 
   canvasDOM.onmousedown = (e: MouseEvent) => {
     // use offsetX/Y to get click coordinate
     let mouseX = e.offsetX, mouseY = e.offsetY;
+    console.log("click on (" + mouseX + ", " + mouseY + ")");
     // search hitbox
     [foot_left, foot_right].forEach((ele, idx) => {
       let temp = ele.calculateHitBox()

@@ -236,6 +236,15 @@ export class WebGLHelper2d {
   }
 
   /**
+   * 水平对称翻转
+   */
+  public getTurnedPoint(point: Vec2, axis: number): Vec2 {
+    let x = 2*axis-point[0]
+    let y = point[1]
+    return [x, y]
+  }
+
+  /**
    * Get the point after rotating theta (DEG) to center.
    */
   public getRotatedPoint(point: Vec2, center: Vec2, theta: number): Vec2 {
@@ -246,6 +255,15 @@ export class WebGLHelper2d {
     let y = (x1 - x2) * Math.sin(rt) + (y1 - y2) * Math.cos(rt) + y2;
     x = x;
     y = row - y;
+    return [x, y]
+  }
+
+  /**
+   * Get the point after moving deltaX and deltaY
+   */
+  public getMovedPoint(point: Vec2, delta: Vec2): Vec2 {
+    let x = point[0] + delta[0]
+    let y = point[1] + delta[1]
     return [x, y]
   }
 
