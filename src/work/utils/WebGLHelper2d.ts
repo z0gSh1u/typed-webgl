@@ -20,6 +20,9 @@ export class WebGLHelper2d {
 
   private waitingQueue: WebGLDrawingPackage
 
+  private lastRenderTick: number
+  private INTERVAL_MIN: number
+
   constructor(_canvasDOM: HTMLCanvasElement, _gl: WebGLRenderingContext, _program: WebGLProgram) {
     this.canvasDOM = _canvasDOM
     this.gl = _gl
@@ -30,6 +33,8 @@ export class WebGLHelper2d {
     this.globalAttributesPerVertex = null
     this.globalColorAttribute = null
     this.waitingQueue = new WebGLDrawingPackage()
+    this.INTERVAL_MIN = 30
+    this.lastRenderTick = 0
   }
 
   /**
@@ -207,11 +212,16 @@ export class WebGLHelper2d {
    * Clear canvas, then draw all objects in `waitingQueue`, then clear it.
    */
   public reRender() {
+    let curTick = new Date().getTime()
+    if(curTick-this.lastRenderTick < this.INTERVAL_MIN){
+      return
+    }
     this.clearCanvas()
     this.waitingQueue.getInnerList().forEach(ele => {
       this.drawImmediately(ele.getCookedData(), ele.getMethod(), ele.getArg1(), ele.getArg2(), ele.getColor())
     })
     this.clearWaitingQueue()
+    this.lastRenderTick = curTick
   }
 
   /**

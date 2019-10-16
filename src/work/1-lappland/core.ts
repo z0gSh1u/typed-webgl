@@ -234,6 +234,10 @@ let fillingDefault = () => {
     new WebGLDrawingObject("主体", [[360, 448], [280, 467], [387, 484]], null, gl.TRIANGLES, COLORS.DARK),
   )
 
+  faceToward = 1 // 1: right, -1: left
+  legLeftCenter = [251, 480]
+  legRightCenter = [318, 444]
+  legStatus = { L: 5, R: -5 }
 }
 
 // get the whole entity, ensuring the order
@@ -269,9 +273,23 @@ let nextLegStatus = () => {
 // get leg rotation angle according to the status turning to
 let rotationAngle: ((status: number) => number)
 rotationAngle = (status: number) => {
-  if (status > 0) return 5
-  else if (status < 0) return -5
+  if (status > 0) return -5
+  else if (status < 0) return 5
   else return 0
+}
+
+let mirrorIt = () => {
+  getLappland().forEach(ele => {
+    ele.performToAllObjectData(vec => {
+      let _vec = vec as Vec2
+      let res = helper.getTurnedPoint(_vec, AXIS)
+      return res
+    })
+  })
+  legRightCenter = helper.getTurnedPoint(legRightCenter, AXIS)
+  legLeftCenter = helper.getTurnedPoint(legLeftCenter, AXIS)
+  legStatus.L *= -1
+  legStatus.R *= -1
 }
 
 // process D key press
@@ -286,12 +304,17 @@ let processDKey = () => {
   //     })
   //   })
   // }
+  if (faceToward == -1) {
+    faceToward = 1
+    // mirror it
+    mirrorIt()
+  }
   nextLegStatus();
   // 右脚前进
   [leg_right, foot_right].forEach(ele => {
     ele.performToAllObjectData(vec => {
       let _vec = vec as Vec2
-      let res = helper.getRotatedPoint(_vec, [318, 444], rotationAngle(legStatus.L))
+      let res = helper.getRotatedPoint(_vec, [legRightCenter[0], legRightCenter[1]], rotationAngle(legStatus.R))
       return res
     })
   });
@@ -299,7 +322,7 @@ let processDKey = () => {
   [leg_left, foot_left].forEach(ele => {
     ele.performToAllObjectData(vec => {
       let _vec = vec as Vec2
-      let res = helper.getRotatedPoint(_vec, [251, 480], rotationAngle(legStatus.R))
+      let res = helper.getRotatedPoint(_vec, [legLeftCenter[0], legLeftCenter[1]], rotationAngle(legStatus.L))
       return res
     })
   });
@@ -312,20 +335,14 @@ let processAKey = () => {
   if (faceToward == 1) {
     faceToward = -1
     // mirror it
-    getLappland().forEach(ele => {
-      ele.performToAllObjectData(vec => {
-        let _vec = vec as Vec2
-        let res = helper.getTurnedPoint(_vec, AXIS)
-        return res
-      })
-    })
+    mirrorIt()
   }
   nextLegStatus();
   // 右脚前进
   [leg_right, foot_right].forEach(ele => {
     ele.performToAllObjectData(vec => {
       let _vec = vec as Vec2
-      let res = helper.getRotatedPoint(_vec, [318, 444], 5 * legStatus.L)
+      let res = helper.getRotatedPoint(_vec, [legRightCenter[0], legRightCenter[1]], rotationAngle(legStatus.R))
       return res
     })
   });
@@ -333,7 +350,7 @@ let processAKey = () => {
   [leg_left, foot_left].forEach(ele => {
     ele.performToAllObjectData(vec => {
       let _vec = vec as Vec2
-      let res = helper.getRotatedPoint(_vec, [251, 480], 5 * legStatus.R)
+      let res = helper.getRotatedPoint(_vec, [legLeftCenter[0], legLeftCenter[1]], rotationAngle(legStatus.L))
       return res
     })
   });
@@ -342,6 +359,8 @@ let processAKey = () => {
 }
 
 let faceToward = 1 // 1: right, -1: left
+let legLeftCenter = [251, 480]
+let legRightCenter = [318, 444]
 let isJumping = false
 const JUMP_V = -1000 // 起跳初速度(每秒)
 const GRAVITY = 2000 // 重力加速度(每秒)
@@ -354,33 +373,26 @@ let processSpaceKey = () => {
   isJumping = true
   curV = JUMP_V
   let id = setInterval(() => {
-    if (curPos > GROUND) {
+    let moveDis = curV * INTERVAL / 1000
+    curV += GRAVITY * INTERVAL / 1000
+    curPos += moveDis
+    if(curPos > GROUND){
+      moveDis -= curPos - GROUND
+      curPos = GROUND
       isJumping = false
       curV = 0
-      getLappland().forEach(ele => {
-        ele.performToAllObjectData(vec => {
-          let _vec = vec as Vec2
-          let res = _vec
-          res = helper.getMovedPoint(_vec, [0, GROUND - curPos])
-          return res
-        })
-      })
-      curPos = GROUND
       clearInterval(id)
-    } else {
-      getLappland().forEach(ele => {
-        ele.performToAllObjectData(vec => {
-          let _vec = vec as Vec2
-          let res = _vec
-          res = helper.getMovedPoint(_vec, [0, curV * INTERVAL / 1000])
-          return res
-        })
-      })
-      curPos += curV * INTERVAL / 1000
-      curV += GRAVITY * INTERVAL / 1000
-      prepareDrawLater()
-      helper.reRender()
     }
+    getLappland().forEach(ele => {
+      ele.performToAllObjectData(vec => {
+        let _vec = vec as Vec2
+        let res = _vec
+        res = helper.getMovedPoint(_vec, [0, moveDis])
+        return res
+      })
+    })
+    prepareDrawLater()
+    helper.reRender()
   }, INTERVAL)
 }
 
@@ -405,6 +417,7 @@ let listenKeyboard = () => {
 let listenMouse = () => {
   // click listener
   canvasDOM.onmousedown = (e: MouseEvent) => {
+    if(isJumping) return
     // use offsetX/Y to get click coordinate
     let mousePoint = [e.offsetX, e.offsetY] as Vec2
     console.log(mousePoint);
@@ -422,7 +435,7 @@ let listenMouse = () => {
           let a = WebGLUtils.getDistance(mousePoint, newMousePoint), b = 100, c = 100
           // 余弦定理
           let angle = WebGLUtils.radToDeg(Math.acos((Math.pow(b, 2) + Math.pow(c, 2) - Math.pow(a, 2)) / (2 * b * c)))
-          // 无论移动方向如何，angle永源为正，这是不正确的，此处确定angle符号
+          // 无论移动方向如何，angle永远为正，这是不正确的，此处确定angle符号
           if (newMousePoint[0] - mousePoint[0] < 0) {
             // left
             angle *= -1
@@ -465,6 +478,7 @@ let listenMouse = () => {
 // menu support
 let listenMenu = () => {
   (document.querySelector("#btnExec") as HTMLButtonElement).onclick = () => {
+    if(isJumping) return
     let val = (document.querySelector("#control") as HTMLSelectElement).value
     if (val == "vow") {
       let audio = new Audio('./vow.mp3')

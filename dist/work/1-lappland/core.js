@@ -98,6 +98,10 @@ define(["require", "exports", "../utils/WebGLHelper2d", "../utils/WebGLUtils", "
         foot_right = new WebGLDrawingPackage_1.WebGLDrawingPackage(new WebGLDrawingObject_1.WebGLDrawingObject("主体", [[377, 596], [300, 598], [397, 662], [297, 665]], null, gl.TRIANGLE_STRIP, COLORS.DARK));
         // 衣服中间 - Part 2
         cloth_center_2 = new WebGLDrawingPackage_1.WebGLDrawingPackage(new WebGLDrawingObject_1.WebGLDrawingObject("主体", [[360, 448], [280, 467], [387, 484]], null, gl.TRIANGLES, COLORS.DARK));
+        faceToward = 1; // 1: right, -1: left
+        legLeftCenter = [251, 480];
+        legRightCenter = [318, 444];
+        legStatus = { L: 5, R: -5 };
     };
     // get the whole entity, ensuring the order
     var getLappland = function () {
@@ -135,11 +139,24 @@ define(["require", "exports", "../utils/WebGLHelper2d", "../utils/WebGLUtils", "
     var rotationAngle;
     rotationAngle = function (status) {
         if (status > 0)
-            return 5;
-        else if (status < 0)
             return -5;
+        else if (status < 0)
+            return 5;
         else
             return 0;
+    };
+    var mirrorIt = function () {
+        getLappland().forEach(function (ele) {
+            ele.performToAllObjectData(function (vec) {
+                var _vec = vec;
+                var res = helper.getTurnedPoint(_vec, AXIS);
+                return res;
+            });
+        });
+        legRightCenter = helper.getTurnedPoint(legRightCenter, AXIS);
+        legLeftCenter = helper.getTurnedPoint(legLeftCenter, AXIS);
+        legStatus.L *= -1;
+        legStatus.R *= -1;
     };
     // process D key press
     var processDKey = function () {
@@ -153,12 +170,17 @@ define(["require", "exports", "../utils/WebGLHelper2d", "../utils/WebGLUtils", "
         //     })
         //   })
         // }
+        if (faceToward == -1) {
+            faceToward = 1;
+            // mirror it
+            mirrorIt();
+        }
         nextLegStatus();
         // 右脚前进
         [leg_right, foot_right].forEach(function (ele) {
             ele.performToAllObjectData(function (vec) {
                 var _vec = vec;
-                var res = helper.getRotatedPoint(_vec, [318, 444], rotationAngle(legStatus.L));
+                var res = helper.getRotatedPoint(_vec, [legRightCenter[0], legRightCenter[1]], rotationAngle(legStatus.R));
                 return res;
             });
         });
@@ -166,7 +188,7 @@ define(["require", "exports", "../utils/WebGLHelper2d", "../utils/WebGLUtils", "
         [leg_left, foot_left].forEach(function (ele) {
             ele.performToAllObjectData(function (vec) {
                 var _vec = vec;
-                var res = helper.getRotatedPoint(_vec, [251, 480], rotationAngle(legStatus.R));
+                var res = helper.getRotatedPoint(_vec, [legLeftCenter[0], legLeftCenter[1]], rotationAngle(legStatus.L));
                 return res;
             });
         });
@@ -178,20 +200,14 @@ define(["require", "exports", "../utils/WebGLHelper2d", "../utils/WebGLUtils", "
         if (faceToward == 1) {
             faceToward = -1;
             // mirror it
-            getLappland().forEach(function (ele) {
-                ele.performToAllObjectData(function (vec) {
-                    var _vec = vec;
-                    var res = helper.getTurnedPoint(_vec, AXIS);
-                    return res;
-                });
-            });
+            mirrorIt();
         }
         nextLegStatus();
         // 右脚前进
         [leg_right, foot_right].forEach(function (ele) {
             ele.performToAllObjectData(function (vec) {
                 var _vec = vec;
-                var res = helper.getRotatedPoint(_vec, [318, 444], 5 * legStatus.L);
+                var res = helper.getRotatedPoint(_vec, [legRightCenter[0], legRightCenter[1]], rotationAngle(legStatus.R));
                 return res;
             });
         });
@@ -199,7 +215,7 @@ define(["require", "exports", "../utils/WebGLHelper2d", "../utils/WebGLUtils", "
         [leg_left, foot_left].forEach(function (ele) {
             ele.performToAllObjectData(function (vec) {
                 var _vec = vec;
-                var res = helper.getRotatedPoint(_vec, [251, 480], 5 * legStatus.R);
+                var res = helper.getRotatedPoint(_vec, [legLeftCenter[0], legLeftCenter[1]], rotationAngle(legStatus.L));
                 return res;
             });
         });
@@ -207,6 +223,8 @@ define(["require", "exports", "../utils/WebGLHelper2d", "../utils/WebGLUtils", "
         helper.reRender();
     };
     var faceToward = 1; // 1: right, -1: left
+    var legLeftCenter = [251, 480];
+    var legRightCenter = [318, 444];
     var isJumping = false;
     var JUMP_V = -1000; // 起跳初速度(每秒)
     var GRAVITY = 2000; // 重力加速度(每秒)
@@ -219,34 +237,26 @@ define(["require", "exports", "../utils/WebGLHelper2d", "../utils/WebGLUtils", "
         isJumping = true;
         curV = JUMP_V;
         var id = setInterval(function () {
+            var moveDis = curV * INTERVAL / 1000;
+            curV += GRAVITY * INTERVAL / 1000;
+            curPos += moveDis;
             if (curPos > GROUND) {
+                moveDis -= curPos - GROUND;
+                curPos = GROUND;
                 isJumping = false;
                 curV = 0;
-                getLappland().forEach(function (ele) {
-                    ele.performToAllObjectData(function (vec) {
-                        var _vec = vec;
-                        var res = _vec;
-                        res = helper.getMovedPoint(_vec, [0, GROUND - curPos]);
-                        return res;
-                    });
-                });
-                curPos = GROUND;
                 clearInterval(id);
             }
-            else {
-                getLappland().forEach(function (ele) {
-                    ele.performToAllObjectData(function (vec) {
-                        var _vec = vec;
-                        var res = _vec;
-                        res = helper.getMovedPoint(_vec, [0, curV * INTERVAL / 1000]);
-                        return res;
-                    });
+            getLappland().forEach(function (ele) {
+                ele.performToAllObjectData(function (vec) {
+                    var _vec = vec;
+                    var res = _vec;
+                    res = helper.getMovedPoint(_vec, [0, moveDis]);
+                    return res;
                 });
-                curPos += curV * INTERVAL / 1000;
-                curV += GRAVITY * INTERVAL / 1000;
-                prepareDrawLater();
-                helper.reRender();
-            }
+            });
+            prepareDrawLater();
+            helper.reRender();
         }, INTERVAL);
     };
     var listenKeyboard = function () {
@@ -271,6 +281,8 @@ define(["require", "exports", "../utils/WebGLHelper2d", "../utils/WebGLUtils", "
     var listenMouse = function () {
         // click listener
         canvasDOM.onmousedown = function (e) {
+            if (isJumping)
+                return;
             // use offsetX/Y to get click coordinate
             var mousePoint = [e.offsetX, e.offsetY];
             console.log(mousePoint);
@@ -288,7 +300,7 @@ define(["require", "exports", "../utils/WebGLHelper2d", "../utils/WebGLUtils", "
                         var a = WebGLUtils.getDistance(mousePoint, newMousePoint), b = 100, c = 100;
                         // 余弦定理
                         var angle = WebGLUtils.radToDeg(Math.acos((Math.pow(b, 2) + Math.pow(c, 2) - Math.pow(a, 2)) / (2 * b * c)));
-                        // 无论移动方向如何，angle永源为正，这是不正确的，此处确定angle符号
+                        // 无论移动方向如何，angle永远为正，这是不正确的，此处确定angle符号
                         if (newMousePoint[0] - mousePoint[0] < 0) {
                             // left
                             angle *= -1;
@@ -328,6 +340,8 @@ define(["require", "exports", "../utils/WebGLHelper2d", "../utils/WebGLUtils", "
     // menu support
     var listenMenu = function () {
         document.querySelector("#btnExec").onclick = function () {
+            if (isJumping)
+                return;
             var val = document.querySelector("#control").value;
             if (val == "vow") {
                 var audio = new Audio('./vow.mp3');
