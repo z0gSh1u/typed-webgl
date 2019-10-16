@@ -1,3 +1,5 @@
+// Core code of 1-Lappland.
+// by z0gSh1u & LongChen.
 var __importStar = (this && this.__importStar) || function (mod) {
     if (mod && mod.__esModule) return mod;
     var result = {};
@@ -22,7 +24,8 @@ define(["require", "exports", "../utils/WebGLHelper2d", "../utils/WebGLUtils", "
         DARK: [80, 80, 80],
         LIGHTGRAY: [110, 110, 110],
         SKIN: [244, 237, 237],
-        WHITE: [255, 255, 255]
+        WHITE: [255, 255, 255],
+        PINK: [242, 101, 153]
     };
     // main function
     var main = function () {
@@ -40,10 +43,11 @@ define(["require", "exports", "../utils/WebGLHelper2d", "../utils/WebGLUtils", "
         helper.reRender();
     };
     // packages (components) used in render function
-    var ear_right, ear_left, cute_left, cute_right, sharp_left, liusea, mouth, eye_left, eye_right, arm_left, hand_left, cloth_left, cloth_right, face, head, arm_right, hand_right, tail, cloth_center_1, leg_left, leg_right, foot_left, foot_right, cloth_center_2;
+    var ear_right, ear_left, cute_left, cute_right, sharp_left, liusea, mouth, eye_left, eye_right, arm_left, hand_left, cloth_left, cloth_right, face, head, arm_right, hand_right, tail, cloth_center_1, leg_left, leg_right, foot_left, foot_right, cloth_center_2, backhair_left, backhair_right;
     // fill packages using default coordinate data
     var fillingDefault = function () {
         // organize and draw
+        // who is written upper is shown upper
         // 右耳
         ear_right = new WebGLDrawingPackage_1.WebGLDrawingPackage(new WebGLDrawingObject_1.WebGLDrawingObject("右瓣", [[441, 37.5], [459.5, 68], [463.5, 121.5], [423, 152]], BezierCurve_1.generateBezierCurve2dL3, gl.TRIANGLE_FAN, COLORS.GRAY), new WebGLDrawingObject_1.WebGLDrawingObject("右瓣勾线", [[441, 37.5], [459.5, 68], [463.5, 121.5], [423, 152]], BezierCurve_1.generateBezierCurve2dL3, gl.LINE_STRIP, COLORS.BLACK), new WebGLDrawingObject_1.WebGLDrawingObject("左瓣勾线", [[375, 85], [443, 39]], null, gl.LINE_STRIP, COLORS.BLACK), new WebGLDrawingObject_1.WebGLDrawingObject("中部", [[425, 151], [375, 85], [443, 39]], null, gl.TRIANGLE_FAN, COLORS.GRAY));
         // 左耳
@@ -74,16 +78,18 @@ define(["require", "exports", "../utils/WebGLHelper2d", "../utils/WebGLUtils", "
         face = new WebGLDrawingPackage_1.WebGLDrawingPackage(new WebGLDrawingObject_1.WebGLDrawingObject("主体", [[304, 220], 170 / 2, 168 / 2], BasicShape_1.generateOval, gl.TRIANGLE_FAN, COLORS.SKIN), new WebGLDrawingObject_1.WebGLDrawingObject("勾线", [[304, 220], 170 / 2, 168 / 2], BasicShape_1.generateOval, gl.LINE_STRIP, COLORS.BLACK));
         // 头部实体
         head = new WebGLDrawingPackage_1.WebGLDrawingPackage(new WebGLDrawingObject_1.WebGLDrawingObject("主体", [[290, 180], 274 / 2, 235 / 2], BasicShape_1.generateOval, gl.TRIANGLE_FAN, COLORS.GRAY), new WebGLDrawingObject_1.WebGLDrawingObject("勾线", [[290, 180], 274 / 2, 235 / 2], BasicShape_1.generateOval, gl.LINE_STRIP, COLORS.BLACK));
+        // 后部头发左
+        backhair_left = new WebGLDrawingPackage_1.WebGLDrawingPackage(new WebGLDrawingObject_1.WebGLDrawingObject("左部", [[155, 200], [116.5, 239.5], [62.5, 310.5], [49, 392.5]], BezierCurve_1.generateBezierCurve2dL3, gl.TRIANGLE_FAN, COLORS.GRAY), new WebGLDrawingObject_1.WebGLDrawingObject("左部勾线", [[155, 200], [116.5, 239.5], [62.5, 310.5], [49, 392.5]], BezierCurve_1.generateBezierCurve2dL3, gl.LINE_STRIP, COLORS.BLACK), new WebGLDrawingObject_1.WebGLDrawingObject("右部", [[179, 260], [166, 292.5], [102.5, 366.5], [49, 392.5]], BezierCurve_1.generateBezierCurve2dL3, gl.TRIANGLE_FAN, COLORS.GRAY), new WebGLDrawingObject_1.WebGLDrawingObject("右部勾线", [[179, 260], [166, 292.5], [102.5, 366.5], [49, 392.5]], BezierCurve_1.generateBezierCurve2dL3, gl.LINE_STRIP, COLORS.BLACK), new WebGLDrawingObject_1.WebGLDrawingObject("下部", [[112, 332.5], [97.5, 379.5], [110, 437.5], [141.5, 463]], BezierCurve_1.generateBezierCurve2dL3, gl.TRIANGLE_FAN, COLORS.GRAY), new WebGLDrawingObject_1.WebGLDrawingObject("下部勾线", [[112, 332.5], [97.5, 379.5], [110, 437.5], [141.5, 463]], BezierCurve_1.generateBezierCurve2dL3, gl.LINE_STRIP, COLORS.BLACK), new WebGLDrawingObject_1.WebGLDrawingObject("下部右边", [[158, 441], [141.5, 463]], null, gl.LINE_STRIP, COLORS.BLACK), new WebGLDrawingObject_1.WebGLDrawingObject("上中部", [[49, 392.5], [184.5, 254], [152, 202]], null, gl.TRIANGLES, COLORS.GRAY), new WebGLDrawingObject_1.WebGLDrawingObject("下中部", [[110, 329], [141.5, 463], [179, 254], [210, 344], [221, 270.5]], null, gl.TRIANGLE_STRIP, COLORS.GRAY));
         // 右臂（正视）
         arm_right = new WebGLDrawingPackage_1.WebGLDrawingPackage(new WebGLDrawingObject_1.WebGLDrawingObject("主体", [[347, 361], [390, 401], [365, 417]], null, gl.TRIANGLES, COLORS.DARK));
         // 右手（正视）
         hand_right = new WebGLDrawingPackage_1.WebGLDrawingPackage(new WebGLDrawingObject_1.WebGLDrawingObject("大拇指", [[393.3, 443.3], [383.3, 435], [426.3, 463], [380.3, 409.6]], BezierCurve_1.generateBezierCurve2dL3, gl.TRIANGLE_FAN, COLORS.SKIN), new WebGLDrawingObject_1.WebGLDrawingObject("主体", [[376, 444], [367, 418], [392, 438], [381, 411]], null, gl.TRIANGLE_STRIP, COLORS.SKIN), new WebGLDrawingObject_1.WebGLDrawingObject("下部", [[347, 361], [390, 401], [365, 417], [376, 444], [389, 438], [387.3, 478.6]], null, gl.TRIANGLES, COLORS.SKIN));
-        // 尾巴
-        tail = new WebGLDrawingPackage_1.WebGLDrawingPackage(new WebGLDrawingObject_1.WebGLDrawingObject("左瓣", [[150.6, 472.6], [136.6, 512.6], [133.3, 547.6], [139, 563]], BezierCurve_1.generateBezierCurve2dL3, gl.TRIANGLE_FAN, COLORS.GRAY), new WebGLDrawingObject_1.WebGLDrawingObject("左瓣勾线", [[150.6, 472.6], [136.6, 512.6], [133.3, 547.6], [139, 563]], BezierCurve_1.generateBezierCurve2dL3, gl.LINE_STRIP, COLORS.BLACK), new WebGLDrawingObject_1.WebGLDrawingObject("右瓣", [[139, 564.3], [106, 571.3], [207.6, 554], [225.3, 508.6]], BezierCurve_1.generateBezierCurve2dL3, gl.TRIANGLE_FAN, COLORS.GRAY), new WebGLDrawingObject_1.WebGLDrawingObject("右瓣勾线", [[139, 564.3], [106, 571.3], [207.6, 554], [225.3, 508.6]], BezierCurve_1.generateBezierCurve2dL3, gl.LINE_STRIP, COLORS.BLACK), new WebGLDrawingObject_1.WebGLDrawingObject("中部", [[150.6, 472.6], [138, 565], [225.3, 509.6], [150.6, 472.6], [225.3, 509.6], [224, 489]], null, gl.TRIANGLES, COLORS.GRAY));
-        // 衣服中间 - Part 1
-        cloth_center_1 = new WebGLDrawingPackage_1.WebGLDrawingPackage(new WebGLDrawingObject_1.WebGLDrawingObject("主体", [[298.5, 359.75], [281.5, 463], [360, 448]], null, gl.TRIANGLES, COLORS.DARK));
         // 左腿（正视）
         leg_left = new WebGLDrawingPackage_1.WebGLDrawingPackage(new WebGLDrawingObject_1.WebGLDrawingObject("主体", [[226, 489], [227, 505], [272, 497], [196, 588], [254, 598]], null, gl.TRIANGLE_STRIP, COLORS.SKIN));
+        // 尾巴
+        tail = new WebGLDrawingPackage_1.WebGLDrawingPackage(new WebGLDrawingObject_1.WebGLDrawingObject("左瓣", [[150.6, 472.6], [136.6, 512.6], [133.3, 547.6], [139, 563]], BezierCurve_1.generateBezierCurve2dL3, gl.TRIANGLE_FAN, COLORS.GRAY), new WebGLDrawingObject_1.WebGLDrawingObject("左瓣勾线", [[150.6, 472.6], [136.6, 512.6], [133.3, 547.6], [139, 563]], BezierCurve_1.generateBezierCurve2dL3, gl.LINE_STRIP, COLORS.BLACK), new WebGLDrawingObject_1.WebGLDrawingObject("右瓣", [[139, 564.3], [106, 571.3], [207.6, 554], [235, 508.6]], BezierCurve_1.generateBezierCurve2dL3, gl.TRIANGLE_FAN, COLORS.GRAY), new WebGLDrawingObject_1.WebGLDrawingObject("右瓣勾线", [[139, 564.3], [106, 571.3], [207.6, 554], [235, 508.6]], BezierCurve_1.generateBezierCurve2dL3, gl.LINE_STRIP, COLORS.BLACK), new WebGLDrawingObject_1.WebGLDrawingObject("中部", [[150.6, 472.6], [138, 565], [235, 509.6], [150.6, 472.6], [235, 509.6], [224, 489]], null, gl.TRIANGLES, COLORS.GRAY));
+        // 衣服中间 - Part 1
+        cloth_center_1 = new WebGLDrawingPackage_1.WebGLDrawingPackage(new WebGLDrawingObject_1.WebGLDrawingObject("主体", [[298.5, 359.75], [281.5, 463], [360, 448]], null, gl.TRIANGLES, COLORS.DARK));
         // 右腿（正视）
         leg_right = new WebGLDrawingPackage_1.WebGLDrawingPackage(new WebGLDrawingObject_1.WebGLDrawingObject("左上瓣", [[340, 454], [303, 462], [358, 498], [315, 506], [308, 596]], null, gl.TRIANGLE_STRIP, COLORS.SKIN), new WebGLDrawingObject_1.WebGLDrawingObject("右下瓣", [[358, 498], [308, 596], [364, 595]], null, gl.TRIANGLES, COLORS.SKIN));
         // 左脚（正视）
@@ -93,38 +99,21 @@ define(["require", "exports", "../utils/WebGLHelper2d", "../utils/WebGLUtils", "
         // 衣服中间 - Part 2
         cloth_center_2 = new WebGLDrawingPackage_1.WebGLDrawingPackage(new WebGLDrawingObject_1.WebGLDrawingObject("主体", [[360, 448], [280, 467], [387, 484]], null, gl.TRIANGLES, COLORS.DARK));
     };
+    // get the whole entity, ensuring the order
     var getLappland = function () {
-        return [ear_right, ear_left, cute_left, cute_right, sharp_left, liusea, mouth, eye_left, eye_right, arm_left, arm_right, hand_left, hand_right, cloth_left, cloth_right, face, head, tail, cloth_center_1, cloth_center_2, leg_left, leg_right, foot_left, foot_right];
+        return [ear_right, ear_left, cute_left, cute_right, sharp_left, liusea, mouth,
+            eye_left, eye_right, arm_left, hand_left, cloth_left, cloth_right, face, head,
+            backhair_left, arm_right, hand_right, leg_left, tail, cloth_center_1,
+            leg_right, foot_left, foot_right, cloth_center_2];
     };
     // buffer current coordinate data to helper
     var prepareDrawLater = function () {
-        helper.drawPackageLater(ear_right);
-        helper.drawPackageLater(ear_left);
-        helper.drawPackageLater(cute_left);
-        helper.drawPackageLater(cute_right);
-        helper.drawPackageLater(sharp_left);
-        helper.drawPackageLater(liusea);
-        helper.drawPackageLater(mouth);
-        helper.drawPackageLater(eye_left);
-        helper.drawPackageLater(eye_right);
-        helper.drawPackageLater(arm_left);
-        helper.drawPackageLater(hand_left);
-        helper.drawPackageLater(cloth_left);
-        helper.drawPackageLater(cloth_right);
-        helper.drawPackageLater(face);
-        helper.drawPackageLater(head);
-        helper.drawPackageLater(arm_right);
-        helper.drawPackageLater(hand_right);
-        helper.drawPackageLater(tail);
-        helper.drawPackageLater(cloth_center_1);
-        helper.drawPackageLater(leg_left);
-        helper.drawPackageLater(leg_right);
-        helper.drawPackageLater(foot_left);
-        helper.drawPackageLater(foot_right);
-        helper.drawPackageLater(cloth_center_2);
+        getLappland().forEach(function (part) {
+            helper.drawPackageLater(part);
+        });
     };
     var legStatus = { L: 5, R: -5 }; // new mechanism: positive to right, negative to left, from -10 to 10, no 0
-    //old mechanism: -2 left most, -1 left to right, 1 right to left, 2 right most
+    // update leg status to next one
     var nextLegStatus = function () {
         var h;
         h = function (a) {
@@ -142,7 +131,7 @@ define(["require", "exports", "../utils/WebGLHelper2d", "../utils/WebGLUtils", "
         legStatus.L = h(legStatus.L);
         legStatus.R = h(legStatus.R);
     };
-    //get rotation angle according to the status turning to
+    // get leg rotation angle according to the status turning to
     var rotationAngle;
     rotationAngle = function (status) {
         if (status > 0)
@@ -152,7 +141,18 @@ define(["require", "exports", "../utils/WebGLHelper2d", "../utils/WebGLUtils", "
         else
             return 0;
     };
+    // process D key press
     var processDKey = function () {
+        // if (faceToward == 1) {
+        //   // mirror it
+        //   getLappland().forEach(ele => {
+        //     ele.performToAllObjectData(vec => {
+        //       let _vec = vec as Vec2
+        //       let res = helper.getTurnedPoint(_vec, AXIS)
+        //       return res
+        //     })
+        //   })
+        // }
         nextLegStatus();
         // 右脚前进
         [leg_right, foot_right].forEach(function (ele) {
@@ -173,14 +173,19 @@ define(["require", "exports", "../utils/WebGLHelper2d", "../utils/WebGLUtils", "
         prepareDrawLater();
         helper.reRender();
     };
+    // process A key press
     var processAKey = function () {
-        getLappland().forEach(function (ele) {
-            ele.performToAllObjectData(function (vec) {
-                var _vec = vec;
-                var res = helper.getTurnedPoint(_vec, AXIS);
-                return res;
+        if (faceToward == 1) {
+            faceToward = -1;
+            // mirror it
+            getLappland().forEach(function (ele) {
+                ele.performToAllObjectData(function (vec) {
+                    var _vec = vec;
+                    var res = helper.getTurnedPoint(_vec, AXIS);
+                    return res;
+                });
             });
-        });
+        }
         nextLegStatus();
         // 右脚前进
         [leg_right, foot_right].forEach(function (ele) {
@@ -201,16 +206,16 @@ define(["require", "exports", "../utils/WebGLHelper2d", "../utils/WebGLUtils", "
         prepareDrawLater();
         helper.reRender();
     };
+    var faceToward = 1; // 1: right, -1: left
     var isJumping = false;
-    var JUMP_V = -1000; //起跳初速度(每秒)
-    var GRAVITY = 2000; //重力加速度(每秒)
-    var INTEVAL = 40; //渲染间隔(毫秒)
-    var GROUND = 672; //地面Y坐标
-    var AXIS = 300; //身体中线
+    var JUMP_V = -1000; // 起跳初速度(每秒)
+    var GRAVITY = 2000; // 重力加速度(每秒)
+    var INTERVAL = 40; // 渲染间隔(毫秒)
+    var GROUND = 632; //地面Y坐标
+    var AXIS = 300; // 身体中线
     var curV = 0;
     var curPos = GROUND;
     var processSpaceKey = function () {
-        //let step = 9, max = 45, min = -45;
         isJumping = true;
         curV = JUMP_V;
         var id = setInterval(function () {
@@ -233,21 +238,18 @@ define(["require", "exports", "../utils/WebGLHelper2d", "../utils/WebGLUtils", "
                     ele.performToAllObjectData(function (vec) {
                         var _vec = vec;
                         var res = _vec;
-                        res = helper.getMovedPoint(_vec, [0, curV * INTEVAL / 1000]);
+                        res = helper.getMovedPoint(_vec, [0, curV * INTERVAL / 1000]);
                         return res;
                     });
                 });
-                curPos += curV * INTEVAL / 1000;
-                curV += GRAVITY * INTEVAL / 1000;
+                curPos += curV * INTERVAL / 1000;
+                curV += GRAVITY * INTERVAL / 1000;
                 prepareDrawLater();
                 helper.reRender();
             }
-        }, INTEVAL);
+        }, INTERVAL);
     };
     var listenKeyboard = function () {
-        // A, D, Space
-        // 右腿绕轴转动测试
-        console.log(leg_right);
         window.onkeydown = function (e) {
             if (e && e.keyCode == 68 /*D*/) {
                 if (!isJumping) {
@@ -265,22 +267,85 @@ define(["require", "exports", "../utils/WebGLHelper2d", "../utils/WebGLUtils", "
                 }
             }
         };
+    };
+    var listenMouse = function () {
+        // click listener
         canvasDOM.onmousedown = function (e) {
             // use offsetX/Y to get click coordinate
-            var mouseX = e.offsetX, mouseY = e.offsetY;
-            console.log("click on (" + mouseX + ", " + mouseY + ")");
-            // search hitbox
-            [foot_left, foot_right].forEach(function (ele, idx) {
-                var temp = ele.calculateHitBox();
-                if (mouseX >= temp[0] && mouseX <= temp[1]) {
-                    if (mouseY >= temp[2] && mouseY <= temp[3]) {
-                        console.log("Hit " + (idx == 0 ? "Left foot." : "Right foot."));
-                        return;
-                    }
+            var mousePoint = [e.offsetX, e.offsetY];
+            console.log(mousePoint);
+            // process tail dragging
+            [tail].forEach(function (ele, idx) {
+                if (ele.judgeInHitBox(mousePoint)) {
+                    canvasDOM.onmousemove = function (e2) {
+                        var newMousePoint = [e2.offsetX, e2.offsetY];
+                        // calculate angle
+                        // P1_____a_____P2
+                        //   \        /
+                        //    b\    /c
+                        //      \θ/
+                        //       V
+                        var a = WebGLUtils.getDistance(mousePoint, newMousePoint), b = 100, c = 100;
+                        // 余弦定理
+                        var angle = WebGLUtils.radToDeg(Math.acos((Math.pow(b, 2) + Math.pow(c, 2) - Math.pow(a, 2)) / (2 * b * c)));
+                        // 无论移动方向如何，angle永源为正，这是不正确的，此处确定angle符号
+                        if (newMousePoint[0] - mousePoint[0] < 0) {
+                            // left
+                            angle *= -1;
+                        }
+                        fillingDefault();
+                        tail.performToAllObjectData(function (point) {
+                            return helper.getRotatedPoint(point, [203, 478], angle); // same as mouse moving direction
+                        });
+                        prepareDrawLater();
+                        helper.reRender();
+                    };
                 }
+            });
+            // process left hand dragging
+            [hand_left].forEach(function (ele, idx) {
+                if (ele.judgeInHitBox(mousePoint)) {
+                    canvasDOM.onmousemove = function (e2) {
+                        console.log("hand left dragging");
+                        var newMousePoint = [e2.offsetX, e2.offsetY];
+                        var dX = newMousePoint[0] - mousePoint[0], dY = newMousePoint[1] - mousePoint[1];
+                        fillingDefault();
+                        hand_left.performToAllObjectData(function (point) {
+                            var newPoint = [point[0] + dX, point[1] + dY];
+                            return newPoint;
+                        });
+                        prepareDrawLater();
+                        helper.reRender();
+                    };
+                }
+            });
+            // !!! remember to reset this hook
+            canvasDOM.onmouseup = (function (e) {
+                canvasDOM.onmousemove = null;
             });
         };
     };
+    // menu support
+    var listenMenu = function () {
+        document.querySelector("#btnExec").onclick = function () {
+            var val = document.querySelector("#control").value;
+            if (val == "vow") {
+                var audio = new Audio('./vow.mp3');
+                audio.play();
+            }
+            else if (val == "red") {
+                fillingDefault();
+                // redraw the whole face manually
+                // 脸
+                face = new WebGLDrawingPackage_1.WebGLDrawingPackage(new WebGLDrawingObject_1.WebGLDrawingObject("主体", [[304, 220], 170 / 2, 168 / 2], BasicShape_1.generateOval, gl.TRIANGLE_FAN, COLORS.PINK), new WebGLDrawingObject_1.WebGLDrawingObject("勾线", [[304, 220], 170 / 2, 168 / 2], BasicShape_1.generateOval, gl.LINE_STRIP, COLORS.BLACK));
+                prepareDrawLater();
+                helper.reRender();
+            }
+        };
+    };
+    // do it
     main();
     listenKeyboard();
+    listenMouse();
+    listenMenu();
 });

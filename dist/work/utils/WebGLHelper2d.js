@@ -193,12 +193,16 @@ define(["require", "exports", "./WebGLUtils", "./WebGLDrawingPackage"], function
             this.gl.clear(this.gl.COLOR_BUFFER_BIT);
         };
         /**
-         * 水平对称翻转
+         * Mirror a point.
          */
         WebGLHelper2d.prototype.getTurnedPoint = function (point, axis) {
-            var x = 2 * axis - point[0];
-            var y = point[1];
-            return [x, y];
+            // !!! note that there might be something not point Vec2 in data (like Oval)
+            if (point.length == 2) {
+                var x = 2 * axis - point[0];
+                var y = point[1];
+                return [x, y];
+            }
+            return point;
         };
         /**
          * Get the point after rotating theta (DEG) to center.
@@ -217,9 +221,13 @@ define(["require", "exports", "./WebGLUtils", "./WebGLDrawingPackage"], function
          * Get the point after moving deltaX and deltaY
          */
         WebGLHelper2d.prototype.getMovedPoint = function (point, delta) {
-            var x = point[0] + delta[0];
-            var y = point[1] + delta[1];
-            return [x, y];
+            // !!! same as getTurnedPoint
+            if (point.length == 2) {
+                var x = point[0] + delta[0];
+                var y = point[1] + delta[1];
+                return [x, y];
+            }
+            return point;
         };
         return WebGLHelper2d;
     }());

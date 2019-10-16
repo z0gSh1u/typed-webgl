@@ -1,9 +1,9 @@
+// WebGL drawing package.
+// Written by z0gSh1u @ https://github.com/z0gSh1u/typed-webgl
+// for book `Interactive Computer Graphics` (7th Edition).
 define(["require", "exports"], function (require, exports) {
     "use strict";
     Object.defineProperty(exports, "__esModule", { value: true });
-    // WebGL drawing package.
-    // Written by z0gSh1u @ https://github.com/z0gSh1u/typed-webgl
-    // for book `Interactive Computer Graphics` (7th Edition).
     /**
      * A `WebGLDrawingPackage` is something that contains many `WebGLDrawingObject`.
      * You can use it to store a specific part of your entity.
@@ -25,9 +25,7 @@ define(["require", "exports"], function (require, exports) {
          */
         WebGLDrawingPackage.prototype.performToAllObjectData = function (fn) {
             this.innerList.forEach(function (ele) {
-                //console.log(ele.getCookedData())
                 ele.setData(ele.getRawData().map(fn), true);
-                //console.log(ele.getCookedData())
             });
         };
         /**
@@ -55,12 +53,7 @@ define(["require", "exports"], function (require, exports) {
          */
         WebGLDrawingPackage.prototype.judgeInHitBox = function (point) {
             var hitBox = this.calculateHitBox();
-            if (point[0] >= hitBox[0] && point[0] <= hitBox[1] && point[1] >= hitBox[2] && point[1] <= hitBox[3]) {
-                return true;
-            }
-            else {
-                return false;
-            }
+            return (point[0] >= hitBox[0] && point[0] <= hitBox[1] && point[1] >= hitBox[2] && point[1] <= hitBox[3]);
         };
         /**
          * Get `innerList` of package.

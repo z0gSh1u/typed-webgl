@@ -29,3 +29,19 @@ export function initializeShaders(gl: WebGLRenderingContext, vShaderPath: string
 export function normalize8bitColor(color8bit: Vec3 | Vec4): Vec4 {
   return [...color8bit.map(x => x / 255), 1.0].slice(0, 4) as Vec4
 }
+
+/**
+ * Get the distance between two points.
+ */
+export function getDistance(pointA: Vec2, pointB: Vec2): number {
+  let dX2 = Math.pow(pointA[0] - pointB[0], 2)
+  let dY2 = Math.pow(pointA[1] - pointB[1], 2)
+  return Math.sqrt(dX2 + dY2)
+}
+
+/**
+ * Convert RAD to DEG.
+ */
+export function radToDeg(angle: number): number {
+  return angle * 57.32
+}
