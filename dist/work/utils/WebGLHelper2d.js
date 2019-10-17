@@ -143,6 +143,8 @@ define(["require", "exports", "./WebGLUtils", "./WebGLDrawingPackage"], function
             }
             this.colorSettingMode(colorBuffer, colorAttribute);
             this.sendDataToBuffer(flatten(colorToSend));
+            // let uColorLoc = this.gl.getUniformLocation(this.program, "uColor")
+            // this.gl.uniform4fv(uColorLoc, normalizedColor)
             // send vertex
             this.vertexSettingMode(vertexBuffer, vertexAttribute, attributePerVertex, dataType);
             this.sendDataToBuffer(this.convertCoordSystemAndFlatten(data), bufferType, drawMode);

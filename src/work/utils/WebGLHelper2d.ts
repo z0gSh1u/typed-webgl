@@ -179,11 +179,16 @@ export class WebGLHelper2d {
     // send color
     let normalizedColor = normalize8bitColor(color)
     let colorToSend: Array<Vec4> = []
+
     for (let i = 0; i < data.length; i++) {
       colorToSend.push(normalizedColor)
     }
     this.colorSettingMode(colorBuffer, colorAttribute)
     this.sendDataToBuffer(flatten(colorToSend))
+    
+    // let uColorLoc = this.gl.getUniformLocation(this.program, "uColor")
+    // this.gl.uniform4fv(uColorLoc, normalizedColor)
+
     // send vertex
     this.vertexSettingMode(vertexBuffer, vertexAttribute, attributePerVertex, dataType)
     this.sendDataToBuffer(this.convertCoordSystemAndFlatten(data), bufferType, drawMode)
