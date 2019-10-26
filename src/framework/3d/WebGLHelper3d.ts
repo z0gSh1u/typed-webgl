@@ -10,17 +10,10 @@ export class WebGLHelper3d {
   private gl: WebGLRenderingContext
   private program: WebGLProgram
 
-  private rect: ClientRect | DOMRect
-  private cvsH: number
-  private cvsW: number
-
   constructor(_canvasDOM: HTMLCanvasElement, _gl: WebGLRenderingContext, _program: WebGLProgram) {
     this.canvasDOM = _canvasDOM
     this.gl = _gl
     this.program = _program
-    this.rect = this.canvasDOM.getBoundingClientRect()
-    this.cvsW = this.canvasDOM.width
-    this.cvsH = this.canvasDOM.height
   }
 
   /**
@@ -118,6 +111,13 @@ export class WebGLHelper3d {
    */
   public setUniformColor(variableName: string, color8bit: Vec3 | Vec4) {
     this.gl.uniform4f(this.getUniformLocation(variableName), ...normalize8bitColor(color8bit))
+  }
+
+  /**
+   * Set uniform matrix (4d) in shader.
+   */
+  public setUniformMatrix4d(variableName: string, data: Mat, transpose: boolean = false) {
+    this.gl.uniformMatrix4fv(this.getUniformLocation(variableName), transpose, flatten(data))
   }
 
 }

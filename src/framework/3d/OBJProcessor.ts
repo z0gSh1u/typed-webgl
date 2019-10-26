@@ -10,7 +10,7 @@
  * 3. 关于OBJ模型文件格式，请参考https://en.wikipedia.org/wiki/Wavefront_.obj_file#File_format
  * 4. 这里面不会对OBJ归一化，请自行归一化OBJ
  */
-export class ObjProcessor {
+export class OBJProcessor {
 
   private objFileContent: string
   private splitedFileContent: Array<string>

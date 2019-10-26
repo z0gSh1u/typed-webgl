@@ -16,9 +16,6 @@ define(["require", "exports", "../WebGLUtils"], function (require, exports, WebG
             this.canvasDOM = _canvasDOM;
             this.gl = _gl;
             this.program = _program;
-            this.rect = this.canvasDOM.getBoundingClientRect();
-            this.cvsW = this.canvasDOM.width;
-            this.cvsH = this.canvasDOM.height;
         }
         /**
          * Create a buffer.
@@ -100,6 +97,13 @@ define(["require", "exports", "../WebGLUtils"], function (require, exports, WebG
         WebGLHelper3d.prototype.setUniformColor = function (variableName, color8bit) {
             var _a;
             (_a = this.gl).uniform4f.apply(_a, __spreadArrays([this.getUniformLocation(variableName)], WebGLUtils_1.normalize8bitColor(color8bit)));
+        };
+        /**
+         * Set uniform matrix (4d) in shader.
+         */
+        WebGLHelper3d.prototype.setUniformMatrix4d = function (variableName, data, transpose) {
+            if (transpose === void 0) { transpose = false; }
+            this.gl.uniformMatrix4fv(this.getUniformLocation(variableName), transpose, flatten(data));
         };
         return WebGLHelper3d;
     }());

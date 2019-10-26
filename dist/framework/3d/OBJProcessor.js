@@ -12,15 +12,15 @@ define(["require", "exports"], function (require, exports) {
      * 3. 关于OBJ模型文件格式，请参考https://en.wikipedia.org/wiki/Wavefront_.obj_file#File_format
      * 4. 这里面不会对OBJ归一化，请自行归一化OBJ
      */
-    var ObjProcessor = /** @class */ (function () {
-        function ObjProcessor(_objFileContent) {
+    var OBJProcessor = /** @class */ (function () {
+        function OBJProcessor(_objFileContent) {
             this.objFileContent = _objFileContent;
             this.splitedFileContent = [];
             this._vs = [];
             this._fs = [];
             this._fillInfoArray();
         }
-        Object.defineProperty(ObjProcessor.prototype, "vs", {
+        Object.defineProperty(OBJProcessor.prototype, "vs", {
             /**
              * 顶点（返回Array<Vec3>代表xyz坐标）
              */
@@ -30,7 +30,7 @@ define(["require", "exports"], function (require, exports) {
             enumerable: true,
             configurable: true
         });
-        Object.defineProperty(ObjProcessor.prototype, "fs", {
+        Object.defineProperty(OBJProcessor.prototype, "fs", {
             /**
              * 面（返回Array<Vec3>代表三角形三个顶点索引，注意索引下标从1开始）
              */
@@ -43,10 +43,10 @@ define(["require", "exports"], function (require, exports) {
         /**
          * 获取总共有效的顶点数量。即考虑了顶点的被重用，而不是仅计数v xxx yyy zzz行的数量。
          */
-        ObjProcessor.prototype.getEffectiveVertexCount = function () {
+        OBJProcessor.prototype.getEffectiveVertexCount = function () {
             return this._fs.length * 3;
         };
-        ObjProcessor.prototype._fillInfoArray = function () {
+        OBJProcessor.prototype._fillInfoArray = function () {
             var _this = this;
             this.splitedFileContent = this.objFileContent.split('\n');
             this.splitedFileContent.forEach(function (ele) {
@@ -68,7 +68,7 @@ define(["require", "exports"], function (require, exports) {
                 }
             });
         };
-        return ObjProcessor;
+        return OBJProcessor;
     }());
-    exports.ObjProcessor = ObjProcessor;
+    exports.OBJProcessor = OBJProcessor;
 });

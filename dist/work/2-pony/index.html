@@ -28,13 +28,7 @@
     .right {
       float: right;
       margin-right: 30px;
-    }
-
-    .colorBlock {
-      height: 40px;
-      width: 40px;
-      display: inline-block;
-      margin: 5px 8px;
+      max-width: 600px;
     }
 
     .requirement {
@@ -50,11 +44,6 @@
       border: 3px solid gray;
       padding: 2px;
     }
-
-    #control {
-      width: 120px;
-      height: 40px;
-    }
   </style>
 
 </head>
@@ -67,8 +56,38 @@
     <h1>《计算机图形学》研讨 02 - Pony</h1>
     <h4>组长：沈汉唐&nbsp;&nbsp;组员：高钰铭 卓旭</h4>
     <hr>
+
+    <h3 style="display: inline-block;">当前坐标系：</h3>
+    <p id="curCoord_object" style="color: red; display: none; font-size: 20px;">物体坐标系</p>
+    <p id="curCoord_screen" style="color: blue; display: inline-block; font-size: 20px;">屏幕坐标系</p>
+    &nbsp;&nbsp;<button id="coordToggler">切换</button>
+
     <div class="requirement">
-      <p>Waiting for update.</p>
+      <h4>A、实现基于物体坐标系的运动，即动物头部方向为前进，相反方向为后退，绕动物中轴线的转向、俯仰和翻滚。</h4>
+      <p>在物体坐标系模式下：</p>
+      <div class="keyBlock">W</div>前进
+      <div class="keyBlock">S</div>后退
+      <div class="keyBlock">A</div>左转向
+      <div class="keyBlock">D</div>右转向<br>
+      <div class="keyBlock">↑</div>前俯
+      <div class="keyBlock">↓</div>后仰
+      <div class="keyBlock">←</div>左翻滚
+      <div class="keyBlock">→</div>右翻滚
+    </div>
+    <div class="requirement">
+      <h4>B、实现以屏幕坐标为参考的运动，即上、下、左、右移动，和绕屏幕坐标轴的旋转。</h4>
+      <p>在屏幕坐标系模式下：</p>
+      <div class="keyBlock">W</div>上移
+      <div class="keyBlock">S</div>下移
+      <div class="keyBlock">A</div>左移
+      <div class="keyBlock">D</div>右移<br>
+      <div class="keyBlock">X</div>绕X轴旋转
+      <div class="keyBlock">Y</div>绕Y轴旋转
+      <div class="keyBlock">Z</div>绕Z轴旋转
+    </div>
+    <div class="requirement">
+      <h4>C、利用虚拟跟踪球技术，实现鼠标交互操作旋转查看对象。</h4>
+      <p>在任何模式下，拖拽物体。</p>
     </div>
   </div>
 

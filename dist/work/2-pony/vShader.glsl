@@ -1,18 +1,15 @@
 // Vertex Shader
 
-attribute vec3 aPosition;
+attribute vec4 aPosition;
 
 //attribute vec4 aColor;
 //varying vec4 vColor;
 
-uniform mat4 uWorldMatrix;
-uniform mat4 uMVMatrix;
+uniform mat4 uWorldMatrix; // transformation matrix under world coordinate system
+uniform mat4 uModelMatrix; // transformation matrix under self coordinate system
 
 void main() {
 	// vertex position
-	gl_Position.x = aPosition.x;
-	gl_Position.y = aPosition.y;
-	gl_Position.z = aPosition.z;
-	gl_Position.w = 1.0;
+	gl_Position = uWorldMatrix * uModelMatrix * aPosition;
 	//vColor = aColor;
 }

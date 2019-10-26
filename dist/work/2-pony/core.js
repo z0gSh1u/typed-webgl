@@ -52,6 +52,19 @@ define(["require", "exports", "../../framework/3d/WebGLHelper3d", "../../framewo
     var program;
     var helper;
     var vBuffer;
+    var ctm; // current world matrix
+    var ponyVertices = [];
+    var objProcessor;
+    // global status recorder
+    var COORD_SYS = {
+        SELF: 0, WORLD: 1
+    };
+    var currentCoordSys = COORD_SYS.WORLD;
+    // global constant
+    var ROTATE_DELTA = 10; // 每次转多少度，角度制
+    var COS_RD = Math.cos(radians(ROTATE_DELTA));
+    var SIN_RD = Math.sin(radians(ROTATE_DELTA));
+    var TRANSLATE_DELTA = 0.010; // 每次平移多少距离，WebGL归一化系
     // main function
     var main = function () {
         // initialization
@@ -61,44 +74,150 @@ define(["require", "exports", "../../framework/3d/WebGLHelper3d", "../../framewo
         gl.enable(gl.DEPTH_TEST);
         gl.enable(gl.CULL_FACE);
         vBuffer = helper.createBuffer();
-        initPony();
+        initializePony();
+    };
+    // 坐标系切换处理
+    document.querySelector('#coordToggler').onclick = function () {
+        currentCoordSys = (currentCoordSys + 1) % 2;
+        if (currentCoordSys == COORD_SYS.SELF) {
+            document.querySelector('#curCoord_screen').style.display = 'none';
+            document.querySelector('#curCoord_object').style.display = 'inline-block';
+        }
+        else {
+            document.querySelector('#curCoord_screen').style.display = 'inline-block';
+            document.querySelector('#curCoord_object').style.display = 'none';
+        }
     };
     // initialize the pony
-    function initPony() {
+    function initializePony() {
         return __awaiter(this, void 0, void 0, function () {
-            var vertices, colors, objProcessor, responseData_1;
+            var responseData_1;
             return __generator(this, function (_a) {
                 switch (_a.label) {
                     case 0:
-                        vertices = [];
-                        colors = new Float32Array([
-                            1.0, 0.0, 0.0, 1.0,
-                            0.0, 1.0, 0.0, 1.0,
-                            0.0, 0.0, 1.0, 1.0
-                        ]);
                         responseData_1 = '';
                         return [4 /*yield*/, axios.get('./model/normed/pony.obj').then(function (res) {
                                 responseData_1 = res.data;
                             })];
                     case 1:
                         _a.sent();
-                        objProcessor = new OBJProcessor_1.ObjProcessor(responseData_1);
+                        objProcessor = new OBJProcessor_1.OBJProcessor(responseData_1);
                         // 把各个面的组成推进去
                         objProcessor.fs.forEach(function (face) {
                             face.forEach(function (vOfFace) {
                                 var subscript = vOfFace - 1;
-                                vertices.push(objProcessor.vs[subscript]); // xyzxyzxyz
+                                ponyVertices.push(objProcessor.vs[subscript]); // xyzxyzxyz
                             });
                         });
                         helper.useBuffer(vBuffer);
-                        helper.sendDataToBuffer(flatten(vertices));
+                        helper.sendDataToBuffer(flatten(ponyVertices));
                         helper.vertexSettingMode(vBuffer, 'aPosition', 3);
                         helper.setUniformColor('uColor', [0, 0, 0]);
-                        helper.drawArrays(gl.LINE_LOOP, 0, objProcessor.getEffectiveVertexCount());
+                        ctm = mat4();
+                        reRender();
                         return [2 /*return*/];
                 }
             });
         });
     }
+    // 重渲染
+    var reRender = function () {
+        helper.clearCanvas();
+        helper.setUniformMatrix4d('uWorldMatrix', ctm);
+        helper.setUniformMatrix4d('uModelMatrix', mat4());
+        helper.drawArrays(gl.LINE_LOOP, 0, objProcessor.getEffectiveVertexCount());
+    };
+    // 键盘监听
+    var listenKeyboard = function () {
+        var handlers = {
+            '88' /*X*/: processXKey,
+            '89' /*Y*/: processYKey,
+            '90' /*Z*/: processZKey,
+            '87' /*W*/: processWKey,
+            '65' /*A*/: processAKey,
+            '83' /*S*/: processSKey,
+            '68' /*D*/: processDKey
+        };
+        window.onkeydown = function (e) {
+            if (e && e.keyCode) {
+                try {
+                    handlers[e.keyCode.toString()].call(null);
+                }
+                catch (ex) { }
+            }
+        };
+    };
+    // W键，上平移或前进
+    var processWKey = function () {
+        if (currentCoordSys == COORD_SYS.WORLD) {
+            // 向上平移(y axis add)
+            var transMat = mat4(1, 0, 0, 0, 0, 1, 0, TRANSLATE_DELTA, 0, 0, 1, 0, 0, 0, 0, 1);
+            ctm = mult(transMat, ctm);
+            helper.setUniformMatrix4d('uWorldMatrix', ctm);
+            reRender();
+        }
+    };
+    // A键，左平移或左转向
+    var processAKey = function () {
+        if (currentCoordSys == COORD_SYS.WORLD) {
+            // 向左平移(x axis minus)
+            var transMat = mat4(1, 0, 0, -TRANSLATE_DELTA, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1);
+            ctm = mult(transMat, ctm);
+            helper.setUniformMatrix4d('uWorldMatrix', ctm);
+            reRender();
+        }
+    };
+    // S键，下平移或后退
+    var processSKey = function () {
+        if (currentCoordSys == COORD_SYS.WORLD) {
+            // 向下平移(y axis minus)
+            var transMat = mat4(1, 0, 0, 0, 0, 1, 0, -TRANSLATE_DELTA, 0, 0, 1, 0, 0, 0, 0, 1);
+            ctm = mult(transMat, ctm);
+            helper.setUniformMatrix4d('uWorldMatrix', ctm);
+            reRender();
+        }
+    };
+    // D键，右平移或右转向
+    var processDKey = function () {
+        if (currentCoordSys == COORD_SYS.WORLD) {
+            // 向右平移(x axis add)
+            var transMat = mat4(1, 0, 0, TRANSLATE_DELTA, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1);
+            ctm = mult(transMat, ctm);
+            helper.setUniformMatrix4d('uWorldMatrix', ctm);
+            reRender();
+        }
+    };
+    // X键，绕世界系X轴旋转
+    var processXKey = function () {
+        if (currentCoordSys != COORD_SYS.WORLD) {
+            return;
+        }
+        var transMat = mat4(1, 0, 0, 0, 0, COS_RD, -SIN_RD, 0, 0, SIN_RD, COS_RD, 0, 0, 0, 0, 1);
+        ctm = mult(transMat, ctm);
+        helper.setUniformMatrix4d('uWorldMatrix', ctm);
+        reRender();
+    };
+    // Y键，绕世界系Y轴旋转
+    var processYKey = function () {
+        if (currentCoordSys != COORD_SYS.WORLD) {
+            return;
+        }
+        var transMat = mat4(COS_RD, 0, SIN_RD, 0, 0, 1, 0, 0, -SIN_RD, 0, COS_RD, 0, 0, 0, 0, 1);
+        ctm = mult(transMat, ctm);
+        helper.setUniformMatrix4d('uWorldMatrix', ctm);
+        reRender();
+    };
+    // Z键，绕世界系Z轴旋转
+    var processZKey = function () {
+        if (currentCoordSys != COORD_SYS.WORLD) {
+            return;
+        }
+        var transMat = mat4(COS_RD, -SIN_RD, 0, 0, SIN_RD, COS_RD, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1);
+        ctm = mult(transMat, ctm);
+        helper.setUniformMatrix4d('uWorldMatrix', ctm);
+        reRender();
+    };
+    // do it
     main();
+    listenKeyboard();
 });
