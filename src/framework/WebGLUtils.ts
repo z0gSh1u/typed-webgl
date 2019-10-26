@@ -2,8 +2,8 @@
 // Written by z0gSh1u @ https://github.com/z0gSh1u/typed-webgl
 // for book `Interactive Computer Graphics` (7th Edition).
 
-import '../../3rd-party/MV'
-import '../../3rd-party/initShaders'
+import '../3rd-party/MV'
+import '../3rd-party/initShaders'
 
 /**
  * Initialize viewport and set canvas to pure white.
@@ -31,9 +31,9 @@ export function normalize8bitColor(color8bit: Vec3 | Vec4): Vec4 {
 }
 
 /**
- * Get the distance between two points.
+ * Get the distance between two points (2d).
  */
-export function getDistance(pointA: Vec2, pointB: Vec2): number {
+export function getDistance2d(pointA: Vec2, pointB: Vec2): number {
   let dX2 = Math.pow(pointA[0] - pointB[0], 2)
   let dY2 = Math.pow(pointA[1] - pointB[1], 2)
   return Math.sqrt(dX2 + dY2)

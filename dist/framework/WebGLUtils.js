@@ -8,7 +8,7 @@ var __spreadArrays = (this && this.__spreadArrays) || function () {
             r[k] = a[j];
     return r;
 };
-define(["require", "exports", "../../3rd-party/MV", "../../3rd-party/initShaders"], function (require, exports) {
+define(["require", "exports", "../3rd-party/MV", "../3rd-party/initShaders"], function (require, exports) {
     "use strict";
     Object.defineProperty(exports, "__esModule", { value: true });
     /**
@@ -38,14 +38,14 @@ define(["require", "exports", "../../3rd-party/MV", "../../3rd-party/initShaders
     }
     exports.normalize8bitColor = normalize8bitColor;
     /**
-     * Get the distance between two points.
+     * Get the distance between two points (2d).
      */
-    function getDistance(pointA, pointB) {
+    function getDistance2d(pointA, pointB) {
         var dX2 = Math.pow(pointA[0] - pointB[0], 2);
         var dY2 = Math.pow(pointA[1] - pointB[1], 2);
         return Math.sqrt(dX2 + dY2);
     }
-    exports.getDistance = getDistance;
+    exports.getDistance2d = getDistance2d;
     /**
      * Convert RAD to DEG.
      */

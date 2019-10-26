@@ -2,7 +2,7 @@
 // Written by z0gSh1u @ https://github.com/z0gSh1u/typed-webgl
 // for book `Interactive Computer Graphics` (7th Edition).
 
-import { normalize8bitColor } from './WebGLUtils'
+import { normalize8bitColor } from '../WebGLUtils'
 import { WebGLDrawingPackage } from './WebGLDrawingPackage'
 import { WebGLDrawingObject } from './WebGLDrawingObject'
 
@@ -11,6 +11,10 @@ export class WebGLHelper2d {
   private canvasDOM: HTMLCanvasElement
   private gl: WebGLRenderingContext
   private program: WebGLProgram
+
+  private rect: ClientRect | DOMRect
+  private cvsH: number
+  private cvsW: number
 
   private globalVertexBuffer: WebGLBuffer | null
   private globalColorBuffer: WebGLBuffer | null
@@ -35,6 +39,9 @@ export class WebGLHelper2d {
     this.waitingQueue = new WebGLDrawingPackage()
     this.INTERVAL_MIN = 30
     this.lastRenderTick = 0
+    this.rect = this.canvasDOM.getBoundingClientRect()
+    this.cvsW = this.canvasDOM.width
+    this.cvsH = this.canvasDOM.height
   }
 
   /**
@@ -112,11 +119,9 @@ export class WebGLHelper2d {
    * Convert a coordinate from canvas system (left-top to be O) to WebGL system (center to be O). (2d)
    */
   private _convertCoordToWebGLSystem(canvasSystemCoord: Vec2) {
-    let rect = this.canvasDOM.getBoundingClientRect() // care margin and padding
     let cvsX = canvasSystemCoord[0], cvsY = canvasSystemCoord[1]
-    let cvsW = this.canvasDOM.width, cvsH = this.canvasDOM.height
-    let x = ((cvsX - rect.left) - cvsW / 2) / cvsW * 2
-    let y = (cvsH / 2 - (cvsY - rect.top)) / cvsH * 2
+    let x = ((cvsX - this.rect.left) - this.cvsW / 2) / this.cvsW * 2
+    let y = (this.cvsH / 2 - (cvsY - this.rect.top)) / this.cvsH * 2
     return [x, y] as Vec2
   }
 
@@ -185,9 +190,6 @@ export class WebGLHelper2d {
     }
     this.colorSettingMode(colorBuffer, colorAttribute)
     this.sendDataToBuffer(flatten(colorToSend))
-    
-    // let uColorLoc = this.gl.getUniformLocation(this.program, "uColor")
-    // this.gl.uniform4fv(uColorLoc, normalizedColor)
 
     // send vertex
     this.vertexSettingMode(vertexBuffer, vertexAttribute, attributePerVertex, dataType)
@@ -218,7 +220,7 @@ export class WebGLHelper2d {
    */
   public reRender() {
     let curTick = new Date().getTime()
-    if(curTick-this.lastRenderTick < this.INTERVAL_MIN){
+    if (curTick - this.lastRenderTick < this.INTERVAL_MIN) {
       return
     }
     this.clearCanvas()
