@@ -52,5 +52,3 @@ export function generateOval(center: Vec2, a: number, b: number, howManyPoints: 
   }
   return res
 }
-
-// rect

@@ -7,7 +7,7 @@ var __importStar = (this && this.__importStar) || function (mod) {
     result["default"] = mod;
     return result;
 };
-define(["require", "exports", "../utils/WebGLHelper2d", "../utils/WebGLUtils", "../utils/BezierCurve", "../utils/BasicShape", "../utils/WebGLDrawingObject", "../utils/WebGLDrawingPackage", "../../3rd-party/MV", "../../3rd-party/initShaders"], function (require, exports, WebGLHelper2d_1, WebGLUtils, BezierCurve_1, BasicShape_1, WebGLDrawingObject_1, WebGLDrawingPackage_1) {
+define(["require", "exports", "../../framework/2d/WebGLHelper2d", "../../framework/WebGLUtils", "../../framework/2d/BezierCurve", "../../framework/2d/BasicShape", "../../framework/2d/WebGLDrawingObject", "../../framework/2d/WebGLDrawingPackage", "../../3rd-party/MV", "../../3rd-party/initShaders"], function (require, exports, WebGLHelper2d_1, WebGLUtils, BezierCurve_1, BasicShape_1, WebGLDrawingObject_1, WebGLDrawingPackage_1) {
     "use strict";
     Object.defineProperty(exports, "__esModule", { value: true });
     WebGLUtils = __importStar(WebGLUtils);
@@ -22,10 +22,10 @@ define(["require", "exports", "../utils/WebGLHelper2d", "../utils/WebGLUtils", "
         GRAY: [225, 225, 226],
         BLACK: [0, 0, 0],
         DARK: [80, 80, 80],
-        LIGHTGRAY: [110, 110, 110],
+        DARKGRAY: [110, 110, 110],
+        LIGHTGRAY: [245, 245, 245],
         SKIN: [244, 237, 237],
-        WHITE: [255, 255, 255],
-        PINK: [242, 101, 153]
+        WHITE: [255, 255, 255]
     };
     // main function
     var main = function () {
@@ -43,7 +43,7 @@ define(["require", "exports", "../utils/WebGLHelper2d", "../utils/WebGLUtils", "
         helper.reRender();
     };
     // packages (components) used in render function
-    var ear_right, ear_left, cute_left, cute_right, sharp_left, liusea, mouth, eye_left, eye_right, arm_left, hand_left, cloth_left, cloth_right, face, head, arm_right, hand_right, tail, cloth_center_1, leg_left, leg_right, foot_left, foot_right, cloth_center_2, backhair_left, backhair_right;
+    var ear_right, ear_left, cute_left, cute_right, sharp_left, liusea, mouth, eye_left, eye_right, arm_left, hand_left, cloth_left, cloth_right, face, head, arm_right, hand_right, tail, cloth_center_1, leg_left, leg_right, foot_left, foot_right, cloth_center_2, backhair_left;
     // fill packages using default coordinate data
     var fillingDefault = function () {
         // organize and draw
@@ -67,7 +67,7 @@ define(["require", "exports", "../utils/WebGLHelper2d", "../utils/WebGLUtils", "
         // 右眼（正视）
         eye_right = new WebGLDrawingPackage_1.WebGLDrawingPackage(new WebGLDrawingObject_1.WebGLDrawingObject("眼珠线", [[347.5, 223], [348, 237]], null, gl.LINE_STRIP, COLORS.BLACK), new WebGLDrawingObject_1.WebGLDrawingObject("上眼线", [[330, 229], [335.3, 209.6], [355.3, 195], [368, 228]], BezierCurve_1.generateBezierCurve2dL3, gl.LINE_STRIP, COLORS.BLACK), new WebGLDrawingObject_1.WebGLDrawingObject("上眼底", [[330, 229], [335.3, 209.6], [355.3, 195], [368, 228]], BezierCurve_1.generateBezierCurve2dL3, gl.TRIANGLE_FAN, COLORS.WHITE), new WebGLDrawingObject_1.WebGLDrawingObject("下眼线", [[331, 229], [318, 229], [350, 250], [368, 226.6]], BezierCurve_1.generateBezierCurve2dL3, gl.LINE_STRIP, COLORS.BLACK), new WebGLDrawingObject_1.WebGLDrawingObject("下眼底", [[331, 229], [318, 229], [350, 250], [368, 226.6]], BezierCurve_1.generateBezierCurve2dL3, gl.TRIANGLE_FAN, COLORS.WHITE));
         // 左臂（正视）
-        arm_left = new WebGLDrawingPackage_1.WebGLDrawingPackage(new WebGLDrawingObject_1.WebGLDrawingObject("上连接点", [[223, 308.5], [209, 331.5], [263.5, 242], [272, 319]], BezierCurve_1.generateBezierCurve2dL3, gl.TRIANGLE_FAN, COLORS.LIGHTGRAY), new WebGLDrawingObject_1.WebGLDrawingObject("主体", [[162, 395], [225, 306], [247, 429], [270, 315]], null, gl.TRIANGLE_STRIP, COLORS.LIGHTGRAY));
+        arm_left = new WebGLDrawingPackage_1.WebGLDrawingPackage(new WebGLDrawingObject_1.WebGLDrawingObject("上连接点", [[223, 308.5], [209, 331.5], [263.5, 242], [272, 319]], BezierCurve_1.generateBezierCurve2dL3, gl.TRIANGLE_FAN, COLORS.DARKGRAY), new WebGLDrawingObject_1.WebGLDrawingObject("主体", [[162, 395], [225, 306], [247, 429], [270, 315]], null, gl.TRIANGLE_STRIP, COLORS.DARKGRAY));
         // 左手（正视）
         hand_left = new WebGLDrawingPackage_1.WebGLDrawingPackage(new WebGLDrawingObject_1.WebGLDrawingObject("下部", [[174.6, 404.3], [142.6, 442.6], [162.6, 531.6], [220.6, 456]], BezierCurve_1.generateBezierCurve2dL3, gl.TRIANGLE_FAN, COLORS.SKIN), new WebGLDrawingObject_1.WebGLDrawingObject("大拇指", [[220.6, 456], [225.6, 469.3], [236.3, 473.3], [236.6, 431.3]], BezierCurve_1.generateBezierCurve2dL3, gl.TRIANGLE_FAN, COLORS.SKIN), new WebGLDrawingObject_1.WebGLDrawingObject("主体", [[174.6, 404.3], [220, 459.6], [237, 431.3]], null, gl.TRIANGLES, COLORS.SKIN));
         // 衣服左（正视）
@@ -87,7 +87,7 @@ define(["require", "exports", "../utils/WebGLHelper2d", "../utils/WebGLUtils", "
         // 左腿（正视）
         leg_left = new WebGLDrawingPackage_1.WebGLDrawingPackage(new WebGLDrawingObject_1.WebGLDrawingObject("主体", [[226, 489], [227, 505], [272, 497], [196, 588], [254, 598]], null, gl.TRIANGLE_STRIP, COLORS.SKIN));
         // 尾巴
-        tail = new WebGLDrawingPackage_1.WebGLDrawingPackage(new WebGLDrawingObject_1.WebGLDrawingObject("左瓣", [[150.6, 472.6], [136.6, 512.6], [133.3, 547.6], [139, 563]], BezierCurve_1.generateBezierCurve2dL3, gl.TRIANGLE_FAN, COLORS.GRAY), new WebGLDrawingObject_1.WebGLDrawingObject("左瓣勾线", [[150.6, 472.6], [136.6, 512.6], [133.3, 547.6], [139, 563]], BezierCurve_1.generateBezierCurve2dL3, gl.LINE_STRIP, COLORS.BLACK), new WebGLDrawingObject_1.WebGLDrawingObject("右瓣", [[139, 564.3], [106, 571.3], [207.6, 554], [235, 508.6]], BezierCurve_1.generateBezierCurve2dL3, gl.TRIANGLE_FAN, COLORS.GRAY), new WebGLDrawingObject_1.WebGLDrawingObject("右瓣勾线", [[139, 564.3], [106, 571.3], [207.6, 554], [235, 508.6]], BezierCurve_1.generateBezierCurve2dL3, gl.LINE_STRIP, COLORS.BLACK), new WebGLDrawingObject_1.WebGLDrawingObject("中部", [[150.6, 472.6], [138, 565], [235, 509.6], [150.6, 472.6], [235, 509.6], [224, 489]], null, gl.TRIANGLES, COLORS.GRAY));
+        tail = new WebGLDrawingPackage_1.WebGLDrawingPackage(new WebGLDrawingObject_1.WebGLDrawingObject("左瓣", [[137, 559], [142, 598], [97, 440], [236, 433]], BezierCurve_1.generateBezierCurve2dL3, gl.TRIANGLE_FAN, COLORS.GRAY), new WebGLDrawingObject_1.WebGLDrawingObject("左瓣勾线", [[137, 559], [142, 598], [97, 440], [236, 433]], BezierCurve_1.generateBezierCurve2dL3, gl.LINE_STRIP, COLORS.BLACK), new WebGLDrawingObject_1.WebGLDrawingObject("右瓣", [[137, 559], [112, 570], [290, 541], [236, 433]], BezierCurve_1.generateBezierCurve2dL3, gl.TRIANGLE_FAN, COLORS.GRAY), new WebGLDrawingObject_1.WebGLDrawingObject("右瓣勾线", [[137, 559], [112, 570], [290, 541], [236, 433]], BezierCurve_1.generateBezierCurve2dL3, gl.LINE_STRIP, COLORS.BLACK), new WebGLDrawingObject_1.WebGLDrawingObject("中部", [[137, 559], [200, 443], [240, 461]], null, gl.TRIANGLES, COLORS.GRAY));
         // 衣服中间 - Part 1
         cloth_center_1 = new WebGLDrawingPackage_1.WebGLDrawingPackage(new WebGLDrawingObject_1.WebGLDrawingObject("主体", [[298.5, 359.75], [281.5, 463], [360, 448]], null, gl.TRIANGLES, COLORS.DARK));
         // 右腿（正视）
@@ -160,16 +160,6 @@ define(["require", "exports", "../utils/WebGLHelper2d", "../utils/WebGLUtils", "
     };
     // process D key press
     var processDKey = function () {
-        // if (faceToward == 1) {
-        //   // mirror it
-        //   getLappland().forEach(ele => {
-        //     ele.performToAllObjectData(vec => {
-        //       let _vec = vec as Vec2
-        //       let res = helper.getTurnedPoint(_vec, AXIS)
-        //       return res
-        //     })
-        //   })
-        // }
         if (faceToward == -1) {
             faceToward = 1;
             // mirror it
@@ -297,7 +287,7 @@ define(["require", "exports", "../utils/WebGLHelper2d", "../utils/WebGLUtils", "
                         //    b\    /c
                         //      \θ/
                         //       V
-                        var a = WebGLUtils.getDistance(mousePoint, newMousePoint), b = 100, c = 100;
+                        var a = WebGLUtils.getDistance2d(mousePoint, newMousePoint), b = 100, c = 100;
                         // 余弦定理
                         var angle = WebGLUtils.radToDeg(Math.acos((Math.pow(b, 2) + Math.pow(c, 2) - Math.pow(a, 2)) / (2 * b * c)));
                         // 无论移动方向如何，angle永远为正，这是不正确的，此处确定angle符号
@@ -351,7 +341,7 @@ define(["require", "exports", "../utils/WebGLHelper2d", "../utils/WebGLUtils", "
                 fillingDefault();
                 // redraw the whole face manually
                 // 脸
-                face = new WebGLDrawingPackage_1.WebGLDrawingPackage(new WebGLDrawingObject_1.WebGLDrawingObject("主体", [[304, 220], 170 / 2, 168 / 2], BasicShape_1.generateOval, gl.TRIANGLE_FAN, COLORS.PINK), new WebGLDrawingObject_1.WebGLDrawingObject("勾线", [[304, 220], 170 / 2, 168 / 2], BasicShape_1.generateOval, gl.LINE_STRIP, COLORS.BLACK));
+                face = new WebGLDrawingPackage_1.WebGLDrawingPackage(new WebGLDrawingObject_1.WebGLDrawingObject("主体", [[304, 220], 170 / 2, 168 / 2], BasicShape_1.generateOval, gl.TRIANGLE_FAN, COLORS.WHITE), new WebGLDrawingObject_1.WebGLDrawingObject("勾线", [[304, 220], 170 / 2, 168 / 2], BasicShape_1.generateOval, gl.LINE_STRIP, COLORS.BLACK));
                 prepareDrawLater();
                 helper.reRender();
             }

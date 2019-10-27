@@ -59,4 +59,3 @@ define(["require", "exports"], function (require, exports) {
     }
     exports.generateOval = generateOval;
 });
-// rect

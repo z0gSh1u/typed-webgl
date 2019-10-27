@@ -1,7 +1,7 @@
 // WebGL Helper (2d).
 // Written by z0gSh1u @ https://github.com/z0gSh1u/typed-webgl
 // for book `Interactive Computer Graphics` (7th Edition).
-define(["require", "exports", "./WebGLUtils", "./WebGLDrawingPackage"], function (require, exports, WebGLUtils_1, WebGLDrawingPackage_1) {
+define(["require", "exports", "../WebGLUtils", "./WebGLDrawingPackage"], function (require, exports, WebGLUtils_1, WebGLDrawingPackage_1) {
     "use strict";
     Object.defineProperty(exports, "__esModule", { value: true });
     var WebGLHelper2d = /** @class */ (function () {
@@ -17,6 +17,9 @@ define(["require", "exports", "./WebGLUtils", "./WebGLDrawingPackage"], function
             this.waitingQueue = new WebGLDrawingPackage_1.WebGLDrawingPackage();
             this.INTERVAL_MIN = 30;
             this.lastRenderTick = 0;
+            this.rect = this.canvasDOM.getBoundingClientRect();
+            this.cvsW = this.canvasDOM.width;
+            this.cvsH = this.canvasDOM.height;
         }
         /**
          * Set global settings. So that you don't need to pass these arguments every time you call `drawImmediately`.
@@ -82,11 +85,9 @@ define(["require", "exports", "./WebGLUtils", "./WebGLDrawingPackage"], function
          * Convert a coordinate from canvas system (left-top to be O) to WebGL system (center to be O). (2d)
          */
         WebGLHelper2d.prototype._convertCoordToWebGLSystem = function (canvasSystemCoord) {
-            var rect = this.canvasDOM.getBoundingClientRect(); // care margin and padding
             var cvsX = canvasSystemCoord[0], cvsY = canvasSystemCoord[1];
-            var cvsW = this.canvasDOM.width, cvsH = this.canvasDOM.height;
-            var x = ((cvsX - rect.left) - cvsW / 2) / cvsW * 2;
-            var y = (cvsH / 2 - (cvsY - rect.top)) / cvsH * 2;
+            var x = ((cvsX - this.rect.left) - this.cvsW / 2) / this.cvsW * 2;
+            var y = (this.cvsH / 2 - (cvsY - this.rect.top)) / this.cvsH * 2;
             return [x, y];
         };
         /**

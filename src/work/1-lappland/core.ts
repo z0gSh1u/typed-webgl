@@ -4,12 +4,12 @@
 import '../../3rd-party/MV'
 import '../../3rd-party/initShaders'
 
-import { WebGLHelper2d } from '../utils/WebGLHelper2d'
-import * as WebGLUtils from '../utils/WebGLUtils'
-import { generateBezierCurve2dL3 } from '../utils/BezierCurve'
-import { generateStraightLineSegment, generateOval } from '../utils/BasicShape'
-import { WebGLDrawingObject } from '../utils/WebGLDrawingObject'
-import { WebGLDrawingPackage } from '../utils/WebGLDrawingPackage'
+import { WebGLHelper2d } from '../../framework/2d/WebGLHelper2d'
+import * as WebGLUtils from '../../framework/WebGLUtils'
+import { generateBezierCurve2dL3 } from '../../framework/2d/BezierCurve'
+import { generateStraightLineSegment, generateOval } from '../../framework/2d/BasicShape'
+import { WebGLDrawingObject } from '../../framework/2d/WebGLDrawingObject'
+import { WebGLDrawingPackage } from '../../framework/2d/WebGLDrawingPackage'
 
 // common variables
 let canvasDOM: HTMLCanvasElement = document.querySelector('#cvs') as HTMLCanvasElement
@@ -23,10 +23,10 @@ let COLORS: { [key: string]: Vec3 } = {
   GRAY: [225, 225, 226],
   BLACK: [0, 0, 0],
   DARK: [80, 80, 80],
-  LIGHTGRAY: [110, 110, 110],
+  DARKGRAY: [110, 110, 110],
+  LIGHTGRAY: [245, 245, 245],
   SKIN: [244, 237, 237],
-  WHITE: [255, 255, 255],
-  PINK: [242, 101, 153]
+  WHITE: [255, 255, 255]
 }
 
 // main function
@@ -54,7 +54,7 @@ let ear_right: WebGLDrawingPackage, ear_left: WebGLDrawingPackage, cute_left: We
   cloth_right: WebGLDrawingPackage, face: WebGLDrawingPackage, head: WebGLDrawingPackage, arm_right: WebGLDrawingPackage,
   hand_right: WebGLDrawingPackage, tail: WebGLDrawingPackage, cloth_center_1: WebGLDrawingPackage, leg_left: WebGLDrawingPackage,
   leg_right: WebGLDrawingPackage, foot_left: WebGLDrawingPackage, foot_right: WebGLDrawingPackage, cloth_center_2: WebGLDrawingPackage,
-  backhair_left: WebGLDrawingPackage, backhair_right: WebGLDrawingPackage
+  backhair_left: WebGLDrawingPackage
 
 // fill packages using default coordinate data
 let fillingDefault = () => {
@@ -136,8 +136,8 @@ let fillingDefault = () => {
 
   // 左臂（正视）
   arm_left = new WebGLDrawingPackage(
-    new WebGLDrawingObject("上连接点", [[223, 308.5], [209, 331.5], [263.5, 242], [272, 319]], generateBezierCurve2dL3, gl.TRIANGLE_FAN, COLORS.LIGHTGRAY),
-    new WebGLDrawingObject("主体", [[162, 395], [225, 306], [247, 429], [270, 315]], null, gl.TRIANGLE_STRIP, COLORS.LIGHTGRAY),
+    new WebGLDrawingObject("上连接点", [[223, 308.5], [209, 331.5], [263.5, 242], [272, 319]], generateBezierCurve2dL3, gl.TRIANGLE_FAN, COLORS.DARKGRAY),
+    new WebGLDrawingObject("主体", [[162, 395], [225, 306], [247, 429], [270, 315]], null, gl.TRIANGLE_STRIP, COLORS.DARKGRAY),
   )
 
   // 左手（正视）
@@ -201,11 +201,11 @@ let fillingDefault = () => {
 
   // 尾巴
   tail = new WebGLDrawingPackage(
-    new WebGLDrawingObject("左瓣", [[150.6, 472.6], [136.6, 512.6], [133.3, 547.6], [139, 563]], generateBezierCurve2dL3, gl.TRIANGLE_FAN, COLORS.GRAY),
-    new WebGLDrawingObject("左瓣勾线", [[150.6, 472.6], [136.6, 512.6], [133.3, 547.6], [139, 563]], generateBezierCurve2dL3, gl.LINE_STRIP, COLORS.BLACK),
-    new WebGLDrawingObject("右瓣", [[139, 564.3], [106, 571.3], [207.6, 554], [235, 508.6]], generateBezierCurve2dL3, gl.TRIANGLE_FAN, COLORS.GRAY),
-    new WebGLDrawingObject("右瓣勾线", [[139, 564.3], [106, 571.3], [207.6, 554], [235, 508.6]], generateBezierCurve2dL3, gl.LINE_STRIP, COLORS.BLACK),
-    new WebGLDrawingObject("中部", [[150.6, 472.6], [138, 565], [235, 509.6], [150.6, 472.6], [235, 509.6], [224, 489]], null, gl.TRIANGLES, COLORS.GRAY),
+    new WebGLDrawingObject("左瓣", [[137, 559], [142, 598], [97, 440], [236, 433]], generateBezierCurve2dL3, gl.TRIANGLE_FAN, COLORS.GRAY),
+    new WebGLDrawingObject("左瓣勾线", [[137, 559], [142, 598], [97, 440], [236, 433]], generateBezierCurve2dL3, gl.LINE_STRIP, COLORS.BLACK),
+    new WebGLDrawingObject("右瓣", [[137, 559], [112, 570], [290, 541], [236, 433]], generateBezierCurve2dL3, gl.TRIANGLE_FAN, COLORS.GRAY),
+    new WebGLDrawingObject("右瓣勾线", [[137, 559], [112, 570], [290, 541], [236, 433]], generateBezierCurve2dL3, gl.LINE_STRIP, COLORS.BLACK),
+    new WebGLDrawingObject("中部", [[137, 559], [200, 443], [240, 461]], null, gl.TRIANGLES, COLORS.GRAY),
   )
 
   // 衣服中间 - Part 1
@@ -294,16 +294,6 @@ let mirrorIt = () => {
 
 // process D key press
 let processDKey = () => {
-  // if (faceToward == 1) {
-  //   // mirror it
-  //   getLappland().forEach(ele => {
-  //     ele.performToAllObjectData(vec => {
-  //       let _vec = vec as Vec2
-  //       let res = helper.getTurnedPoint(_vec, AXIS)
-  //       return res
-  //     })
-  //   })
-  // }
   if (faceToward == -1) {
     faceToward = 1
     // mirror it
@@ -376,7 +366,7 @@ let processSpaceKey = () => {
     let moveDis = curV * INTERVAL / 1000
     curV += GRAVITY * INTERVAL / 1000
     curPos += moveDis
-    if(curPos > GROUND){
+    if (curPos > GROUND) {
       moveDis -= curPos - GROUND
       curPos = GROUND
       isJumping = false
@@ -417,7 +407,7 @@ let listenKeyboard = () => {
 let listenMouse = () => {
   // click listener
   canvasDOM.onmousedown = (e: MouseEvent) => {
-    if(isJumping) return
+    if (isJumping) return
     // use offsetX/Y to get click coordinate
     let mousePoint = [e.offsetX, e.offsetY] as Vec2
     console.log(mousePoint);
@@ -432,7 +422,7 @@ let listenMouse = () => {
           //    b\    /c
           //      \θ/
           //       V
-          let a = WebGLUtils.getDistance(mousePoint, newMousePoint), b = 100, c = 100
+          let a = WebGLUtils.getDistance2d(mousePoint, newMousePoint), b = 100, c = 100
           // 余弦定理
           let angle = WebGLUtils.radToDeg(Math.acos((Math.pow(b, 2) + Math.pow(c, 2) - Math.pow(a, 2)) / (2 * b * c)))
           // 无论移动方向如何，angle永远为正，这是不正确的，此处确定angle符号
@@ -478,7 +468,7 @@ let listenMouse = () => {
 // menu support
 let listenMenu = () => {
   (document.querySelector("#btnExec") as HTMLButtonElement).onclick = () => {
-    if(isJumping) return
+    if (isJumping) return
     let val = (document.querySelector("#control") as HTMLSelectElement).value
     if (val == "vow") {
       let audio = new Audio('./vow.mp3')
@@ -488,7 +478,7 @@ let listenMenu = () => {
       // redraw the whole face manually
       // 脸
       face = new WebGLDrawingPackage(
-        new WebGLDrawingObject("主体", [[304, 220], 170 / 2, 168 / 2], generateOval, gl.TRIANGLE_FAN, COLORS.PINK),
+        new WebGLDrawingObject("主体", [[304, 220], 170 / 2, 168 / 2], generateOval, gl.TRIANGLE_FAN, COLORS.WHITE),
         new WebGLDrawingObject("勾线", [[304, 220], 170 / 2, 168 / 2], generateOval, gl.LINE_STRIP, COLORS.BLACK),
       )
       prepareDrawLater()

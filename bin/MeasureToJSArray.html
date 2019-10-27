@@ -13,7 +13,6 @@
       width: 300px;
       height: 50px;
     }
-
     button {
       margin: 10px;
       width: 220px;
@@ -44,16 +43,13 @@
     var content1 = document.querySelector("#excel").value
     var toarr = content1.split(/\t+/)
     var op = ""
-
     toarr.forEach(ele => {
       var str = ele.trim()
       var cc = str.split(' ')
       str = "[" + cc[0] + ", " + cc[1] + "], "
       op += str
     });
-
     op = op.substring(0, op.length - 2)
-
     document.querySelector("#arr").value = op
   }
 </script>
