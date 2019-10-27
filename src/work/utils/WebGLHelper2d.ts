@@ -33,7 +33,7 @@ export class WebGLHelper2d {
     this.globalAttributesPerVertex = null
     this.globalColorAttribute = null
     this.waitingQueue = new WebGLDrawingPackage()
-    this.INTERVAL_MIN = 30
+    this.INTERVAL_MIN = 20
     this.lastRenderTick = 0
   }
 

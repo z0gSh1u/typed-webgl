@@ -15,7 +15,7 @@ define(["require", "exports", "./WebGLUtils", "./WebGLDrawingPackage"], function
             this.globalAttributesPerVertex = null;
             this.globalColorAttribute = null;
             this.waitingQueue = new WebGLDrawingPackage_1.WebGLDrawingPackage();
-            this.INTERVAL_MIN = 30;
+            this.INTERVAL_MIN = 20;
             this.lastRenderTick = 0;
         }
         /**
