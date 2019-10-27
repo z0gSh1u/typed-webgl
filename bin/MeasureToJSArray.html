@@ -1,0 +1,57 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta http-equiv="X-UA-Compatible" content="ie=edge">
+  <title>把Excel里测的数据转成数组形式</title>
+
+  <style>
+    
+    input {
+      width: 300px;
+      height: 50px;
+    }
+    button {
+      margin: 10px;
+      width: 220px;
+      height: 50px;
+    }
+  
+  </style>
+
+</head>
+
+<body>
+
+  <h1>懒是第一生产力 —— 爱因斯坦</h1>
+  <p>by z0gSh1u</p>
+
+  <input type="text" id="excel">
+  <button onclick="wake()">convert</button>
+  <input type="text" id="arr">
+
+  <br><br><hr>
+  <p>样例：</p>
+  <img src="https://s2.ax1x.com/2019/10/13/uvJ7fH.jpg" alt="uvJ7fH.jpg" border="0" />
+
+</body>
+
+<script>
+  function wake() {
+    var content1 = document.querySelector("#excel").value
+    var toarr = content1.split(/\t+/)
+    var op = ""
+    toarr.forEach(ele => {
+      var str = ele.trim()
+      var cc = str.split(' ')
+      str = "[" + cc[0] + ", " + cc[1] + "], "
+      op += str
+    });
+    op = op.substring(0, op.length - 2)
+    document.querySelector("#arr").value = op
+  }
+</script>
+
+</html>

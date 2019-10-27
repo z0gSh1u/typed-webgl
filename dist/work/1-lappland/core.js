@@ -7,7 +7,7 @@ var __importStar = (this && this.__importStar) || function (mod) {
     result["default"] = mod;
     return result;
 };
-define(["require", "exports", "../utils/WebGLHelper2d", "../utils/WebGLUtils", "../utils/BezierCurve", "../utils/BasicShape", "../utils/WebGLDrawingObject", "../utils/WebGLDrawingPackage", "../../3rd-party/MV", "../../3rd-party/initShaders"], function (require, exports, WebGLHelper2d_1, WebGLUtils, BezierCurve_1, BasicShape_1, WebGLDrawingObject_1, WebGLDrawingPackage_1) {
+define(["require", "exports", "../../framework/2d/WebGLHelper2d", "../../framework/WebGLUtils", "../../framework/2d/BezierCurve", "../../framework/2d/BasicShape", "../../framework/2d/WebGLDrawingObject", "../../framework/2d/WebGLDrawingPackage", "../../3rd-party/MV", "../../3rd-party/initShaders"], function (require, exports, WebGLHelper2d_1, WebGLUtils, BezierCurve_1, BasicShape_1, WebGLDrawingObject_1, WebGLDrawingPackage_1) {
     "use strict";
     Object.defineProperty(exports, "__esModule", { value: true });
     WebGLUtils = __importStar(WebGLUtils);
@@ -43,7 +43,7 @@ define(["require", "exports", "../utils/WebGLHelper2d", "../utils/WebGLUtils", "
         helper.reRender();
     };
     // packages (components) used in render function
-    var ear_right, ear_left, cute_left, cute_right, sharp_left, liusea, mouth, eye_left, eye_right, arm_left, hand_left, cloth_left, cloth_right, face, head, arm_right, hand_right, tail, cloth_center_1, leg_left, leg_right, foot_left, foot_right, cloth_center_2, backhair_left, backhair_right;
+    var ear_right, ear_left, cute_left, cute_right, sharp_left, liusea, mouth, eye_left, eye_right, arm_left, hand_left, cloth_left, cloth_right, face, head, arm_right, hand_right, tail, cloth_center_1, leg_left, leg_right, foot_left, foot_right, cloth_center_2, backhair_left;
     // fill packages using default coordinate data
     var fillingDefault = function () {
         // organize and draw
@@ -287,7 +287,7 @@ define(["require", "exports", "../utils/WebGLHelper2d", "../utils/WebGLUtils", "
                         //    b\    /c
                         //      \θ/
                         //       V
-                        var a = WebGLUtils.getDistance(mousePoint, newMousePoint), b = 100, c = 100;
+                        var a = WebGLUtils.getDistance2d(mousePoint, newMousePoint), b = 100, c = 100;
                         // 余弦定理
                         var angle = WebGLUtils.radToDeg(Math.acos((Math.pow(b, 2) + Math.pow(c, 2) - Math.pow(a, 2)) / (2 * b * c)));
                         // 无论移动方向如何，angle永远为正，这是不正确的，此处确定angle符号

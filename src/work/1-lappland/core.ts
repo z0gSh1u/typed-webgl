@@ -4,12 +4,12 @@
 import '../../3rd-party/MV'
 import '../../3rd-party/initShaders'
 
-import { WebGLHelper2d } from '../utils/WebGLHelper2d'
-import * as WebGLUtils from '../utils/WebGLUtils'
-import { generateBezierCurve2dL3 } from '../utils/BezierCurve'
-import { generateStraightLineSegment, generateOval } from '../utils/BasicShape'
-import { WebGLDrawingObject } from '../utils/WebGLDrawingObject'
-import { WebGLDrawingPackage } from '../utils/WebGLDrawingPackage'
+import { WebGLHelper2d } from '../../framework/2d/WebGLHelper2d'
+import * as WebGLUtils from '../../framework/WebGLUtils'
+import { generateBezierCurve2dL3 } from '../../framework/2d/BezierCurve'
+import { generateStraightLineSegment, generateOval } from '../../framework/2d/BasicShape'
+import { WebGLDrawingObject } from '../../framework/2d/WebGLDrawingObject'
+import { WebGLDrawingPackage } from '../../framework/2d/WebGLDrawingPackage'
 
 // common variables
 let canvasDOM: HTMLCanvasElement = document.querySelector('#cvs') as HTMLCanvasElement
@@ -54,7 +54,7 @@ let ear_right: WebGLDrawingPackage, ear_left: WebGLDrawingPackage, cute_left: We
   cloth_right: WebGLDrawingPackage, face: WebGLDrawingPackage, head: WebGLDrawingPackage, arm_right: WebGLDrawingPackage,
   hand_right: WebGLDrawingPackage, tail: WebGLDrawingPackage, cloth_center_1: WebGLDrawingPackage, leg_left: WebGLDrawingPackage,
   leg_right: WebGLDrawingPackage, foot_left: WebGLDrawingPackage, foot_right: WebGLDrawingPackage, cloth_center_2: WebGLDrawingPackage,
-  backhair_left: WebGLDrawingPackage, backhair_right: WebGLDrawingPackage
+  backhair_left: WebGLDrawingPackage
 
 // fill packages using default coordinate data
 let fillingDefault = () => {
@@ -422,7 +422,7 @@ let listenMouse = () => {
           //    b\    /c
           //      \θ/
           //       V
-          let a = WebGLUtils.getDistance(mousePoint, newMousePoint), b = 100, c = 100
+          let a = WebGLUtils.getDistance2d(mousePoint, newMousePoint), b = 100, c = 100
           // 余弦定理
           let angle = WebGLUtils.radToDeg(Math.acos((Math.pow(b, 2) + Math.pow(c, 2) - Math.pow(a, 2)) / (2 * b * c)))
           // 无论移动方向如何，angle永远为正，这是不正确的，此处确定angle符号
