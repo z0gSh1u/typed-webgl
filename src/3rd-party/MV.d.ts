@@ -86,7 +86,7 @@ declare function mult(u: Mat | Vec, v: Mat | Vec): Mat | Vec
 /**
  * Translate a vector.
  */
-declare function translate(x: Vec, y: Vec, z: Vec): Mat
+declare function translate(x: Vec | number, y: Vec | number, z: Vec | number): Mat
 /**
  * Rotate axes by an angle (in DEG).
  */

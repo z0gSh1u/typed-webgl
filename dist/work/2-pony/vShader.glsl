@@ -2,14 +2,19 @@
 
 attribute vec4 aPosition;
 
-//attribute vec4 aColor;
-//varying vec4 vColor;
+attribute vec2 aTexCoord;
+varying vec2 vTexCoord;
 
-uniform mat4 uWorldMatrix; // transformation matrix under world coordinate system
-uniform mat4 uModelMatrix; // transformation matrix under self coordinate system
+// transformation matrix under world coordinate system
+uniform mat4 uWorldMatrix;
+// transformation matrix under self coordinate system
+uniform mat4 uModelMatrix;
 
 void main() {
+
 	// vertex position
 	gl_Position = uWorldMatrix * uModelMatrix * aPosition;
-	//vColor = aColor;
+
+	vTexCoord = aTexCoord;
+	
 }

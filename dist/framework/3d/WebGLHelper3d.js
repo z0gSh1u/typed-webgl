@@ -16,7 +16,23 @@ define(["require", "exports", "../WebGLUtils"], function (require, exports, WebG
             this.canvasDOM = _canvasDOM;
             this.gl = _gl;
             this.program = _program;
+            this.totalVerticesCount = 0;
+            this.globalTextureBuffer = null;
+            this.globalVertexAttribute = null;
+            this.globalVertexBuffer = null;
+            this.globalTextureAttribute = null;
+            this.waitingQueue = [];
+            this.textureManager = [];
         }
+        WebGLHelper3d.prototype.setTextureManager = function (tm) {
+            this.textureManager = tm;
+        };
+        WebGLHelper3d.prototype.setGlobalSettings = function (_vBuf, _vAttr, _tBuf, _tAttr) {
+            this.globalTextureBuffer = _tBuf;
+            this.globalVertexAttribute = _vAttr;
+            this.globalVertexBuffer = _vBuf;
+            this.globalTextureAttribute = _tAttr;
+        };
         /**
          * Create a buffer.
          */
@@ -104,6 +120,64 @@ define(["require", "exports", "../WebGLUtils"], function (require, exports, WebG
         WebGLHelper3d.prototype.setUniformMatrix4d = function (variableName, data, transpose) {
             if (transpose === void 0) { transpose = false; }
             this.gl.uniformMatrix4fv(this.getUniformLocation(variableName), transpose, flatten(data));
+        };
+        /**
+         *
+         */
+        WebGLHelper3d.prototype.textureSettingMode = function (tBuf, tAttr) {
+            this.vertexSettingMode(tBuf, tAttr, 2, this.gl.FLOAT);
+        };
+        /**
+         *
+         */
+        WebGLHelper3d.prototype.drawImmediately = function (obj, ii) {
+            // 准备mesh绘制
+            var meshVertices = [];
+            obj.objProcessor.fs.forEach(function (face) {
+                face.forEach(function (vOfFace) {
+                    var subscript = vOfFace - 1;
+                    meshVertices.push(obj.objProcessor.vs[subscript]); // xyzxyzxyz
+                });
+            });
+            // 发送三角形顶点信息
+            this.vertexSettingMode(this.globalVertexBuffer, this.globalVertexAttribute, 3);
+            this.sendDataToBuffer(flatten(meshVertices));
+            // 准备材质绘制
+            this.textureSettingMode(this.globalTextureBuffer, this.globalTextureAttribute);
+            // 发送材质顶点信息
+            var textureVertices = [];
+            obj.objProcessor.fts.forEach(function (face) {
+                face.forEach(function (vOfFace) {
+                    var subscript = vOfFace - 1;
+                    textureVertices.push(obj.objProcessor.vts[subscript]);
+                });
+            });
+            this.sendDataToBuffer(flatten(textureVertices));
+            // 发送材质贴图信息
+            // this.gl.texImage2D(this.gl.TEXTURE_2D, 0, this.gl.RGBA, this.gl.RGBA, this.gl.UNSIGNED_BYTE, obj.textureImage as HTMLImageElement)
+            // this.gl.generateMipmap(this.gl.TEXTURE_2D)
+            this.gl.uniform1i(this.getUniformLocation('uTexture'), ii + 1);
+            // 在回调中综合绘制
+            this.drawArrays(this.gl.TRIANGLES, 0, obj.objProcessor.getEffectiveVertexCount());
+        };
+        WebGLHelper3d.prototype.drawLater = function (toDraw) {
+            this.waitingQueue.push(toDraw);
+        };
+        WebGLHelper3d.prototype.clearWaitingQueue = function () {
+            this.waitingQueue = [];
+        };
+        /**
+         * Re-render the canvas using `waitingQueue`. Need new ctm and modelMat.
+         */
+        WebGLHelper3d.prototype.reRender = function (ctm, modelMat) {
+            var _this = this;
+            this.setUniformMatrix4d('uWorldMatrix', ctm);
+            this.setUniformMatrix4d('uModelMatrix', modelMat);
+            this.clearCanvas();
+            this.waitingQueue.forEach(function (ele, idx) {
+                _this.drawImmediately(ele, idx);
+            });
+            this.clearWaitingQueue();
         };
         return WebGLHelper3d;
     }());
