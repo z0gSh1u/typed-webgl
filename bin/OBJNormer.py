@@ -5,8 +5,8 @@
 '''
 
 # edit this before running this script
-OBJ_FILE_PATH=r'F:\\CG-lesson\\dec-rewrite\\dist\\work\\2-pony\\unnorm.obj'
-OUTPUT_FILE_PATH=r'F:\\CG-lesson\\dec-rewrite\\dist\\work\\2-pony\\norm.obj'
+OBJ_FILE_PATH=r'F:\\CG-lesson\\dec-rewrite\\dist\\work\\2-pony\\model\\raw\\newpony.obj'
+OUTPUT_FILE_PATH=r'F:\\CG-lesson\\dec-rewrite\\dist\\work\\2-pony\\model\\normed\\newpony.obj'
 NEWLINE_BREAKER='\r\n'
 
 f = open(OBJ_FILE_PATH, 'r')
