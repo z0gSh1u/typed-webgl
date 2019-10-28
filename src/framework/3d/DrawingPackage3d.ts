@@ -1,15 +1,40 @@
 // 
 
-import { DrawingObject3d } from "./DrawingObject3d";
+import { DrawingObject3d } from './DrawingObject3d'
+import { normalize8bitColor } from '../WebGLUtils'
 
 export class DrawingPackage3d {
 
   private _innerList: Array<DrawingObject3d>
   private _modelMat: Mat
+  private _meshOnly: boolean
+  private _colorMeshOnly: Vec4 | null
+  private _methodMeshOnly: number | null
 
   constructor(modelMat: Mat, ...objects: Array<DrawingObject3d>) {
     this._innerList = objects.length == 0 ? [] : objects
     this._modelMat = modelMat
+    this._meshOnly = false
+    this._colorMeshOnly = null
+    this._methodMeshOnly = null
+  }
+
+  public setMeshOnly(method: number, color8bit: Vec3 | Vec4) {
+    this._meshOnly = true
+    this._colorMeshOnly = normalize8bitColor(color8bit)
+    this._methodMeshOnly = method
+  }
+
+  get colorMeshOnly() {
+    return this._colorMeshOnly
+  }
+
+  get methodMeshOnly() {
+    return this._methodMeshOnly
+  }
+
+  get meshOnly() {
+    return this._meshOnly
   }
 
   get modelMat() {

@@ -1,5 +1,5 @@
 // 
-define(["require", "exports"], function (require, exports) {
+define(["require", "exports", "../WebGLUtils"], function (require, exports, WebGLUtils_1) {
     "use strict";
     Object.defineProperty(exports, "__esModule", { value: true });
     var DrawingPackage3d = /** @class */ (function () {
@@ -10,7 +10,36 @@ define(["require", "exports"], function (require, exports) {
             }
             this._innerList = objects.length == 0 ? [] : objects;
             this._modelMat = modelMat;
+            this._meshOnly = false;
+            this._colorMeshOnly = null;
+            this._methodMeshOnly = null;
         }
+        DrawingPackage3d.prototype.setMeshOnly = function (method, color8bit) {
+            this._meshOnly = true;
+            this._colorMeshOnly = WebGLUtils_1.normalize8bitColor(color8bit);
+            this._methodMeshOnly = method;
+        };
+        Object.defineProperty(DrawingPackage3d.prototype, "colorMeshOnly", {
+            get: function () {
+                return this._colorMeshOnly;
+            },
+            enumerable: true,
+            configurable: true
+        });
+        Object.defineProperty(DrawingPackage3d.prototype, "methodMeshOnly", {
+            get: function () {
+                return this._methodMeshOnly;
+            },
+            enumerable: true,
+            configurable: true
+        });
+        Object.defineProperty(DrawingPackage3d.prototype, "meshOnly", {
+            get: function () {
+                return this._meshOnly;
+            },
+            enumerable: true,
+            configurable: true
+        });
         Object.defineProperty(DrawingPackage3d.prototype, "modelMat", {
             get: function () {
                 return this._modelMat;

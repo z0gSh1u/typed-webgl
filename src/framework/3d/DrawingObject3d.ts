@@ -12,12 +12,12 @@ export class DrawingObject3d {
   private _textureImage: HTMLImageElement | null // 材质（贴图）对象
   private _textureIndex: number | null
 
-  constructor(objFilePath: string, texturePath: string, textureIndex: number) {
+  constructor(objFilePath: string, texturePath?: string, textureIndex?: number) {
     this._objFilePath = objFilePath
-    this._texturePath = texturePath
+    this._texturePath = texturePath as string
     this._objProcessor = null
     this._textureImage = null
-    this._textureIndex = textureIndex
+    this._textureIndex = textureIndex as number
     this._processOBJ()
   }
 
