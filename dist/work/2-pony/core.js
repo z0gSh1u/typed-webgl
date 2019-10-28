@@ -20,6 +20,7 @@ define(["require", "exports", "../../framework/3d/WebGLHelper3d", "../../framewo
     var ctm; // 当前世界矩阵
     var modelMat; // 当前物体自身矩阵
     var Pony = []; // 小马全身
+    var PonyTextureManager = []; // 小马材质管理器
     // global status recorder
     var COORD_SYS = {
         SELF: 0, WORLD: 1
@@ -38,17 +39,16 @@ define(["require", "exports", "../../framework/3d/WebGLHelper3d", "../../framewo
         // gl.enable(gl.CULL_FACE)
         vBuffer = helper.createBuffer();
         textureBuffer = helper.createBuffer();
-        helper.setGlobalSettings(vBuffer, 'aPosition', textureBuffer, 'aTexCoord');
+        helper.setGlobalSettings(vBuffer, 'aPosition', textureBuffer, 'aTexCoord', 'uTexture');
         // 不知道为什么小马一出来是背对的，而且还贼高。绕y轴先转180度，再微调一下y坐标位置
         ctm = rotateY(180);
         ctm = mult(translate(0, -0.2, 0), ctm);
         modelMat = mat4();
         initializePony();
-        // resetPony()
-        // helper.reRender(ctm, modelMat)
     };
-    var PonyTextureManager = [];
-    // 读入模型数据，初始化JS中的模型信息记录变量
+    /**
+     * 读入模型数据，初始化JS中的模型信息记录变量，传送材质，渲染小马
+     */
     var initializePony = function () {
         Pony = [
             new DrawingObject3d_1.DrawingObject3d('./model/normed/Pony/pony.obj', './model/texture/Pony/pony.png'),
@@ -60,58 +60,55 @@ define(["require", "exports", "../../framework/3d/WebGLHelper3d", "../../framewo
             new DrawingObject3d_1.DrawingObject3d('./model/normed/Pony/rightEye.obj', './model/texture/Pony/rightEye.png'),
             new DrawingObject3d_1.DrawingObject3d('./model/normed/Pony/teeth.obj', './model/texture/Pony/teeth.png'),
         ];
-        function preloadimages(arr) {
-            var newimages = [], loadedimages = 0;
-            var postaction = function (ni) {
-                for (var i_1 = 0; i_1 < ni.length; i_1++) {
-                    Pony[i_1]._textureImage = ni[i_1];
-                    var no = gl.createTexture();
-                    gl.bindTexture(gl.TEXTURE_2D, no);
-                    gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, Pony[i_1]._textureImage);
-                    gl.generateMipmap(gl.TEXTURE_2D);
-                    PonyTextureManager.push(no);
-                }
-                gl.activeTexture(gl.TEXTURE1);
-                gl.bindTexture(gl.TEXTURE_2D, PonyTextureManager[0]);
-                gl.activeTexture(gl.TEXTURE2);
-                gl.bindTexture(gl.TEXTURE_2D, PonyTextureManager[1]);
-                gl.activeTexture(gl.TEXTURE3);
-                gl.bindTexture(gl.TEXTURE_2D, PonyTextureManager[2]);
-                gl.activeTexture(gl.TEXTURE4);
-                gl.bindTexture(gl.TEXTURE_2D, PonyTextureManager[3]);
-                gl.activeTexture(gl.TEXTURE5);
-                gl.bindTexture(gl.TEXTURE_2D, PonyTextureManager[4]);
-                gl.activeTexture(gl.TEXTURE6);
-                gl.bindTexture(gl.TEXTURE_2D, PonyTextureManager[5]);
-                gl.activeTexture(gl.TEXTURE7);
-                gl.bindTexture(gl.TEXTURE_2D, PonyTextureManager[6]);
-                gl.activeTexture(gl.TEXTURE8);
-                gl.bindTexture(gl.TEXTURE_2D, PonyTextureManager[7]);
-                gl.activeTexture(gl.TEXTURE9);
-                gl.bindTexture(gl.TEXTURE_2D, PonyTextureManager[8]);
-                resetPony();
-                helper.reRender(ctm, modelMat);
-            };
+        // 同步预加载材质
+        var preloadTexture = function (arr, callback) {
+            var newImages = [], loadedImagesCount = 0;
             var arr = (typeof arr != "object") ? [arr] : arr;
-            function imageloadpost() {
-                loadedimages++;
-                if (loadedimages == arr.length) {
-                    postaction(newimages); //call postaction and pass in newimages array as parameter
+            function sendImageLoadedMessage() {
+                loadedImagesCount++;
+                if (loadedImagesCount == arr.length) {
+                    callback(newImages);
                 }
             }
             for (var i = 0; i < arr.length; i++) {
-                newimages[i] = new Image();
-                newimages[i].src = arr[i].texturePath;
-                newimages[i].onload = function () {
-                    imageloadpost();
+                newImages[i] = new Image();
+                newImages[i].src = arr[i].texturePath;
+                newImages[i].onload = function () {
+                    sendImageLoadedMessage();
                 };
-                newimages[i].onerror = function () {
-                    imageloadpost();
+                newImages[i].onerror = function () {
+                    sendImageLoadedMessage();
                 };
             }
-        }
-        preloadimages(Pony);
+        };
+        // 材质初次加载完成后渲染一次，把材质绑到WebGL预置变量上
+        var renderAfterTextureLoad = function (loadedElements) {
+            // 把素材图像传送到GPU  
+            for (var i = 0; i < loadedElements.length; i++) {
+                Pony[i]._textureImage = loadedElements[i];
+                var no = gl.createTexture();
+                gl.bindTexture(gl.TEXTURE_2D, no);
+                gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, Pony[i]._textureImage);
+                gl.generateMipmap(gl.TEXTURE_2D);
+                PonyTextureManager.push(no);
+            }
+            // 为预置的材质变量绑定上各部分的材质，材质编号从0开始
+            for (var i = 0; i < PonyTextureManager.length; i++) {
+                // PonyTextureManager.length == 8
+                var cmd1 = "gl.activeTexture(gl.TEXTURE" + i + ")";
+                var cmd2 = "gl.bindTexture(gl.TEXTURE_2D, PonyTextureManager[" + i + "])";
+                eval(cmd1);
+                eval(cmd2);
+            }
+            // 渲染
+            resetPony();
+            helper.reRender(ctm, modelMat);
+        };
+        preloadTexture(Pony, renderAfterTextureLoad);
     };
+    /**
+     * 重设Pony全身坐标，但不会重传材质
+     */
     var resetPony = function () {
         helper.clearWaitingQueue();
         Pony.forEach(function (ele) {

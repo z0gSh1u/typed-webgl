@@ -18,6 +18,7 @@ let ctm: Mat // 当前世界矩阵
 let modelMat: Mat // 当前物体自身矩阵
 
 let Pony: Array<DrawingObject3d> = [] // 小马全身
+let PonyTextureManager: Array<WebGLTexture> = [] // 小马材质管理器
 
 // global status recorder
 let COORD_SYS = {
@@ -41,7 +42,7 @@ let main = () => {
 
   vBuffer = helper.createBuffer()
   textureBuffer = helper.createBuffer()
-  helper.setGlobalSettings(vBuffer, 'aPosition', textureBuffer, 'aTexCoord')
+  helper.setGlobalSettings(vBuffer, 'aPosition', textureBuffer, 'aTexCoord', 'uTexture')
 
   // 不知道为什么小马一出来是背对的，而且还贼高。绕y轴先转180度，再微调一下y坐标位置
   ctm = rotateY(180)
@@ -49,15 +50,12 @@ let main = () => {
   modelMat = mat4()
 
   initializePony()
-  // resetPony()
-  // helper.reRender(ctm, modelMat)
 
 }
 
-
-let PonyTextureManager: Array<WebGLTexture> = []
-
-// 读入模型数据，初始化JS中的模型信息记录变量
+/**
+ * 读入模型数据，初始化JS中的模型信息记录变量，传送材质，渲染小马
+ */
 let initializePony = () => {
 
   Pony = [
@@ -69,76 +67,64 @@ let initializePony = () => {
     new DrawingObject3d('./model/normed/Pony/leftEye.obj', './model/texture/Pony/leftEye.png'), // 左眼
     new DrawingObject3d('./model/normed/Pony/rightEye.obj', './model/texture/Pony/rightEye.png'), // 右眼
     new DrawingObject3d('./model/normed/Pony/teeth.obj', './model/texture/Pony/teeth.png'), // 牙
+   
+    // new DrawingObject3d('./model/normed/Pen/pen.obj', './model/texture/Pen/pen.png')
   ]
 
-  function preloadimages(arr: Array<DrawingObject3d>) {
-    var newimages: Array<HTMLImageElement> = [], loadedimages = 0
-    var postaction = function (ni: HTMLImageElement[]) {
-
-      for (let i = 0; i < ni.length; i++) {
-
-        Pony[i]._textureImage = ni[i]
-
-        let no = gl.createTexture() as WebGLTexture
-
-        gl.bindTexture(gl.TEXTURE_2D, no)
-
-        gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, Pony[i]._textureImage as HTMLImageElement)
-
-        gl.generateMipmap(gl.TEXTURE_2D)
-
-        PonyTextureManager.push(no)
-
-      }
-
-
-      gl.activeTexture(gl.TEXTURE1);
-      gl.bindTexture(gl.TEXTURE_2D, PonyTextureManager[0]);
-      gl.activeTexture(gl.TEXTURE2);
-      gl.bindTexture(gl.TEXTURE_2D, PonyTextureManager[1]);
-      gl.activeTexture(gl.TEXTURE3);
-      gl.bindTexture(gl.TEXTURE_2D, PonyTextureManager[2]);
-      gl.activeTexture(gl.TEXTURE4);
-      gl.bindTexture(gl.TEXTURE_2D, PonyTextureManager[3]);
-      gl.activeTexture(gl.TEXTURE5);
-      gl.bindTexture(gl.TEXTURE_2D, PonyTextureManager[4]);
-      gl.activeTexture(gl.TEXTURE6);
-      gl.bindTexture(gl.TEXTURE_2D, PonyTextureManager[5]);
-      gl.activeTexture(gl.TEXTURE7);
-      gl.bindTexture(gl.TEXTURE_2D, PonyTextureManager[6]);
-      gl.activeTexture(gl.TEXTURE8);
-      gl.bindTexture(gl.TEXTURE_2D, PonyTextureManager[7]);
-      gl.activeTexture(gl.TEXTURE9);
-      gl.bindTexture(gl.TEXTURE_2D, PonyTextureManager[8]);
-
-      resetPony()
-      helper.reRender(ctm, modelMat)
-
-    }
+  // 同步预加载材质
+  let preloadTexture = (arr: Array<DrawingObject3d>, callback: (loadedElements: HTMLImageElement[]) => void) => {
+    let newImages: Array<HTMLImageElement> = [], loadedImagesCount = 0
     var arr = (typeof arr != "object") ? [arr] : arr
-    function imageloadpost() {
-      loadedimages++
-      if (loadedimages == arr.length) {
-        postaction(newimages) //call postaction and pass in newimages array as parameter
+    function sendImageLoadedMessage() {
+      loadedImagesCount++
+      if (loadedImagesCount == arr.length) {
+        callback(newImages)
       }
     }
-    for (var i = 0; i < arr.length; i++) {
-      newimages[i] = new Image()
-      newimages[i].src = arr[i].texturePath
-      newimages[i].onload = function () {
-        imageloadpost()
+    for (let i = 0; i < arr.length; i++) {
+      newImages[i] = new Image()
+      newImages[i].src = arr[i].texturePath
+      newImages[i].onload = () => {
+        sendImageLoadedMessage()
       }
-      newimages[i].onerror = function () {
-        imageloadpost()
+      newImages[i].onerror = () => {
+        sendImageLoadedMessage()
       }
     }
   }
 
-  preloadimages(Pony)
+  // 材质初次加载完成后渲染一次，把材质绑到WebGL预置变量上
+  let renderAfterTextureLoad = (loadedElements: HTMLImageElement[]) => {
+    // 把素材图像传送到GPU  
+    for (let i = 0; i < loadedElements.length; i++) {
+      Pony[i]._textureImage = loadedElements[i]
+      let no = gl.createTexture() as WebGLTexture
+      gl.bindTexture(gl.TEXTURE_2D, no)
+      gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, Pony[i]._textureImage as HTMLImageElement)
+      gl.generateMipmap(gl.TEXTURE_2D)
+      PonyTextureManager.push(no)
+    }
+    // 为预置的材质变量绑定上各部分的材质，材质编号从0开始
+    for (let i = 0; i < PonyTextureManager.length; i++) {
+      // PonyTextureManager.length == 8
+      let cmd1 = `gl.activeTexture(gl.TEXTURE${i})`
+      let cmd2 = `gl.bindTexture(gl.TEXTURE_2D, PonyTextureManager[${i}])`
+      eval(cmd1)
+      eval(cmd2)
+    }
+    // 渲染
+    resetPony()
+    helper.reRender(ctm, modelMat)
+  }
+
+  preloadTexture(Pony, renderAfterTextureLoad)
 
 }
 
-let resetPony = () => {
+/**
+ * 重设Pony全身坐标，但不会重传材质
+ */
+ let resetPony = () => {
   helper.clearWaitingQueue()
   Pony.forEach(ele => {
     helper.drawLater(ele)

@@ -16,22 +16,22 @@ define(["require", "exports", "../WebGLUtils"], function (require, exports, WebG
             this.canvasDOM = _canvasDOM;
             this.gl = _gl;
             this.program = _program;
-            this.totalVerticesCount = 0;
             this.globalTextureBuffer = null;
             this.globalVertexAttribute = null;
             this.globalVertexBuffer = null;
-            this.globalTextureAttribute = null;
+            this.globalTextureCoordAttribute = null;
+            this.globalTextureSamplerAttribute = null;
             this.waitingQueue = [];
-            this.textureManager = [];
         }
-        WebGLHelper3d.prototype.setTextureManager = function (tm) {
-            this.textureManager = tm;
-        };
-        WebGLHelper3d.prototype.setGlobalSettings = function (_vBuf, _vAttr, _tBuf, _tAttr) {
+        /**
+         * Set some global settings so that you don't need to pass them every time you draw.
+         */
+        WebGLHelper3d.prototype.setGlobalSettings = function (_vBuf, _vAttr, _tBuf, _tCoordAttr, _tSamplerAttr) {
             this.globalTextureBuffer = _tBuf;
             this.globalVertexAttribute = _vAttr;
             this.globalVertexBuffer = _vBuf;
-            this.globalTextureAttribute = _tAttr;
+            this.globalTextureCoordAttribute = _tCoordAttr;
+            this.globalTextureSamplerAttribute = _tSamplerAttr;
         };
         /**
          * Create a buffer.
@@ -122,15 +122,15 @@ define(["require", "exports", "../WebGLUtils"], function (require, exports, WebG
             this.gl.uniformMatrix4fv(this.getUniformLocation(variableName), transpose, flatten(data));
         };
         /**
-         *
+         * Transform current mode to textureSetting.
          */
         WebGLHelper3d.prototype.textureSettingMode = function (tBuf, tAttr) {
             this.vertexSettingMode(tBuf, tAttr, 2, this.gl.FLOAT);
         };
         /**
-         *
+         * Draw a `DrawingObject3d` immediately using the specified texture. `textureIndex` starts from 0.
          */
-        WebGLHelper3d.prototype.drawImmediately = function (obj, ii) {
+        WebGLHelper3d.prototype.drawImmediately = function (obj, textureIndex) {
             // 准备mesh绘制
             var meshVertices = [];
             obj.objProcessor.fs.forEach(function (face) {
@@ -143,7 +143,7 @@ define(["require", "exports", "../WebGLUtils"], function (require, exports, WebG
             this.vertexSettingMode(this.globalVertexBuffer, this.globalVertexAttribute, 3);
             this.sendDataToBuffer(flatten(meshVertices));
             // 准备材质绘制
-            this.textureSettingMode(this.globalTextureBuffer, this.globalTextureAttribute);
+            this.textureSettingMode(this.globalTextureBuffer, this.globalTextureCoordAttribute);
             // 发送材质顶点信息
             var textureVertices = [];
             obj.objProcessor.fts.forEach(function (face) {
@@ -153,21 +153,25 @@ define(["require", "exports", "../WebGLUtils"], function (require, exports, WebG
                 });
             });
             this.sendDataToBuffer(flatten(textureVertices));
-            // 发送材质贴图信息
-            // this.gl.texImage2D(this.gl.TEXTURE_2D, 0, this.gl.RGBA, this.gl.RGBA, this.gl.UNSIGNED_BYTE, obj.textureImage as HTMLImageElement)
-            // this.gl.generateMipmap(this.gl.TEXTURE_2D)
-            this.gl.uniform1i(this.getUniformLocation('uTexture'), ii + 1);
-            // 在回调中综合绘制
+            // 根据前端传来的材质要求，让着色器调取显存中对应的材质
+            this.gl.uniform1i(this.getUniformLocation(this.globalTextureSamplerAttribute), textureIndex);
+            // 综合绘制
             this.drawArrays(this.gl.TRIANGLES, 0, obj.objProcessor.getEffectiveVertexCount());
         };
+        /**
+         * Push a `DrawingObject3d` into `waitingQueue`.
+         */
         WebGLHelper3d.prototype.drawLater = function (toDraw) {
             this.waitingQueue.push(toDraw);
         };
+        /**
+         * Clear `waitingQueue`.
+         */
         WebGLHelper3d.prototype.clearWaitingQueue = function () {
             this.waitingQueue = [];
         };
         /**
-         * Re-render the canvas using `waitingQueue`. Need new ctm and modelMat.
+         * Re-render the canvas using `waitingQueue`. Need new `ctm` and `modelMat`.
          */
         WebGLHelper3d.prototype.reRender = function (ctm, modelMat) {
             var _this = this;

@@ -14,37 +14,32 @@ export class WebGLHelper3d {
   private globalVertexBuffer: WebGLBuffer | null
   private globalVertexAttribute: string | null
   private globalTextureBuffer: WebGLBuffer | null
-  private globalTextureAttribute: string | null
-
-  private textureManager: Array<WebGLTexture>
+  private globalTextureCoordAttribute: string | null
+  private globalTextureSamplerAttribute: string | null
 
   private waitingQueue: Array<DrawingObject3d>
-
-  private totalVerticesCount: number
 
   constructor(_canvasDOM: HTMLCanvasElement, _gl: WebGLRenderingContext, _program: WebGLProgram) {
     this.canvasDOM = _canvasDOM
     this.gl = _gl
     this.program = _program
-    this.totalVerticesCount = 0
     this.globalTextureBuffer = null
     this.globalVertexAttribute = null
     this.globalVertexBuffer = null
-    this.globalTextureAttribute = null
+    this.globalTextureCoordAttribute = null
+    this.globalTextureSamplerAttribute = null
     this.waitingQueue = []
-    this.textureManager = []
-
   }
 
-  public setTextureManager(tm: Array<WebGLTexture>) {
-    this.textureManager = tm
-  }
-
-  public setGlobalSettings(_vBuf: WebGLBuffer, _vAttr: string, _tBuf: WebGLBuffer, _tAttr: string) {
+  /**
+   * Set some global settings so that you don't need to pass them every time you draw. 
+   */
+  public setGlobalSettings(_vBuf: WebGLBuffer, _vAttr: string, _tBuf: WebGLBuffer, _tCoordAttr: string, _tSamplerAttr: string) {
     this.globalTextureBuffer = _tBuf
     this.globalVertexAttribute = _vAttr
     this.globalVertexBuffer = _vBuf
-    this.globalTextureAttribute = _tAttr
+    this.globalTextureCoordAttribute = _tCoordAttr
+    this.globalTextureSamplerAttribute = _tSamplerAttr
   }
 
   /**
@@ -152,16 +147,16 @@ export class WebGLHelper3d {
   }
 
   /**
-   * 
+   * Transform current mode to textureSetting.
    */
   public textureSettingMode(tBuf: WebGLBuffer, tAttr: string) {
     this.vertexSettingMode(tBuf, tAttr, 2, this.gl.FLOAT)
   }
 
   /**
-   * 
+   * Draw a `DrawingObject3d` immediately using the specified texture. `textureIndex` starts from 0.
    */
-  public drawImmediately(obj: DrawingObject3d, ii: number) {
+  public drawImmediately(obj: DrawingObject3d, textureIndex: number) {
     // 准备mesh绘制
     let meshVertices: Array<Vec3> = []
     obj.objProcessor.fs.forEach(face => {
@@ -174,7 +169,7 @@ export class WebGLHelper3d {
     this.vertexSettingMode(this.globalVertexBuffer as WebGLBuffer, this.globalVertexAttribute as string, 3)
     this.sendDataToBuffer(flatten(meshVertices))
     // 准备材质绘制
-    this.textureSettingMode(this.globalTextureBuffer as WebGLBuffer, this.globalTextureAttribute as string)
+    this.textureSettingMode(this.globalTextureBuffer as WebGLBuffer, this.globalTextureCoordAttribute as string)
     // 发送材质顶点信息
     let textureVertices: Array<Vec2> = []
     obj.objProcessor.fts.forEach(face => {
@@ -183,29 +178,30 @@ export class WebGLHelper3d {
         textureVertices.push(obj.objProcessor.vts[subscript])
       })
     })
-
     this.sendDataToBuffer(flatten(textureVertices))
-    // 发送材质贴图信息
-    // this.gl.texImage2D(this.gl.TEXTURE_2D, 0, this.gl.RGBA, this.gl.RGBA, this.gl.UNSIGNED_BYTE, obj.textureImage as HTMLImageElement)
-    // this.gl.generateMipmap(this.gl.TEXTURE_2D)
 
-    this.gl.uniform1i(this.getUniformLocation('uTexture'), ii + 1)
-
-    // 在回调中综合绘制
+    // 根据前端传来的材质要求，让着色器调取显存中对应的材质
+    this.gl.uniform1i(this.getUniformLocation(this.globalTextureSamplerAttribute as string), textureIndex)
+    // 综合绘制
     this.drawArrays(this.gl.TRIANGLES, 0, obj.objProcessor.getEffectiveVertexCount())
-
   }
 
+  /**
+   * Push a `DrawingObject3d` into `waitingQueue`.
+   */
   public drawLater(toDraw: DrawingObject3d) {
     this.waitingQueue.push(toDraw)
   }
 
+  /**
+   * Clear `waitingQueue`.
+   */
   public clearWaitingQueue() {
     this.waitingQueue = []
   }
 
   /**
-   * Re-render the canvas using `waitingQueue`. Need new ctm and modelMat.
+   * Re-render the canvas using `waitingQueue`. Need new `ctm` and `modelMat`.
    */
   public reRender(ctm: Mat, modelMat: Mat) {
     this.setUniformMatrix4d('uWorldMatrix', ctm)

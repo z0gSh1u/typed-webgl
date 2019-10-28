@@ -1,6 +1,8 @@
-import { OBJProcessor } from "./OBJProcessor"
+// Drawing object (3d) definition.
+// Written by z0gSh1u @ https://github.com/z0gSh1u/typed-webgl
+// for book `Interactive Computer Graphics` (7th Edition).
 
-declare var axios: any
+import { OBJProcessor } from "./OBJProcessor"
 
 export class DrawingObject3d {
 
@@ -15,7 +17,6 @@ export class DrawingObject3d {
     this._objProcessor = null
     this._textureImage = null
     this._processOBJ()
-   // this._processTexture()
   }
 
   get objProcessor() {
@@ -34,23 +35,6 @@ export class DrawingObject3d {
     let responseData: string
     responseData = loadFileAJAX(this._objFilePath) as string
     this._objProcessor = new OBJProcessor(responseData)
-  }
-
-  // TODO: synchronize this
-  private _processTexture() {
-
-    let textureImage = new Image()
-    textureImage.src = this._texturePath
-
-    // let curTick = new Date().getTime()
-    // while (1) {
-    //   if (new Date().getTime() - curTick >= 150) {
-    //     break
-    //   }
-    // }
-
-    this._textureImage = textureImage
-    console.log(this._textureImage)
   }
 
 }
