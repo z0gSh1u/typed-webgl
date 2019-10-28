@@ -4,6 +4,7 @@
 
 import { normalize8bitColor } from '../WebGLUtils'
 import { DrawingObject3d } from './DrawingObject3d'
+import { DrawingPackage3d } from './DrawingPackage3d'
 
 export class WebGLHelper3d {
 
@@ -16,8 +17,11 @@ export class WebGLHelper3d {
   private globalTextureBuffer: WebGLBuffer | null
   private globalTextureCoordAttribute: string | null
   private globalTextureSamplerAttribute: string | null
+  private globalWorldMatrixUniform: string | null
+  private globalModelMatrixUniform: string | null
 
-  private waitingQueue: Array<DrawingObject3d>
+
+  private waitingQueue: Array<DrawingPackage3d>
 
   constructor(_canvasDOM: HTMLCanvasElement, _gl: WebGLRenderingContext, _program: WebGLProgram) {
     this.canvasDOM = _canvasDOM
@@ -28,18 +32,29 @@ export class WebGLHelper3d {
     this.globalVertexBuffer = null
     this.globalTextureCoordAttribute = null
     this.globalTextureSamplerAttribute = null
+    this.globalWorldMatrixUniform = null
+    this.globalModelMatrixUniform = null
     this.waitingQueue = []
   }
 
   /**
    * Set some global settings so that you don't need to pass them every time you draw. 
    */
-  public setGlobalSettings(_vBuf: WebGLBuffer, _vAttr: string, _tBuf: WebGLBuffer, _tCoordAttr: string, _tSamplerAttr: string) {
+  public setGlobalSettings(
+    _vBuf: WebGLBuffer,
+    _vAttr: string,
+    _tBuf: WebGLBuffer,
+    _tCoordAttr: string,
+    _tSamplerAttr: string,
+    _worldMatUniform: string,
+    _modelMatUniform: string) {
     this.globalTextureBuffer = _tBuf
     this.globalVertexAttribute = _vAttr
     this.globalVertexBuffer = _vBuf
     this.globalTextureCoordAttribute = _tCoordAttr
     this.globalTextureSamplerAttribute = _tSamplerAttr
+    this.globalWorldMatrixUniform = _worldMatUniform
+    this.globalModelMatrixUniform = _modelMatUniform
   }
 
   /**
@@ -187,9 +202,20 @@ export class WebGLHelper3d {
   }
 
   /**
-   * Push a `DrawingObject3d` into `waitingQueue`.
+   * Draw a `DrawingPackage3d` immediately using the specified texture.
    */
-  public drawLater(toDraw: DrawingObject3d) {
+  public drawPackageImmediately(pkg: DrawingPackage3d) {
+    // 设置该物体的自身视图矩阵
+    this.setUniformMatrix4d(this.globalModelMatrixUniform as string, pkg.modelMat)
+    pkg.innerList.forEach(ele => {
+      this.drawImmediately(ele, ele.textureIndex as number)
+    })
+  }
+
+  /**
+   * Push a `DrawingPackage3d` into `waitingQueue`.
+   */
+  public drawPackageLater(toDraw: DrawingPackage3d) {
     this.waitingQueue.push(toDraw)
   }
 
@@ -203,12 +229,11 @@ export class WebGLHelper3d {
   /**
    * Re-render the canvas using `waitingQueue`. Need new `ctm` and `modelMat`.
    */
-  public reRender(ctm: Mat, modelMat: Mat) {
-    this.setUniformMatrix4d('uWorldMatrix', ctm)
-    this.setUniformMatrix4d('uModelMatrix', modelMat)
+  public reRender(ctm: Mat) {
+    this.setUniformMatrix4d(this.globalWorldMatrixUniform as string, ctm)
     this.clearCanvas()
-    this.waitingQueue.forEach((ele, idx) => {
-      this.drawImmediately(ele, idx)
+    this.waitingQueue.forEach(ele => {
+      this.drawPackageImmediately(ele)
     })
     this.clearWaitingQueue()
   }

@@ -21,17 +21,21 @@ define(["require", "exports", "../WebGLUtils"], function (require, exports, WebG
             this.globalVertexBuffer = null;
             this.globalTextureCoordAttribute = null;
             this.globalTextureSamplerAttribute = null;
+            this.globalWorldMatrixUniform = null;
+            this.globalModelMatrixUniform = null;
             this.waitingQueue = [];
         }
         /**
          * Set some global settings so that you don't need to pass them every time you draw.
          */
-        WebGLHelper3d.prototype.setGlobalSettings = function (_vBuf, _vAttr, _tBuf, _tCoordAttr, _tSamplerAttr) {
+        WebGLHelper3d.prototype.setGlobalSettings = function (_vBuf, _vAttr, _tBuf, _tCoordAttr, _tSamplerAttr, _worldMatUniform, _modelMatUniform) {
             this.globalTextureBuffer = _tBuf;
             this.globalVertexAttribute = _vAttr;
             this.globalVertexBuffer = _vBuf;
             this.globalTextureCoordAttribute = _tCoordAttr;
             this.globalTextureSamplerAttribute = _tSamplerAttr;
+            this.globalWorldMatrixUniform = _worldMatUniform;
+            this.globalModelMatrixUniform = _modelMatUniform;
         };
         /**
          * Create a buffer.
@@ -159,9 +163,20 @@ define(["require", "exports", "../WebGLUtils"], function (require, exports, WebG
             this.drawArrays(this.gl.TRIANGLES, 0, obj.objProcessor.getEffectiveVertexCount());
         };
         /**
-         * Push a `DrawingObject3d` into `waitingQueue`.
+         * Draw a `DrawingPackage3d` immediately using the specified texture.
          */
-        WebGLHelper3d.prototype.drawLater = function (toDraw) {
+        WebGLHelper3d.prototype.drawPackageImmediately = function (pkg) {
+            var _this = this;
+            // 设置该物体的自身视图矩阵
+            this.setUniformMatrix4d(this.globalModelMatrixUniform, pkg.modelMat);
+            pkg.innerList.forEach(function (ele) {
+                _this.drawImmediately(ele, ele.textureIndex);
+            });
+        };
+        /**
+         * Push a `DrawingPackage3d` into `waitingQueue`.
+         */
+        WebGLHelper3d.prototype.drawPackageLater = function (toDraw) {
             this.waitingQueue.push(toDraw);
         };
         /**
@@ -173,13 +188,12 @@ define(["require", "exports", "../WebGLUtils"], function (require, exports, WebG
         /**
          * Re-render the canvas using `waitingQueue`. Need new `ctm` and `modelMat`.
          */
-        WebGLHelper3d.prototype.reRender = function (ctm, modelMat) {
+        WebGLHelper3d.prototype.reRender = function (ctm) {
             var _this = this;
-            this.setUniformMatrix4d('uWorldMatrix', ctm);
-            this.setUniformMatrix4d('uModelMatrix', modelMat);
+            this.setUniformMatrix4d(this.globalWorldMatrixUniform, ctm);
             this.clearCanvas();
-            this.waitingQueue.forEach(function (ele, idx) {
-                _this.drawImmediately(ele, idx);
+            this.waitingQueue.forEach(function (ele) {
+                _this.drawPackageImmediately(ele);
             });
             this.clearWaitingQueue();
         };

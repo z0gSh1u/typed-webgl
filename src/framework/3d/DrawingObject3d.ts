@@ -9,13 +9,15 @@ export class DrawingObject3d {
   private _objFilePath: string // 模型路径
   private _objProcessor: OBJProcessor | null // 绑定的模型处理器
   private _texturePath: string // 材质（贴图）路径
-  public _textureImage: HTMLImageElement | null // 材质（贴图）对象
+  private _textureImage: HTMLImageElement | null // 材质（贴图）对象
+  private _textureIndex: number | null
 
-  constructor(objFilePath: string, texturePath: string) {
+  constructor(objFilePath: string, texturePath: string, textureIndex: number) {
     this._objFilePath = objFilePath
     this._texturePath = texturePath
     this._objProcessor = null
     this._textureImage = null
+    this._textureIndex = textureIndex
     this._processOBJ()
   }
 
@@ -29,6 +31,10 @@ export class DrawingObject3d {
 
   get textureImage() {
     return this._textureImage
+  }
+
+  get textureIndex() {
+    return this._textureIndex
   }
 
   private _processOBJ() {

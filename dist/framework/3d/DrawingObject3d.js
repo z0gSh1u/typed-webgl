@@ -5,11 +5,12 @@ define(["require", "exports", "./OBJProcessor"], function (require, exports, OBJ
     "use strict";
     Object.defineProperty(exports, "__esModule", { value: true });
     var DrawingObject3d = /** @class */ (function () {
-        function DrawingObject3d(objFilePath, texturePath) {
+        function DrawingObject3d(objFilePath, texturePath, textureIndex) {
             this._objFilePath = objFilePath;
             this._texturePath = texturePath;
             this._objProcessor = null;
             this._textureImage = null;
+            this._textureIndex = textureIndex;
             this._processOBJ();
         }
         Object.defineProperty(DrawingObject3d.prototype, "objProcessor", {
@@ -29,6 +30,13 @@ define(["require", "exports", "./OBJProcessor"], function (require, exports, OBJ
         Object.defineProperty(DrawingObject3d.prototype, "textureImage", {
             get: function () {
                 return this._textureImage;
+            },
+            enumerable: true,
+            configurable: true
+        });
+        Object.defineProperty(DrawingObject3d.prototype, "textureIndex", {
+            get: function () {
+                return this._textureIndex;
             },
             enumerable: true,
             configurable: true
