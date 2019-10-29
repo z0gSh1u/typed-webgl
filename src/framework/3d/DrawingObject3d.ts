@@ -1,21 +1,24 @@
-import { OBJProcessor } from "./OBJProcessor"
+// Drawing object (3d) definition.
+// Written by z0gSh1u @ https://github.com/z0gSh1u/typed-webgl
+// for book `Interactive Computer Graphics` (7th Edition).
 
-declare var axios: any
+import { OBJProcessor } from "./OBJProcessor"
 
 export class DrawingObject3d {
 
   private _objFilePath: string // 模型路径
   private _objProcessor: OBJProcessor | null // 绑定的模型处理器
   private _texturePath: string // 材质（贴图）路径
-  public _textureImage: HTMLImageElement | null // 材质（贴图）对象
+  private _textureImage: HTMLImageElement | null // 材质（贴图）对象
+  private _textureIndex: number | null
 
-  constructor(objFilePath: string, texturePath: string) {
+  constructor(objFilePath: string, texturePath?: string, textureIndex?: number) {
     this._objFilePath = objFilePath
-    this._texturePath = texturePath
+    this._texturePath = texturePath as string
     this._objProcessor = null
     this._textureImage = null
+    this._textureIndex = textureIndex as number
     this._processOBJ()
-   // this._processTexture()
   }
 
   get objProcessor() {
@@ -30,27 +33,14 @@ export class DrawingObject3d {
     return this._textureImage
   }
 
+  get textureIndex() {
+    return this._textureIndex
+  }
+
   private _processOBJ() {
     let responseData: string
     responseData = loadFileAJAX(this._objFilePath) as string
     this._objProcessor = new OBJProcessor(responseData)
-  }
-
-  // TODO: synchronize this
-  private _processTexture() {
-
-    let textureImage = new Image()
-    textureImage.src = this._texturePath
-
-    // let curTick = new Date().getTime()
-    // while (1) {
-    //   if (new Date().getTime() - curTick >= 150) {
-    //     break
-    //   }
-    // }
-
-    this._textureImage = textureImage
-    console.log(this._textureImage)
   }
 
 }

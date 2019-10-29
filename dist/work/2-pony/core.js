@@ -1,4 +1,11 @@
 // Core code of 2-Pony.
+var __spreadArrays = (this && this.__spreadArrays) || function () {
+    for (var s = 0, i = 0, il = arguments.length; i < il; i++) s += arguments[i].length;
+    for (var r = Array(s), k = 0, i = 0; i < il; i++)
+        for (var a = arguments[i], j = 0, jl = a.length; j < jl; j++, k++)
+            r[k] = a[j];
+    return r;
+};
 var __importStar = (this && this.__importStar) || function (mod) {
     if (mod && mod.__esModule) return mod;
     var result = {};
@@ -6,7 +13,7 @@ var __importStar = (this && this.__importStar) || function (mod) {
     result["default"] = mod;
     return result;
 };
-define(["require", "exports", "../../framework/3d/WebGLHelper3d", "../../framework/WebGLUtils", "../../framework/3d/DrawingObject3d", "../../3rd-party/MV", "../../3rd-party/initShaders"], function (require, exports, WebGLHelper3d_1, WebGLUtils, DrawingObject3d_1) {
+define(["require", "exports", "../../framework/3d/WebGLHelper3d", "../../framework/WebGLUtils", "../../framework/3d/DrawingObject3d", "../../framework/3d/DrawingPackage3d", "../../3rd-party/MV", "../../3rd-party/initShaders"], function (require, exports, WebGLHelper3d_1, WebGLUtils, DrawingObject3d_1, DrawingPackage3d_1) {
     "use strict";
     Object.defineProperty(exports, "__esModule", { value: true });
     WebGLUtils = __importStar(WebGLUtils);
@@ -18,15 +25,16 @@ define(["require", "exports", "../../framework/3d/WebGLHelper3d", "../../framewo
     var vBuffer; // 顶点缓冲区
     var textureBuffer; // 材质缓冲区
     var ctm; // 当前世界矩阵
-    var modelMat; // 当前物体自身矩阵
-    var Pony = []; // 小马全身
+    var Pony; // 小马全身
+    var PonyTextureManager = []; // 小马材质管理器
+    var Floor; // 地板
     // global status recorder
     var COORD_SYS = {
         SELF: 0, WORLD: 1
     };
     var currentCoordSys = COORD_SYS.WORLD;
     // global constant
-    var ROTATE_DELTA = 10; // 每次转多少度，角度制
+    var ROTATE_DELTA = 5; // 每次转多少度，角度制
     var TRANSLATE_DELTA = 0.010; // 每次平移多少距离，WebGL归一化系
     // main function
     var main = function () {
@@ -38,84 +46,63 @@ define(["require", "exports", "../../framework/3d/WebGLHelper3d", "../../framewo
         // gl.enable(gl.CULL_FACE)
         vBuffer = helper.createBuffer();
         textureBuffer = helper.createBuffer();
-        helper.setGlobalSettings(vBuffer, 'aPosition', textureBuffer, 'aTexCoord');
-        // 不知道为什么小马一出来是背对的，而且还贼高。绕y轴先转180度，再微调一下y坐标位置
-        ctm = rotateY(180);
-        ctm = mult(translate(0, -0.2, 0), ctm);
-        modelMat = mat4();
+        helper.setGlobalSettings(vBuffer, 'aPosition', textureBuffer, 'aTexCoord', 'uTexture', 'uWorldMatrix', 'uModelMatrix');
+        ctm = mat4();
         initializePony();
-        // resetPony()
-        // helper.reRender(ctm, modelMat)
     };
-    var PonyTextureManager = [];
-    // 读入模型数据，初始化JS中的模型信息记录变量
+    /**
+     * 读入模型数据，初始化JS中的模型信息记录变量，传送材质，渲染小马
+     */
     var initializePony = function () {
-        Pony = [
-            new DrawingObject3d_1.DrawingObject3d('./model/normed/Pony/pony.obj', './model/texture/Pony/pony.png'),
-            new DrawingObject3d_1.DrawingObject3d('./model/normed/Pony/tail.obj', './model/texture/Pony/tail.png'),
-            new DrawingObject3d_1.DrawingObject3d('./model/normed/Pony/hairBack.obj', './model/texture/Pony/hairBack.png'),
-            new DrawingObject3d_1.DrawingObject3d('./model/normed/Pony/hairFront.obj', './model/texture/Pony/hairFront.png'),
-            new DrawingObject3d_1.DrawingObject3d('./model/normed/Pony/horn.obj', './model/texture/Pony/horn.png'),
-            new DrawingObject3d_1.DrawingObject3d('./model/normed/Pony/leftEye.obj', './model/texture/Pony/leftEye.png'),
-            new DrawingObject3d_1.DrawingObject3d('./model/normed/Pony/rightEye.obj', './model/texture/Pony/rightEye.png'),
-            new DrawingObject3d_1.DrawingObject3d('./model/normed/Pony/teeth.obj', './model/texture/Pony/teeth.png'),
-        ];
-        function preloadimages(arr) {
-            var newimages = [], loadedimages = 0;
-            var postaction = function (ni) {
-                for (var i_1 = 0; i_1 < ni.length; i_1++) {
-                    Pony[i_1]._textureImage = ni[i_1];
-                    var no = gl.createTexture();
-                    gl.bindTexture(gl.TEXTURE_2D, no);
-                    gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, Pony[i_1]._textureImage);
-                    gl.generateMipmap(gl.TEXTURE_2D);
-                    PonyTextureManager.push(no);
-                }
-                gl.activeTexture(gl.TEXTURE1);
-                gl.bindTexture(gl.TEXTURE_2D, PonyTextureManager[0]);
-                gl.activeTexture(gl.TEXTURE2);
-                gl.bindTexture(gl.TEXTURE_2D, PonyTextureManager[1]);
-                gl.activeTexture(gl.TEXTURE3);
-                gl.bindTexture(gl.TEXTURE_2D, PonyTextureManager[2]);
-                gl.activeTexture(gl.TEXTURE4);
-                gl.bindTexture(gl.TEXTURE_2D, PonyTextureManager[3]);
-                gl.activeTexture(gl.TEXTURE5);
-                gl.bindTexture(gl.TEXTURE_2D, PonyTextureManager[4]);
-                gl.activeTexture(gl.TEXTURE6);
-                gl.bindTexture(gl.TEXTURE_2D, PonyTextureManager[5]);
-                gl.activeTexture(gl.TEXTURE7);
-                gl.bindTexture(gl.TEXTURE_2D, PonyTextureManager[6]);
-                gl.activeTexture(gl.TEXTURE8);
-                gl.bindTexture(gl.TEXTURE_2D, PonyTextureManager[7]);
-                gl.activeTexture(gl.TEXTURE9);
-                gl.bindTexture(gl.TEXTURE_2D, PonyTextureManager[8]);
-                resetPony();
-                helper.reRender(ctm, modelMat);
-            };
-            var arr = (typeof arr != "object") ? [arr] : arr;
-            function imageloadpost() {
-                loadedimages++;
-                if (loadedimages == arr.length) {
-                    postaction(newimages); //call postaction and pass in newimages array as parameter
-                }
+        // 不知道为什么小马一出来是背对的，而且还贼高。绕y轴先转180度，再微调一下y坐标位置
+        var initModelMap = mult(translate(0, -0.3, 0), rotateY(180));
+        // 设定小马模型
+        Pony = new (DrawingPackage3d_1.DrawingPackage3d.bind.apply(DrawingPackage3d_1.DrawingPackage3d, __spreadArrays([void 0, initModelMap], [
+            new DrawingObject3d_1.DrawingObject3d('./model/normed/Pony/pony.obj', './model/texture/Pony/pony.png', 0),
+            new DrawingObject3d_1.DrawingObject3d('./model/normed/Pony/tail.obj', './model/texture/Pony/tail.png', 1),
+            new DrawingObject3d_1.DrawingObject3d('./model/normed/Pony/hairBack.obj', './model/texture/Pony/hairBack.png', 2),
+            new DrawingObject3d_1.DrawingObject3d('./model/normed/Pony/hairFront.obj', './model/texture/Pony/hairFront.png', 3),
+            new DrawingObject3d_1.DrawingObject3d('./model/normed/Pony/horn.obj', './model/texture/Pony/horn.png', 4),
+            new DrawingObject3d_1.DrawingObject3d('./model/normed/Pony/leftEye.obj', './model/texture/Pony/leftEye.png', 5),
+            new DrawingObject3d_1.DrawingObject3d('./model/normed/Pony/rightEye.obj', './model/texture/Pony/rightEye.png', 6),
+            new DrawingObject3d_1.DrawingObject3d('./model/normed/Pony/teeth.obj', './model/texture/Pony/teeth.png', 7),
+        ])))();
+        // 设定地板模型
+        Floor = new (DrawingPackage3d_1.DrawingPackage3d.bind.apply(DrawingPackage3d_1.DrawingPackage3d, __spreadArrays([void 0, mat4()], [
+            new DrawingObject3d_1.DrawingObject3d('./model/normed/Floor/floor.obj')
+        ])))();
+        Floor.setMeshOnly(gl.LINE_LOOP, [0, 0, 0]);
+        // 材质初次加载完成后渲染一次，把材质绑到WebGL预置变量上
+        var renderAfterTextureLoad = function (loadedElements) {
+            // 把素材图像传送到GPU  
+            for (var i = 0; i < loadedElements.length; i++) {
+                var no = gl.createTexture();
+                gl.bindTexture(gl.TEXTURE_2D, no);
+                gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, loadedElements[i]);
+                gl.generateMipmap(gl.TEXTURE_2D);
+                PonyTextureManager.push(no);
             }
-            for (var i = 0; i < arr.length; i++) {
-                newimages[i] = new Image();
-                newimages[i].src = arr[i].texturePath;
-                newimages[i].onload = function () {
-                    imageloadpost();
-                };
-                newimages[i].onerror = function () {
-                    imageloadpost();
-                };
+            // 为预置的材质变量绑定上各部分的材质，材质编号从0开始
+            for (var i = 0; i < PonyTextureManager.length; i++) {
+                // PonyTextureManager.length == 8
+                var cmd1 = "gl.activeTexture(gl.TEXTURE" + i + ")", cmd2 = "gl.bindTexture(gl.TEXTURE_2D, PonyTextureManager[" + i + "])";
+                eval(cmd1);
+                eval(cmd2);
             }
-        }
-        preloadimages(Pony);
+            // 渲染
+            resetScene();
+            helper.reRender(ctm);
+        };
+        // 有需要加载外部材质的，在这里加载
+        Pony.preloadTexture(renderAfterTextureLoad);
     };
-    var resetPony = function () {
+    /**
+     * 重设Pony全身和地面、洗脚盆坐标，但不会重传材质，也不会重设模型视图矩阵
+     */
+    var resetScene = function () {
         helper.clearWaitingQueue();
-        Pony.forEach(function (ele) {
-            helper.drawLater(ele);
+        [Floor, Pony,].forEach(function (ele) {
+            helper.drawPackageLater(ele);
         });
     };
     // 坐标系切换处理
@@ -139,7 +126,11 @@ define(["require", "exports", "../../framework/3d/WebGLHelper3d", "../../framewo
             '87' /*W*/: processWKey,
             '65' /*A*/: processAKey,
             '83' /*S*/: processSKey,
-            '68' /*D*/: processDKey
+            '68' /*D*/: processDKey,
+            '37' /*←*/: processLAKey,
+            '38' /*↑*/: processUAKey,
+            '39' /*→*/: processRAKey,
+            '40' /*↓*/: processDAKey
         };
         window.onkeydown = function (e) {
             if (e && e.keyCode) {
@@ -150,41 +141,101 @@ define(["require", "exports", "../../framework/3d/WebGLHelper3d", "../../framewo
             }
         };
     };
+    // 左方向键，左翻滚
+    var processLAKey = function () {
+        if (currentCoordSys != COORD_SYS.SELF) {
+            return;
+        }
+        var newMat = mult(Pony.modelMat, rotateZ(-ROTATE_DELTA));
+        Pony.setModelMat(newMat);
+        resetScene();
+        helper.reRender(ctm);
+    };
+    // 上方向键，后仰
+    var processUAKey = function () {
+        if (currentCoordSys != COORD_SYS.SELF) {
+            return;
+        }
+        var newMat = mult(Pony.modelMat, rotateX(-ROTATE_DELTA));
+        Pony.setModelMat(newMat);
+        resetScene();
+        helper.reRender(ctm);
+    };
+    // 右方向键，右翻滚
+    var processRAKey = function () {
+        if (currentCoordSys != COORD_SYS.SELF) {
+            return;
+        }
+        var newMat = mult(Pony.modelMat, rotateZ(ROTATE_DELTA));
+        Pony.setModelMat(newMat);
+        resetScene();
+        helper.reRender(ctm);
+    };
+    // 下方向键，前俯
+    var processDAKey = function () {
+        if (currentCoordSys != COORD_SYS.SELF) {
+            return;
+        }
+        var newMat = mult(Pony.modelMat, rotateX(ROTATE_DELTA));
+        Pony.setModelMat(newMat);
+        resetScene();
+        helper.reRender(ctm);
+    };
     // W键，上平移或前进
     var processWKey = function () {
         if (currentCoordSys == COORD_SYS.WORLD) {
             // 向上平移(y axis add)
             ctm = mult(translate(0, TRANSLATE_DELTA, 0), ctm);
-            resetPony();
-            helper.reRender(ctm, mat4());
         }
+        else {
+            // 面向前进
+            var newMat = mult(Pony.modelMat, translate(0, 0, TRANSLATE_DELTA));
+            Pony.setModelMat(newMat);
+        }
+        resetScene();
+        helper.reRender(ctm);
     };
     // A键，左平移或左转向
     var processAKey = function () {
         if (currentCoordSys == COORD_SYS.WORLD) {
             // 向左平移(x axis minus)
             ctm = mult(translate(-TRANSLATE_DELTA, 0, 0), ctm);
-            resetPony();
-            helper.reRender(ctm, mat4());
         }
+        else {
+            // 向左转
+            var newMat = mult(Pony.modelMat, rotateY(-ROTATE_DELTA));
+            Pony.setModelMat(newMat);
+        }
+        resetScene();
+        helper.reRender(ctm);
     };
     // S键，下平移或后退
     var processSKey = function () {
         if (currentCoordSys == COORD_SYS.WORLD) {
             // 向下平移(y axis minus)
             ctm = mult(translate(0, -TRANSLATE_DELTA, 0), ctm);
-            resetPony();
-            helper.reRender(ctm, mat4());
         }
+        else {
+            // 面向后退
+            var newMat = mult(Pony.modelMat, translate(0, 0, -TRANSLATE_DELTA));
+            Pony.setModelMat(newMat);
+        }
+        resetScene();
+        helper.reRender(ctm);
     };
     // D键，右平移或右转向
     var processDKey = function () {
         if (currentCoordSys == COORD_SYS.WORLD) {
             // 向右平移(x axis add)
             ctm = mult(translate(TRANSLATE_DELTA, 0, 0), ctm);
-            resetPony();
-            helper.reRender(ctm, mat4());
         }
+        else {
+            // 向右转
+            var newMat = mult(Pony.modelMat, rotateY(ROTATE_DELTA));
+            Pony.setModelMat(newMat);
+        }
+        resetScene();
+        helper.reRender(ctm);
     };
     // X键，绕世界系X轴旋转
     var processXKey = function () {
@@ -192,8 +243,8 @@ define(["require", "exports", "../../framework/3d/WebGLHelper3d", "../../framewo
             return;
         }
         ctm = mult(rotateX(ROTATE_DELTA), ctm);
-        resetPony();
-        helper.reRender(ctm, mat4());
+        resetScene();
+        helper.reRender(ctm);
     };
     // Y键，绕世界系Y轴旋转
     var processYKey = function () {
@@ -201,8 +252,8 @@ define(["require", "exports", "../../framework/3d/WebGLHelper3d", "../../framewo
             return;
         }
         ctm = mult(rotateY(ROTATE_DELTA), ctm);
-        resetPony();
-        helper.reRender(ctm, mat4());
+        resetScene();
+        helper.reRender(ctm);
     };
     // Z键，绕世界系Z轴旋转
     var processZKey = function () {
@@ -210,8 +261,8 @@ define(["require", "exports", "../../framework/3d/WebGLHelper3d", "../../framewo
             return;
         }
         ctm = mult(rotateZ(ROTATE_DELTA), ctm);
-        resetPony();
-        helper.reRender(ctm, mat4());
+        resetScene();
+        helper.reRender(ctm);
     };
     // do it
     main();

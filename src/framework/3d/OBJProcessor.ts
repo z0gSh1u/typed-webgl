@@ -6,7 +6,7 @@
  * 将OBJ模型文件中的顶点坐标信息和面信息提取到JavaScript
  * 【注意】
  * 1. 面必须是三角形，即f后带三个参数
- * 2. f后每个参数允许形式为 xxx 或 xxx/xxx 或 xxx/xxx/xxx
+ * 2. f后每个参数允许形式为 xxx 或 xxx/xxx 或 xxx/xxx/xxx 或 xxx//xxx
  * 3. 关于OBJ模型文件格式，请参考https://en.wikipedia.org/wiki/Wavefront_.obj_file#File_format
  * 4. 这里面不会对OBJ的顶点坐标归一化，请自行归一化OBJ
  * 5. 不支持OBJ模型中有多个o的情形，请合并模型到只有一个o
@@ -76,7 +76,7 @@ export class OBJProcessor {
    * 获取总共有效的顶点数量。即考虑了顶点的被重用，而不是仅计数v xxx yyy zzz行的数量。
    */
   public getEffectiveVertexCount() {
-    return this._fs.length * 3
+    return this._fs.length * 3 // triangle
   }
 
   private _fillInfoArray() {
@@ -111,13 +111,20 @@ export class OBJProcessor {
             this._fs.push([intCvted[0], intCvted[3], intCvted[6]] as Vec3)
             this._fts.push([intCvted[1], intCvted[4], intCvted[7]] as Vec3)
             this._fns.push([intCvted[2], intCvted[5], intCvted[8]] as Vec3)
-          } else {
+          } else if (ele.match(/f [0-9]+\/[0-9]+ [0-9]+\/[0-9]+ [0-9]+\/[0-9]+/)) {
             // f 2/2 2/2 2/2
             let newEle = ele.substring(2)
             newEle = newEle.replace(/\//g, ' ')
             let intCvted = (newEle.split(' ')).map(str => parseInt(str))
             this._fs.push([intCvted[0], intCvted[2], intCvted[4]] as Vec3)
             this._fts.push([intCvted[1], intCvted[3], intCvted[5]] as Vec3)
+          } else if (ele.match(/f [0-9]+\/\/[0-9]+ [0-9]+\/\/[0-9]+ [0-9]+\/\/[0-9]+/)) {
+            // f x//x x//x x//x
+            let newEle = ele.substring(2)
+            newEle = newEle.replace(/\/\//g, ' ')
+            let intCvted = (newEle.split(' ')).map(str => parseInt(str))
+            this._fs.push([intCvted[0], intCvted[2], intCvted[4]] as Vec3)
+            this._fns.push([intCvted[1], intCvted[3], intCvted[5]] as Vec3)
           }
         }
       } else {
