@@ -13,7 +13,7 @@ import { WebGLDrawingPackage } from '../../framework/2d/WebGLDrawingPackage'
 
 // common variables
 let canvasDOM: HTMLCanvasElement = document.querySelector('#cvs') as HTMLCanvasElement
-let gl: WebGLRenderingContext = canvasDOM.getContext('webgl') as WebGLRenderingContext
+let gl: WebGLRenderingContext = canvasDOM.getContext('experimental-webgl') as WebGLRenderingContext
 let program: WebGLProgram
 let helper: WebGLHelper2d
 let vBuffer: WebGLBuffer, cBuffer: WebGLBuffer

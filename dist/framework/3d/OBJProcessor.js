@@ -140,7 +140,7 @@ define(["require", "exports"], function (require, exports) {
                         else if (ele.match(/f [0-9]+\/\/[0-9]+ [0-9]+\/\/[0-9]+ [0-9]+\/\/[0-9]+/)) {
                             // f x//x x//x x//x
                             var newEle = ele.substring(2);
-                            newEle = newEle.replace(/\//g, ' ');
+                            newEle = newEle.replace(/\/\//g, ' ');
                             var intCvted = (newEle.split(' ')).map(function (str) { return parseInt(str); });
                             _this._fs.push([intCvted[0], intCvted[2], intCvted[4]]);
                             _this._fns.push([intCvted[1], intCvted[3], intCvted[5]]);

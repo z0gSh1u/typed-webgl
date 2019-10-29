@@ -13,7 +13,7 @@ define(["require", "exports", "../../framework/2d/WebGLHelper2d", "../../framewo
     WebGLUtils = __importStar(WebGLUtils);
     // common variables
     var canvasDOM = document.querySelector('#cvs');
-    var gl = canvasDOM.getContext('webgl');
+    var gl = canvasDOM.getContext('experimental-webgl');
     var program;
     var helper;
     var vBuffer, cBuffer;

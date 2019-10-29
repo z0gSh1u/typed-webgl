@@ -121,7 +121,7 @@ export class OBJProcessor {
           } else if (ele.match(/f [0-9]+\/\/[0-9]+ [0-9]+\/\/[0-9]+ [0-9]+\/\/[0-9]+/)) {
             // f x//x x//x x//x
             let newEle = ele.substring(2)
-            newEle = newEle.replace(/\//g, ' ')
+            newEle = newEle.replace(/\/\//g, ' ')
             let intCvted = (newEle.split(' ')).map(str => parseInt(str))
             this._fs.push([intCvted[0], intCvted[2], intCvted[4]] as Vec3)
             this._fns.push([intCvted[1], intCvted[3], intCvted[5]] as Vec3)

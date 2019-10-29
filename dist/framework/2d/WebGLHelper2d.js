@@ -15,7 +15,7 @@ define(["require", "exports", "../WebGLUtils", "./WebGLDrawingPackage"], functio
             this.globalAttributesPerVertex = null;
             this.globalColorAttribute = null;
             this.waitingQueue = new WebGLDrawingPackage_1.WebGLDrawingPackage();
-            this.INTERVAL_MIN = 30;
+            this.INTERVAL_MIN = 20;
             this.lastRenderTick = 0;
             this.rect = this.canvasDOM.getBoundingClientRect();
             this.cvsW = this.canvasDOM.width;

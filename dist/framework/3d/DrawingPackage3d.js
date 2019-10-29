@@ -1,5 +1,5 @@
 // 
-define(["require", "exports"], function (require, exports) {
+define(["require", "exports", "../WebGLUtils"], function (require, exports, WebGLUtils_1) {
     "use strict";
     Object.defineProperty(exports, "__esModule", { value: true });
     var DrawingPackage3d = /** @class */ (function () {
@@ -10,7 +10,52 @@ define(["require", "exports"], function (require, exports) {
             }
             this._innerList = objects.length == 0 ? [] : objects;
             this._modelMat = modelMat;
+            this._meshOnly = false;
+            this._colorMeshOnly = null;
+            this._methodMeshOnly = null;
         }
+        DrawingPackage3d.prototype.setObjectExtraMatrix = function (name, newMat) {
+            for (var i = 0; i < this._innerList.length; i++) {
+                if (this._innerList[i].name == name) {
+                    this._innerList[i].setExtraMatrix(newMat);
+                }
+            }
+        };
+        DrawingPackage3d.prototype.getObjectByName = function (name) {
+            var result = null;
+            this._innerList.forEach(function (ele) {
+                if (ele.name == name) {
+                    result = ele;
+                }
+            });
+            return result;
+        };
+        DrawingPackage3d.prototype.setMeshOnly = function (method, color8bit) {
+            this._meshOnly = true;
+            this._colorMeshOnly = WebGLUtils_1.normalize8bitColor(color8bit);
+            this._methodMeshOnly = method;
+        };
+        Object.defineProperty(DrawingPackage3d.prototype, "colorMeshOnly", {
+            get: function () {
+                return this._colorMeshOnly;
+            },
+            enumerable: true,
+            configurable: true
+        });
+        Object.defineProperty(DrawingPackage3d.prototype, "methodMeshOnly", {
+            get: function () {
+                return this._methodMeshOnly;
+            },
+            enumerable: true,
+            configurable: true
+        });
+        Object.defineProperty(DrawingPackage3d.prototype, "meshOnly", {
+            get: function () {
+                return this._meshOnly;
+            },
+            enumerable: true,
+            configurable: true
+        });
         Object.defineProperty(DrawingPackage3d.prototype, "modelMat", {
             get: function () {
                 return this._modelMat;

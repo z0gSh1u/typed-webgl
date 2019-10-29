@@ -19,8 +19,9 @@ export class WebGLHelper3d {
   private globalTextureSamplerAttribute: string | null
   private globalWorldMatrixUniform: string | null
   private globalModelMatrixUniform: string | null
+  private globalExtraMatrixUniform: string | null
 
-
+  private renderingLock:boolean
   private waitingQueue: Array<DrawingPackage3d>
 
   constructor(_canvasDOM: HTMLCanvasElement, _gl: WebGLRenderingContext, _program: WebGLProgram) {
@@ -34,7 +35,9 @@ export class WebGLHelper3d {
     this.globalTextureSamplerAttribute = null
     this.globalWorldMatrixUniform = null
     this.globalModelMatrixUniform = null
+    this.globalExtraMatrixUniform = null
     this.waitingQueue = []
+    this.renderingLock = false
   }
 
   /**
@@ -47,7 +50,8 @@ export class WebGLHelper3d {
     _tCoordAttr: string,
     _tSamplerAttr: string,
     _worldMatUniform: string,
-    _modelMatUniform: string) {
+    _modelMatUniform: string,
+    _extraMatUniform:string) {
     this.globalTextureBuffer = _tBuf
     this.globalVertexAttribute = _vAttr
     this.globalVertexBuffer = _vBuf
@@ -55,6 +59,7 @@ export class WebGLHelper3d {
     this.globalTextureSamplerAttribute = _tSamplerAttr
     this.globalWorldMatrixUniform = _worldMatUniform
     this.globalModelMatrixUniform = _modelMatUniform
+    this.globalExtraMatrixUniform = _extraMatUniform
   }
 
   /**
@@ -169,9 +174,9 @@ export class WebGLHelper3d {
   }
 
   /**
-   * Draw a `DrawingObject3d` immediately using the specified texture. `textureIndex` starts from 0.
+   * Draw a `DrawingObject3d` without texture. (Mesh only.)
    */
-  public drawImmediately(obj: DrawingObject3d, textureIndex: number) {
+  public drawImmediatelyMeshOnly(obj: DrawingObject3d, method: number, color: Vec4) {
     // 准备mesh绘制
     let meshVertices: Array<Vec3> = []
     obj.objProcessor.fs.forEach(face => {
@@ -183,22 +188,65 @@ export class WebGLHelper3d {
     // 发送三角形顶点信息
     this.vertexSettingMode(this.globalVertexBuffer as WebGLBuffer, this.globalVertexAttribute as string, 3)
     this.sendDataToBuffer(flatten(meshVertices))
-    // 准备材质绘制
-    this.textureSettingMode(this.globalTextureBuffer as WebGLBuffer, this.globalTextureCoordAttribute as string)
-    // 发送材质顶点信息
-    let textureVertices: Array<Vec2> = []
-    obj.objProcessor.fts.forEach(face => {
+    // 纯色纹理
+    let texture = this.gl.createTexture()
+    this.gl.bindTexture(this.gl.TEXTURE_2D, texture)
+    this.gl.texImage2D(this.gl.TEXTURE_2D, 0, this.gl.RGBA, 1, 1, 0, this.gl.RGBA, this.gl.UNSIGNED_BYTE,
+      // notice it is Uint8 here, no need to normalize
+      new Uint8Array([...color.map(x => Math.floor(x * 255))] as Vec3))
+    this.drawArrays(method, 0, obj.objProcessor.getEffectiveVertexCount())
+  }
+
+  /**
+   * Draw a `DrawingObject3d` immediately using the specified texture. `textureIndex` starts from 0.
+   */
+  public drawImmediately(obj: DrawingObject3d, textureIndex: number) {
+    // 处理extraMatrix
+    this.setUniformMatrix4d(this.globalExtraMatrixUniform as string, obj.extraMatrix)
+    // 准备mesh绘制
+    let meshVertices: Array<Vec3> = []
+    obj.objProcessor.fs.forEach(face => {
       face.forEach(vOfFace => {
         let subscript = vOfFace - 1
-        textureVertices.push(obj.objProcessor.vts[subscript])
+        meshVertices.push(obj.objProcessor.vs[subscript]) // xyzxyzxyz
       })
     })
-    this.sendDataToBuffer(flatten(textureVertices))
+    // 发送三角形顶点信息
+    this.vertexSettingMode(this.globalVertexBuffer as WebGLBuffer, this.globalVertexAttribute as string, 3)
+    this.sendDataToBuffer(flatten(meshVertices))
 
-    // 根据前端传来的材质要求，让着色器调取显存中对应的材质
-    this.gl.uniform1i(this.getUniformLocation(this.globalTextureSamplerAttribute as string), textureIndex)
+    if (obj.objProcessor.fts.length != 0) {
+      // 准备材质绘制
+      this.textureSettingMode(this.globalTextureBuffer as WebGLBuffer, this.globalTextureCoordAttribute as string)
+      // 发送材质顶点信息
+      let textureVertices: Array<Vec2> = []
+      obj.objProcessor.fts.forEach(face => {
+        face.forEach(vOfFace => {
+          let subscript = vOfFace - 1
+          textureVertices.push(obj.objProcessor.vts[subscript])
+        })
+      })
+      this.sendDataToBuffer(flatten(textureVertices))
+      // 根据前端传来的材质要求，让着色器调取显存中对应的材质
+      this.gl.uniform1i(this.getUniformLocation(this.globalTextureSamplerAttribute as string), textureIndex)
+    } else {
+      throw "[drawImmediately] Cannot find texture vertices info. Framework doesn't support this situation."
+    }
+
     // 综合绘制
     this.drawArrays(this.gl.TRIANGLES, 0, obj.objProcessor.getEffectiveVertexCount())
+  }
+
+
+  /**
+   * Draw a `DrawingPackage3d` immediately using the specified texture.
+   */
+  public drawPackageImmediatelyMeshOnly(pkg: DrawingPackage3d) {
+    // 设置该物体的自身视图矩阵
+    this.setUniformMatrix4d(this.globalModelMatrixUniform as string, pkg.modelMat)
+    pkg.innerList.forEach(ele => {
+      this.drawImmediatelyMeshOnly(ele, pkg.methodMeshOnly as number, pkg.colorMeshOnly as Vec4)
+    })
   }
 
   /**
@@ -227,15 +275,24 @@ export class WebGLHelper3d {
   }
 
   /**
-   * Re-render the canvas using `waitingQueue`. Need new `ctm` and `modelMat`.
+   * Re-render the canvas using `waitingQueue`. Need the `ctm`.
    */
   public reRender(ctm: Mat) {
+    if (this.renderingLock) {
+      return
+    }
+    this.renderingLock = true
     this.setUniformMatrix4d(this.globalWorldMatrixUniform as string, ctm)
     this.clearCanvas()
     this.waitingQueue.forEach(ele => {
-      this.drawPackageImmediately(ele)
+      if (!ele.meshOnly) {
+        this.drawPackageImmediately(ele)
+      } else {
+        this.drawPackageImmediatelyMeshOnly(ele)
+      }
     })
     this.clearWaitingQueue()
+    this.renderingLock = false
   }
 
 }

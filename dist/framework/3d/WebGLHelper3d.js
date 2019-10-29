@@ -23,12 +23,14 @@ define(["require", "exports", "../WebGLUtils"], function (require, exports, WebG
             this.globalTextureSamplerAttribute = null;
             this.globalWorldMatrixUniform = null;
             this.globalModelMatrixUniform = null;
+            this.globalExtraMatrixUniform = null;
             this.waitingQueue = [];
+            this.renderingLock = false;
         }
         /**
          * Set some global settings so that you don't need to pass them every time you draw.
          */
-        WebGLHelper3d.prototype.setGlobalSettings = function (_vBuf, _vAttr, _tBuf, _tCoordAttr, _tSamplerAttr, _worldMatUniform, _modelMatUniform) {
+        WebGLHelper3d.prototype.setGlobalSettings = function (_vBuf, _vAttr, _tBuf, _tCoordAttr, _tSamplerAttr, _worldMatUniform, _modelMatUniform, _extraMatUniform) {
             this.globalTextureBuffer = _tBuf;
             this.globalVertexAttribute = _vAttr;
             this.globalVertexBuffer = _vBuf;
@@ -36,6 +38,7 @@ define(["require", "exports", "../WebGLUtils"], function (require, exports, WebG
             this.globalTextureSamplerAttribute = _tSamplerAttr;
             this.globalWorldMatrixUniform = _worldMatUniform;
             this.globalModelMatrixUniform = _modelMatUniform;
+            this.globalExtraMatrixUniform = _extraMatUniform;
         };
         /**
          * Create a buffer.
@@ -132,9 +135,9 @@ define(["require", "exports", "../WebGLUtils"], function (require, exports, WebG
             this.vertexSettingMode(tBuf, tAttr, 2, this.gl.FLOAT);
         };
         /**
-         * Draw a `DrawingObject3d` immediately using the specified texture. `textureIndex` starts from 0.
+         * Draw a `DrawingObject3d` without texture. (Mesh only.)
          */
-        WebGLHelper3d.prototype.drawImmediately = function (obj, textureIndex) {
+        WebGLHelper3d.prototype.drawImmediatelyMeshOnly = function (obj, method, color) {
             // 准备mesh绘制
             var meshVertices = [];
             obj.objProcessor.fs.forEach(function (face) {
@@ -146,21 +149,62 @@ define(["require", "exports", "../WebGLUtils"], function (require, exports, WebG
             // 发送三角形顶点信息
             this.vertexSettingMode(this.globalVertexBuffer, this.globalVertexAttribute, 3);
             this.sendDataToBuffer(flatten(meshVertices));
-            // 准备材质绘制
-            this.textureSettingMode(this.globalTextureBuffer, this.globalTextureCoordAttribute);
-            // 发送材质顶点信息
-            var textureVertices = [];
-            obj.objProcessor.fts.forEach(function (face) {
+            // 纯色纹理
+            var texture = this.gl.createTexture();
+            this.gl.bindTexture(this.gl.TEXTURE_2D, texture);
+            this.gl.texImage2D(this.gl.TEXTURE_2D, 0, this.gl.RGBA, 1, 1, 0, this.gl.RGBA, this.gl.UNSIGNED_BYTE, 
+            // notice it is Uint8 here, no need to normalize
+            new Uint8Array(__spreadArrays(color.map(function (x) { return Math.floor(x * 255); }))));
+            this.drawArrays(method, 0, obj.objProcessor.getEffectiveVertexCount());
+        };
+        /**
+         * Draw a `DrawingObject3d` immediately using the specified texture. `textureIndex` starts from 0.
+         */
+        WebGLHelper3d.prototype.drawImmediately = function (obj, textureIndex) {
+            // 处理extraMatrix
+            this.setUniformMatrix4d(this.globalExtraMatrixUniform, obj.extraMatrix);
+            // 准备mesh绘制
+            var meshVertices = [];
+            obj.objProcessor.fs.forEach(function (face) {
                 face.forEach(function (vOfFace) {
                     var subscript = vOfFace - 1;
-                    textureVertices.push(obj.objProcessor.vts[subscript]);
+                    meshVertices.push(obj.objProcessor.vs[subscript]); // xyzxyzxyz
                 });
             });
-            this.sendDataToBuffer(flatten(textureVertices));
-            // 根据前端传来的材质要求，让着色器调取显存中对应的材质
-            this.gl.uniform1i(this.getUniformLocation(this.globalTextureSamplerAttribute), textureIndex);
+            // 发送三角形顶点信息
+            this.vertexSettingMode(this.globalVertexBuffer, this.globalVertexAttribute, 3);
+            this.sendDataToBuffer(flatten(meshVertices));
+            if (obj.objProcessor.fts.length != 0) {
+                // 准备材质绘制
+                this.textureSettingMode(this.globalTextureBuffer, this.globalTextureCoordAttribute);
+                // 发送材质顶点信息
+                var textureVertices_1 = [];
+                obj.objProcessor.fts.forEach(function (face) {
+                    face.forEach(function (vOfFace) {
+                        var subscript = vOfFace - 1;
+                        textureVertices_1.push(obj.objProcessor.vts[subscript]);
+                    });
+                });
+                this.sendDataToBuffer(flatten(textureVertices_1));
+                // 根据前端传来的材质要求，让着色器调取显存中对应的材质
+                this.gl.uniform1i(this.getUniformLocation(this.globalTextureSamplerAttribute), textureIndex);
+            }
+            else {
+                throw "[drawImmediately] Cannot find texture vertices info. Framework doesn't support this situation.";
+            }
             // 综合绘制
             this.drawArrays(this.gl.TRIANGLES, 0, obj.objProcessor.getEffectiveVertexCount());
+        };
+        /**
+         * Draw a `DrawingPackage3d` immediately using the specified texture.
+         */
+        WebGLHelper3d.prototype.drawPackageImmediatelyMeshOnly = function (pkg) {
+            var _this = this;
+            // 设置该物体的自身视图矩阵
+            this.setUniformMatrix4d(this.globalModelMatrixUniform, pkg.modelMat);
+            pkg.innerList.forEach(function (ele) {
+                _this.drawImmediatelyMeshOnly(ele, pkg.methodMeshOnly, pkg.colorMeshOnly);
+            });
         };
         /**
          * Draw a `DrawingPackage3d` immediately using the specified texture.
@@ -186,16 +230,26 @@ define(["require", "exports", "../WebGLUtils"], function (require, exports, WebG
             this.waitingQueue = [];
         };
         /**
-         * Re-render the canvas using `waitingQueue`. Need new `ctm` and `modelMat`.
+         * Re-render the canvas using `waitingQueue`. Need the `ctm`.
          */
         WebGLHelper3d.prototype.reRender = function (ctm) {
             var _this = this;
+            if (this.renderingLock) {
+                return;
+            }
+            this.renderingLock = true;
             this.setUniformMatrix4d(this.globalWorldMatrixUniform, ctm);
             this.clearCanvas();
             this.waitingQueue.forEach(function (ele) {
-                _this.drawPackageImmediately(ele);
+                if (!ele.meshOnly) {
+                    _this.drawPackageImmediately(ele);
+                }
+                else {
+                    _this.drawPackageImmediatelyMeshOnly(ele);
+                }
             });
             this.clearWaitingQueue();
+            this.renderingLock = false;
         };
         return WebGLHelper3d;
     }());

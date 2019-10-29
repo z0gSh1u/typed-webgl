@@ -19,6 +19,9 @@ let ctm: Mat // 当前世界矩阵
 
 let Pony: DrawingPackage3d // 小马全身
 let PonyTextureManager: Array<WebGLTexture> = [] // 小马材质管理器
+let PonyTailAngle: number // 小马尾部当前旋转角度（DEG）
+let PonyTailDirection: number // 小马尾部旋转方向，-1或1
+let Floor: DrawingPackage3d // 地板
 
 // global status recorder
 let COORD_SYS = {
@@ -29,6 +32,8 @@ let currentCoordSys = COORD_SYS.WORLD
 // global constant
 const ROTATE_DELTA = 5 // 每次转多少度，角度制
 const TRANSLATE_DELTA = 0.010 // 每次平移多少距离，WebGL归一化系
+const TAIL_ROTATE_DELTA = 2
+const TAIL_ROTATE_LIMIT = 6
 
 // main function
 let main = () => {
@@ -42,10 +47,11 @@ let main = () => {
 
   vBuffer = helper.createBuffer()
   textureBuffer = helper.createBuffer()
-  helper.setGlobalSettings(vBuffer, 'aPosition', textureBuffer, 'aTexCoord', 'uTexture', 'uWorldMatrix', 'uModelMatrix')
+  helper.setGlobalSettings(
+    vBuffer, 'aPosition', textureBuffer, 'aTexCoord', 'uTexture', 'uWorldMatrix', 'uModelMatrix', 'uExtraMatrix'
+  )
 
   ctm = mat4()
-
   initializePony()
 
 }
@@ -56,19 +62,29 @@ let main = () => {
 let initializePony = () => {
 
   // 不知道为什么小马一出来是背对的，而且还贼高。绕y轴先转180度，再微调一下y坐标位置
-  let initModelMap = mult(translate(0, -0.2, 0), rotateY(180)) as Mat
+  let initModelMap = mult(translate(0, -0.3, 0), rotateY(180)) as Mat
 
+  // 设定小马尾部角度
+  PonyTailAngle = 0
+  PonyTailDirection = -1
+
+  // 设定小马模型
   Pony = new DrawingPackage3d(initModelMap, ...[
-    new DrawingObject3d('./model/normed/Pony/pony.obj', './model/texture/Pony/pony.png', 0), // 身体
-    new DrawingObject3d('./model/normed/Pony/tail.obj', './model/texture/Pony/tail.png', 1), // 尾巴
-    new DrawingObject3d('./model/normed/Pony/hairBack.obj', './model/texture/Pony/hairBack.png', 2), // 头发后
-    new DrawingObject3d('./model/normed/Pony/hairFront.obj', './model/texture/Pony/hairFront.png', 3), // 头发前
-    new DrawingObject3d('./model/normed/Pony/horn.obj', './model/texture/Pony/horn.png', 4), // 角
-    new DrawingObject3d('./model/normed/Pony/leftEye.obj', './model/texture/Pony/leftEye.png', 5), // 左眼
-    new DrawingObject3d('./model/normed/Pony/rightEye.obj', './model/texture/Pony/rightEye.png', 6), // 右眼
-    new DrawingObject3d('./model/normed/Pony/teeth.obj', './model/texture/Pony/teeth.png', 7), // 牙
-    // new DrawingObject3d('./model/normed/Pen/pen.obj', './model/texture/Pen/pen.png')
+    new DrawingObject3d('body', './model/normed/Pony/pony.obj', './model/texture/Pony/pony.png', 0), // 身体
+    new DrawingObject3d('tail', './model/normed/Pony/tail.obj', './model/texture/Pony/tail.png', 1), // 尾巴
+    new DrawingObject3d('hairBack', './model/normed/Pony/hairBack.obj', './model/texture/Pony/hairBack.png', 2), // 头发后
+    new DrawingObject3d('hairFront', './model/normed/Pony/hairFront.obj', './model/texture/Pony/hairFront.png', 3), // 头发前
+    new DrawingObject3d('horn', './model/normed/Pony/horn.obj', './model/texture/Pony/horn.png', 4), // 角
+    new DrawingObject3d('leftEye', './model/normed/Pony/leftEye.obj', './model/texture/Pony/leftEye.png', 5), // 左眼
+    new DrawingObject3d('rightEye', './model/normed/Pony/rightEye.obj', './model/texture/Pony/rightEye.png', 6), // 右眼
+    new DrawingObject3d('teeth', './model/normed/Pony/teeth.obj', './model/texture/Pony/teeth.png', 7), // 牙
   ])
+
+  // 设定地板模型
+  Floor = new DrawingPackage3d(mat4(), ...[
+    new DrawingObject3d('floor', './model/normed/Floor/floor.obj')
+  ])
+  Floor.setMeshOnly(gl.LINE_LOOP, [0, 0, 0])
 
   // 材质初次加载完成后渲染一次，把材质绑到WebGL预置变量上
   let renderAfterTextureLoad = (loadedElements: HTMLImageElement[]) => {
@@ -87,20 +103,23 @@ let initializePony = () => {
       eval(cmd1); eval(cmd2)
     }
     // 渲染
-    resetPony()
+    resetScene()
     helper.reRender(ctm)
   }
 
+  // 有需要加载外部材质的，在这里加载
   Pony.preloadTexture(renderAfterTextureLoad)
 
 }
 
 /**
- * 重设Pony全身坐标，但不会重传材质，也不会重设模型视图矩阵
+ * 重设Pony全身和地面、洗脚盆坐标，但不会重传材质，也不会重设模型视图矩阵
  */
-let resetPony = () => {
-  helper.clearWaitingQueue()
-  helper.drawPackageLater(Pony)
+let resetScene = () => {
+  helper.clearWaitingQueue();
+  [Floor, Pony, /*Pen*/].forEach(ele => {
+    helper.drawPackageLater(ele)
+  })
 }
 
 // 坐标系切换处理
@@ -139,6 +158,17 @@ let listenKeyboard = () => {
   }
 }
 
+// 尾部旋转处理器
+let rotateTail = () => {
+  let tailObject = Pony.getObjectByName('tail') as DrawingObject3d
+  if (PonyTailAngle >= TAIL_ROTATE_LIMIT || PonyTailAngle <= -TAIL_ROTATE_LIMIT) {
+    PonyTailDirection *= -1
+  }
+  PonyTailAngle += PonyTailDirection * TAIL_ROTATE_DELTA
+  let newTailExtra = mult(tailObject.extraMatrix, rotateY(PonyTailAngle))
+  Pony.setObjectExtraMatrix('tail', newTailExtra as Mat)
+}
+
 // 左方向键，左翻滚
 let processLAKey = () => {
   if (currentCoordSys != COORD_SYS.SELF) {
@@ -146,7 +176,7 @@ let processLAKey = () => {
   }
   let newMat = mult(Pony.modelMat, rotateZ(-ROTATE_DELTA))
   Pony.setModelMat(newMat as Mat)
-  resetPony()
+  resetScene()
   helper.reRender(ctm)
 }
 // 上方向键，后仰
@@ -156,7 +186,7 @@ let processUAKey = () => {
   }
   let newMat = mult(Pony.modelMat, rotateX(-ROTATE_DELTA))
   Pony.setModelMat(newMat as Mat)
-  resetPony()
+  resetScene()
   helper.reRender(ctm)
 }
 // 右方向键，右翻滚
@@ -166,7 +196,7 @@ let processRAKey = () => {
   }
   let newMat = mult(Pony.modelMat, rotateZ(ROTATE_DELTA))
   Pony.setModelMat(newMat as Mat)
-  resetPony()
+  resetScene()
   helper.reRender(ctm)
 }
 // 下方向键，前俯
@@ -176,7 +206,7 @@ let processDAKey = () => {
   }
   let newMat = mult(Pony.modelMat, rotateX(ROTATE_DELTA))
   Pony.setModelMat(newMat as Mat)
-  resetPony()
+  resetScene()
   helper.reRender(ctm)
 }
 // W键，上平移或前进
@@ -187,9 +217,10 @@ let processWKey = () => {
   } else {
     // 面向前进
     let newMat = mult(Pony.modelMat, translate(0, 0, TRANSLATE_DELTA))
-    Pony.setModelMat(newMat as Mat)
+    Pony.setModelMat(newMat as Mat);
+    rotateTail()
   }
-  resetPony()
+  resetScene()
   helper.reRender(ctm)
 }
 // A键，左平移或左转向
@@ -202,7 +233,7 @@ let processAKey = () => {
     let newMat = mult(Pony.modelMat, rotateY(-ROTATE_DELTA))
     Pony.setModelMat(newMat as Mat)
   }
-  resetPony()
+  resetScene()
   helper.reRender(ctm)
 }
 // S键，下平移或后退
@@ -214,8 +245,9 @@ let processSKey = () => {
     // 面向后退
     let newMat = mult(Pony.modelMat, translate(0, 0, -TRANSLATE_DELTA))
     Pony.setModelMat(newMat as Mat)
+    rotateTail()
   }
-  resetPony()
+  resetScene()
   helper.reRender(ctm)
 }
 // D键，右平移或右转向
@@ -228,7 +260,7 @@ let processDKey = () => {
     let newMat = mult(Pony.modelMat, rotateY(ROTATE_DELTA))
     Pony.setModelMat(newMat as Mat)
   }
-  resetPony()
+  resetScene()
   helper.reRender(ctm)
 }
 // X键，绕世界系X轴旋转
@@ -237,7 +269,7 @@ let processXKey = () => {
     return
   }
   ctm = mult(rotateX(ROTATE_DELTA), ctm) as Mat
-  resetPony()
+  resetScene()
   helper.reRender(ctm)
 }
 // Y键，绕世界系Y轴旋转
@@ -246,7 +278,7 @@ let processYKey = () => {
     return
   }
   ctm = mult(rotateY(ROTATE_DELTA), ctm) as Mat
-  resetPony()
+  resetScene()
   helper.reRender(ctm)
 }
 // Z键，绕世界系Z轴旋转
@@ -255,7 +287,7 @@ let processZKey = () => {
     return
   }
   ctm = mult(rotateZ(ROTATE_DELTA), ctm) as Mat
-  resetPony()
+  resetScene()
   helper.reRender(ctm)
 }
 
