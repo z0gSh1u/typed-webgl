@@ -43,7 +43,6 @@ let main = () => {
   program = WebGLUtils.initializeShaders(gl, './vShader.glsl', './fShader.glsl')
   helper = new WebGLHelper3d(canvasDOM, gl, program)
   gl.enable(gl.DEPTH_TEST)
-  // gl.enable(gl.CULL_FACE)
 
   vBuffer = helper.createBuffer()
   textureBuffer = helper.createBuffer()

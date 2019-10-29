@@ -47,7 +47,6 @@ define(["require", "exports", "../../framework/3d/WebGLHelper3d", "../../framewo
         program = WebGLUtils.initializeShaders(gl, './vShader.glsl', './fShader.glsl');
         helper = new WebGLHelper3d_1.WebGLHelper3d(canvasDOM, gl, program);
         gl.enable(gl.DEPTH_TEST);
-        // gl.enable(gl.CULL_FACE)
         vBuffer = helper.createBuffer();
         textureBuffer = helper.createBuffer();
         helper.setGlobalSettings(vBuffer, 'aPosition', textureBuffer, 'aTexCoord', 'uTexture', 'uWorldMatrix', 'uModelMatrix', 'uExtraMatrix');
