@@ -22,6 +22,13 @@ let PonyTextureManager: Array<WebGLTexture> = [] // 小马材质管理器
 let PonyTailAngle: number // 小马尾部当前旋转角度（DEG）
 let PonyTailDirection: number // 小马尾部旋转方向，-1或1
 let Floor: DrawingPackage3d // 地板
+let id: number//计时器编号
+let isMouseDown = false
+let mouseLastPos: Vec2//上一次鼠标位置
+let vX = 0//X轴旋转速度
+let vY = 0//Y轴旋转速度
+let curTick: number
+let lastTick: number
 
 // global status recorder
 let COORD_SYS = {
@@ -34,6 +41,10 @@ const ROTATE_DELTA = 5 // 每次转多少度，角度制
 const TRANSLATE_DELTA = 0.010 // 每次平移多少距离，WebGL归一化系
 const TAIL_ROTATE_DELTA = 2
 const TAIL_ROTATE_LIMIT = 6
+const FRICTION = 0.0006//模拟摩擦力，每毫秒降低的速度
+const INTERVAL = 40//速度降低的毫秒间隔
+const ROTATE_PER_X = 0.2//X轴鼠标拖动旋转的比例
+const ROTATE_PER_Y = 0.2//Y轴鼠标拖动旋转的比例
 
 // main function
 let main = () => {
@@ -113,7 +124,7 @@ let initializePony = () => {
 }
 
 /**
- * 重设Pony全身和地面、洗脚盆坐标，但不会重传材质，也不会重设模型视图矩阵
+ * 重设Pony全身和地面坐标，但不会重传材质，也不会重设模型视图矩阵
  */
 let resetScene = () => {
   helper.clearWaitingQueue();
@@ -291,6 +302,77 @@ let processZKey = () => {
   helper.reRender(ctm)
 }
 
+/*
+全局变量，调试完放到最顶上
+**/
+
+
+//鼠标按下时随鼠标旋转
+let rotateWithMouse = (e: MouseEvent) => {
+  if (!isMouseDown) {
+    return
+  }
+  let mousePos = [e.offsetX, e.offsetY] as Vec2
+  lastTick = curTick
+  curTick = new Date().getTime()
+  let disX = (mousePos[0] - mouseLastPos[0]) * ROTATE_PER_X
+  let disY = (mousePos[1] - mouseLastPos[1]) * ROTATE_PER_Y
+  vX = disX / (curTick - lastTick)
+  vY = disY / (curTick - lastTick)
+  ctm = mult(rotateX(-disY), ctm) as Mat
+  ctm = mult(rotateY(-disX), ctm) as Mat
+  mouseLastPos = mousePos
+  resetScene()
+  helper.reRender(ctm)
+}
+
+let abs = (n: number): number => {
+  return n < 0 ? -n : n
+}
+
+let sign = (n: number): number => {
+  if (n == 0) {
+    return 0
+  } else {
+    return abs(n) / n
+  }
+}
+
+//松开鼠标后每INTERVAL毫秒进行一次减速
+let slowDown = () => {
+  if (vX == 0 && vY == 0) {
+    clearInterval(id)
+    return
+  }
+  ctm = mult(rotateX(-vY * INTERVAL), ctm) as Mat
+  ctm = mult(rotateY(-vX * INTERVAL), ctm) as Mat
+  vX = abs(vX) <= FRICTION * INTERVAL ? 0 : vX - FRICTION * INTERVAL * sign(vX)
+  vY = abs(vY) <= FRICTION * INTERVAL ? 0 : vY - FRICTION * INTERVAL * sign(vY)
+  resetScene()
+  helper.reRender(ctm)
+}
+
+//鼠标侦听
+let listenMouse = () => {
+  canvasDOM.onmousedown = (e: MouseEvent) => {
+    isMouseDown = true
+    mouseLastPos = [e.offsetX, e.offsetY] as Vec2
+    clearInterval(id)
+    curTick = lastTick = new Date().getTime()
+  }
+  canvasDOM.onmouseup = (e: MouseEvent) => {
+    isMouseDown = false
+    clearInterval(id)
+    id = setInterval(slowDown, INTERVAL)
+  }
+  canvasDOM.onmousemove = (e: MouseEvent) => {
+    rotateWithMouse(e)
+  }
+}
+
+
+
 // do it
 main()
 listenKeyboard()
+listenMouse()
