@@ -27,6 +27,8 @@ define(["require", "exports", "../../framework/3d/WebGLHelper3d", "../../framewo
     var ctm; // 当前世界矩阵
     var Pony; // 小马全身
     var PonyTextureManager = []; // 小马材质管理器
+    var PonyTailAngle; // 小马尾部当前旋转角度（DEG）
+    var PonyTailDirection; // 小马尾部旋转方向，-1或1
     var Floor; // 地板
     // global status recorder
     var COORD_SYS = {
@@ -36,6 +38,8 @@ define(["require", "exports", "../../framework/3d/WebGLHelper3d", "../../framewo
     // global constant
     var ROTATE_DELTA = 5; // 每次转多少度，角度制
     var TRANSLATE_DELTA = 0.010; // 每次平移多少距离，WebGL归一化系
+    var TAIL_ROTATE_DELTA = 2;
+    var TAIL_ROTATE_LIMIT = 6;
     // main function
     var main = function () {
         // initialization
@@ -46,7 +50,7 @@ define(["require", "exports", "../../framework/3d/WebGLHelper3d", "../../framewo
         // gl.enable(gl.CULL_FACE)
         vBuffer = helper.createBuffer();
         textureBuffer = helper.createBuffer();
-        helper.setGlobalSettings(vBuffer, 'aPosition', textureBuffer, 'aTexCoord', 'uTexture', 'uWorldMatrix', 'uModelMatrix');
+        helper.setGlobalSettings(vBuffer, 'aPosition', textureBuffer, 'aTexCoord', 'uTexture', 'uWorldMatrix', 'uModelMatrix', 'uExtraMatrix');
         ctm = mat4();
         initializePony();
     };
@@ -56,20 +60,23 @@ define(["require", "exports", "../../framework/3d/WebGLHelper3d", "../../framewo
     var initializePony = function () {
         // 不知道为什么小马一出来是背对的，而且还贼高。绕y轴先转180度，再微调一下y坐标位置
         var initModelMap = mult(translate(0, -0.3, 0), rotateY(180));
+        // 设定小马尾部角度
+        PonyTailAngle = 0;
+        PonyTailDirection = -1;
         // 设定小马模型
         Pony = new (DrawingPackage3d_1.DrawingPackage3d.bind.apply(DrawingPackage3d_1.DrawingPackage3d, __spreadArrays([void 0, initModelMap], [
-            new DrawingObject3d_1.DrawingObject3d('./model/normed/Pony/pony.obj', './model/texture/Pony/pony.png', 0),
-            new DrawingObject3d_1.DrawingObject3d('./model/normed/Pony/tail.obj', './model/texture/Pony/tail.png', 1),
-            new DrawingObject3d_1.DrawingObject3d('./model/normed/Pony/hairBack.obj', './model/texture/Pony/hairBack.png', 2),
-            new DrawingObject3d_1.DrawingObject3d('./model/normed/Pony/hairFront.obj', './model/texture/Pony/hairFront.png', 3),
-            new DrawingObject3d_1.DrawingObject3d('./model/normed/Pony/horn.obj', './model/texture/Pony/horn.png', 4),
-            new DrawingObject3d_1.DrawingObject3d('./model/normed/Pony/leftEye.obj', './model/texture/Pony/leftEye.png', 5),
-            new DrawingObject3d_1.DrawingObject3d('./model/normed/Pony/rightEye.obj', './model/texture/Pony/rightEye.png', 6),
-            new DrawingObject3d_1.DrawingObject3d('./model/normed/Pony/teeth.obj', './model/texture/Pony/teeth.png', 7),
+            new DrawingObject3d_1.DrawingObject3d('body', './model/normed/Pony/pony.obj', './model/texture/Pony/pony.png', 0),
+            new DrawingObject3d_1.DrawingObject3d('tail', './model/normed/Pony/tail.obj', './model/texture/Pony/tail.png', 1),
+            new DrawingObject3d_1.DrawingObject3d('hairBack', './model/normed/Pony/hairBack.obj', './model/texture/Pony/hairBack.png', 2),
+            new DrawingObject3d_1.DrawingObject3d('hairFront', './model/normed/Pony/hairFront.obj', './model/texture/Pony/hairFront.png', 3),
+            new DrawingObject3d_1.DrawingObject3d('horn', './model/normed/Pony/horn.obj', './model/texture/Pony/horn.png', 4),
+            new DrawingObject3d_1.DrawingObject3d('leftEye', './model/normed/Pony/leftEye.obj', './model/texture/Pony/leftEye.png', 5),
+            new DrawingObject3d_1.DrawingObject3d('rightEye', './model/normed/Pony/rightEye.obj', './model/texture/Pony/rightEye.png', 6),
+            new DrawingObject3d_1.DrawingObject3d('teeth', './model/normed/Pony/teeth.obj', './model/texture/Pony/teeth.png', 7),
         ])))();
         // 设定地板模型
         Floor = new (DrawingPackage3d_1.DrawingPackage3d.bind.apply(DrawingPackage3d_1.DrawingPackage3d, __spreadArrays([void 0, mat4()], [
-            new DrawingObject3d_1.DrawingObject3d('./model/normed/Floor/floor.obj')
+            new DrawingObject3d_1.DrawingObject3d('floor', './model/normed/Floor/floor.obj')
         ])))();
         Floor.setMeshOnly(gl.LINE_LOOP, [0, 0, 0]);
         // 材质初次加载完成后渲染一次，把材质绑到WebGL预置变量上
@@ -141,6 +148,16 @@ define(["require", "exports", "../../framework/3d/WebGLHelper3d", "../../framewo
             }
         };
     };
+    // 尾部旋转处理器
+    var rotateTail = function () {
+        var tailObject = Pony.getObjectByName('tail');
+        if (PonyTailAngle >= TAIL_ROTATE_LIMIT || PonyTailAngle <= -TAIL_ROTATE_LIMIT) {
+            PonyTailDirection *= -1;
+        }
+        PonyTailAngle += PonyTailDirection * TAIL_ROTATE_DELTA;
+        var newTailExtra = mult(tailObject.extraMatrix, rotateY(PonyTailAngle));
+        Pony.setObjectExtraMatrix('tail', newTailExtra);
+    };
     // 左方向键，左翻滚
     var processLAKey = function () {
         if (currentCoordSys != COORD_SYS.SELF) {
@@ -191,6 +208,7 @@ define(["require", "exports", "../../framework/3d/WebGLHelper3d", "../../framewo
             // 面向前进
             var newMat = mult(Pony.modelMat, translate(0, 0, TRANSLATE_DELTA));
             Pony.setModelMat(newMat);
+            rotateTail();
         }
         resetScene();
         helper.reRender(ctm);
@@ -219,6 +237,7 @@ define(["require", "exports", "../../framework/3d/WebGLHelper3d", "../../framewo
             // 面向后退
             var newMat = mult(Pony.modelMat, translate(0, 0, -TRANSLATE_DELTA));
             Pony.setModelMat(newMat);
+            rotateTail();
         }
         resetScene();
         helper.reRender(ctm);

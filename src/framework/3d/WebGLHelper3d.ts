@@ -19,7 +19,9 @@ export class WebGLHelper3d {
   private globalTextureSamplerAttribute: string | null
   private globalWorldMatrixUniform: string | null
   private globalModelMatrixUniform: string | null
+  private globalExtraMatrixUniform: string | null
 
+  private renderingLock:boolean
   private waitingQueue: Array<DrawingPackage3d>
 
   constructor(_canvasDOM: HTMLCanvasElement, _gl: WebGLRenderingContext, _program: WebGLProgram) {
@@ -33,7 +35,9 @@ export class WebGLHelper3d {
     this.globalTextureSamplerAttribute = null
     this.globalWorldMatrixUniform = null
     this.globalModelMatrixUniform = null
+    this.globalExtraMatrixUniform = null
     this.waitingQueue = []
+    this.renderingLock = false
   }
 
   /**
@@ -46,7 +50,8 @@ export class WebGLHelper3d {
     _tCoordAttr: string,
     _tSamplerAttr: string,
     _worldMatUniform: string,
-    _modelMatUniform: string) {
+    _modelMatUniform: string,
+    _extraMatUniform:string) {
     this.globalTextureBuffer = _tBuf
     this.globalVertexAttribute = _vAttr
     this.globalVertexBuffer = _vBuf
@@ -54,6 +59,7 @@ export class WebGLHelper3d {
     this.globalTextureSamplerAttribute = _tSamplerAttr
     this.globalWorldMatrixUniform = _worldMatUniform
     this.globalModelMatrixUniform = _modelMatUniform
+    this.globalExtraMatrixUniform = _extraMatUniform
   }
 
   /**
@@ -195,6 +201,8 @@ export class WebGLHelper3d {
    * Draw a `DrawingObject3d` immediately using the specified texture. `textureIndex` starts from 0.
    */
   public drawImmediately(obj: DrawingObject3d, textureIndex: number) {
+    // 处理extraMatrix
+    this.setUniformMatrix4d(this.globalExtraMatrixUniform as string, obj.extraMatrix)
     // 准备mesh绘制
     let meshVertices: Array<Vec3> = []
     obj.objProcessor.fs.forEach(face => {
@@ -270,6 +278,10 @@ export class WebGLHelper3d {
    * Re-render the canvas using `waitingQueue`. Need the `ctm`.
    */
   public reRender(ctm: Mat) {
+    if (this.renderingLock) {
+      return
+    }
+    this.renderingLock = true
     this.setUniformMatrix4d(this.globalWorldMatrixUniform as string, ctm)
     this.clearCanvas()
     this.waitingQueue.forEach(ele => {
@@ -280,6 +292,7 @@ export class WebGLHelper3d {
       }
     })
     this.clearWaitingQueue()
+    this.renderingLock = false
   }
 
 }

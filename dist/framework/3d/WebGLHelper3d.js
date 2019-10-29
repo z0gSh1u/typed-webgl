@@ -23,12 +23,14 @@ define(["require", "exports", "../WebGLUtils"], function (require, exports, WebG
             this.globalTextureSamplerAttribute = null;
             this.globalWorldMatrixUniform = null;
             this.globalModelMatrixUniform = null;
+            this.globalExtraMatrixUniform = null;
             this.waitingQueue = [];
+            this.renderingLock = false;
         }
         /**
          * Set some global settings so that you don't need to pass them every time you draw.
          */
-        WebGLHelper3d.prototype.setGlobalSettings = function (_vBuf, _vAttr, _tBuf, _tCoordAttr, _tSamplerAttr, _worldMatUniform, _modelMatUniform) {
+        WebGLHelper3d.prototype.setGlobalSettings = function (_vBuf, _vAttr, _tBuf, _tCoordAttr, _tSamplerAttr, _worldMatUniform, _modelMatUniform, _extraMatUniform) {
             this.globalTextureBuffer = _tBuf;
             this.globalVertexAttribute = _vAttr;
             this.globalVertexBuffer = _vBuf;
@@ -36,6 +38,7 @@ define(["require", "exports", "../WebGLUtils"], function (require, exports, WebG
             this.globalTextureSamplerAttribute = _tSamplerAttr;
             this.globalWorldMatrixUniform = _worldMatUniform;
             this.globalModelMatrixUniform = _modelMatUniform;
+            this.globalExtraMatrixUniform = _extraMatUniform;
         };
         /**
          * Create a buffer.
@@ -158,6 +161,8 @@ define(["require", "exports", "../WebGLUtils"], function (require, exports, WebG
          * Draw a `DrawingObject3d` immediately using the specified texture. `textureIndex` starts from 0.
          */
         WebGLHelper3d.prototype.drawImmediately = function (obj, textureIndex) {
+            // 处理extraMatrix
+            this.setUniformMatrix4d(this.globalExtraMatrixUniform, obj.extraMatrix);
             // 准备mesh绘制
             var meshVertices = [];
             obj.objProcessor.fs.forEach(function (face) {
@@ -229,6 +234,10 @@ define(["require", "exports", "../WebGLUtils"], function (require, exports, WebG
          */
         WebGLHelper3d.prototype.reRender = function (ctm) {
             var _this = this;
+            if (this.renderingLock) {
+                return;
+            }
+            this.renderingLock = true;
             this.setUniformMatrix4d(this.globalWorldMatrixUniform, ctm);
             this.clearCanvas();
             this.waitingQueue.forEach(function (ele) {
@@ -240,6 +249,7 @@ define(["require", "exports", "../WebGLUtils"], function (require, exports, WebG
                 }
             });
             this.clearWaitingQueue();
+            this.renderingLock = false;
         };
         return WebGLHelper3d;
     }());

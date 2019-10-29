@@ -19,6 +19,24 @@ export class DrawingPackage3d {
     this._methodMeshOnly = null
   }
 
+  public setObjectExtraMatrix(name: string, newMat: Mat) {
+    for (let i = 0; i < this._innerList.length; i++) {
+      if (this._innerList[i].name == name) {
+        this._innerList[i].setExtraMatrix(newMat)
+      }
+    }
+  }
+
+  public getObjectByName(name: string): DrawingObject3d | null {
+    let result: DrawingObject3d | null = null
+    this._innerList.forEach(ele => {
+      if (ele.name == name) {
+        result = ele
+      }
+    })
+    return result
+  }
+
   public setMeshOnly(method: number, color8bit: Vec3 | Vec4) {
     this._meshOnly = true
     this._colorMeshOnly = normalize8bitColor(color8bit)

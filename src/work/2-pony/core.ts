@@ -19,6 +19,8 @@ let ctm: Mat // 当前世界矩阵
 
 let Pony: DrawingPackage3d // 小马全身
 let PonyTextureManager: Array<WebGLTexture> = [] // 小马材质管理器
+let PonyTailAngle: number // 小马尾部当前旋转角度（DEG）
+let PonyTailDirection: number // 小马尾部旋转方向，-1或1
 let Floor: DrawingPackage3d // 地板
 
 // global status recorder
@@ -30,6 +32,8 @@ let currentCoordSys = COORD_SYS.WORLD
 // global constant
 const ROTATE_DELTA = 5 // 每次转多少度，角度制
 const TRANSLATE_DELTA = 0.010 // 每次平移多少距离，WebGL归一化系
+const TAIL_ROTATE_DELTA = 2
+const TAIL_ROTATE_LIMIT = 6
 
 // main function
 let main = () => {
@@ -43,7 +47,9 @@ let main = () => {
 
   vBuffer = helper.createBuffer()
   textureBuffer = helper.createBuffer()
-  helper.setGlobalSettings(vBuffer, 'aPosition', textureBuffer, 'aTexCoord', 'uTexture', 'uWorldMatrix', 'uModelMatrix')
+  helper.setGlobalSettings(
+    vBuffer, 'aPosition', textureBuffer, 'aTexCoord', 'uTexture', 'uWorldMatrix', 'uModelMatrix', 'uExtraMatrix'
+  )
 
   ctm = mat4()
   initializePony()
@@ -58,21 +64,25 @@ let initializePony = () => {
   // 不知道为什么小马一出来是背对的，而且还贼高。绕y轴先转180度，再微调一下y坐标位置
   let initModelMap = mult(translate(0, -0.3, 0), rotateY(180)) as Mat
 
+  // 设定小马尾部角度
+  PonyTailAngle = 0
+  PonyTailDirection = -1
+
   // 设定小马模型
   Pony = new DrawingPackage3d(initModelMap, ...[
-    new DrawingObject3d('./model/normed/Pony/pony.obj', './model/texture/Pony/pony.png', 0), // 身体
-    new DrawingObject3d('./model/normed/Pony/tail.obj', './model/texture/Pony/tail.png', 1), // 尾巴
-    new DrawingObject3d('./model/normed/Pony/hairBack.obj', './model/texture/Pony/hairBack.png', 2), // 头发后
-    new DrawingObject3d('./model/normed/Pony/hairFront.obj', './model/texture/Pony/hairFront.png', 3), // 头发前
-    new DrawingObject3d('./model/normed/Pony/horn.obj', './model/texture/Pony/horn.png', 4), // 角
-    new DrawingObject3d('./model/normed/Pony/leftEye.obj', './model/texture/Pony/leftEye.png', 5), // 左眼
-    new DrawingObject3d('./model/normed/Pony/rightEye.obj', './model/texture/Pony/rightEye.png', 6), // 右眼
-    new DrawingObject3d('./model/normed/Pony/teeth.obj', './model/texture/Pony/teeth.png', 7), // 牙
+    new DrawingObject3d('body', './model/normed/Pony/pony.obj', './model/texture/Pony/pony.png', 0), // 身体
+    new DrawingObject3d('tail', './model/normed/Pony/tail.obj', './model/texture/Pony/tail.png', 1), // 尾巴
+    new DrawingObject3d('hairBack', './model/normed/Pony/hairBack.obj', './model/texture/Pony/hairBack.png', 2), // 头发后
+    new DrawingObject3d('hairFront', './model/normed/Pony/hairFront.obj', './model/texture/Pony/hairFront.png', 3), // 头发前
+    new DrawingObject3d('horn', './model/normed/Pony/horn.obj', './model/texture/Pony/horn.png', 4), // 角
+    new DrawingObject3d('leftEye', './model/normed/Pony/leftEye.obj', './model/texture/Pony/leftEye.png', 5), // 左眼
+    new DrawingObject3d('rightEye', './model/normed/Pony/rightEye.obj', './model/texture/Pony/rightEye.png', 6), // 右眼
+    new DrawingObject3d('teeth', './model/normed/Pony/teeth.obj', './model/texture/Pony/teeth.png', 7), // 牙
   ])
 
   // 设定地板模型
   Floor = new DrawingPackage3d(mat4(), ...[
-    new DrawingObject3d('./model/normed/Floor/floor.obj')
+    new DrawingObject3d('floor', './model/normed/Floor/floor.obj')
   ])
   Floor.setMeshOnly(gl.LINE_LOOP, [0, 0, 0])
 
@@ -148,6 +158,17 @@ let listenKeyboard = () => {
   }
 }
 
+// 尾部旋转处理器
+let rotateTail = () => {
+  let tailObject = Pony.getObjectByName('tail') as DrawingObject3d
+  if (PonyTailAngle >= TAIL_ROTATE_LIMIT || PonyTailAngle <= -TAIL_ROTATE_LIMIT) {
+    PonyTailDirection *= -1
+  }
+  PonyTailAngle += PonyTailDirection * TAIL_ROTATE_DELTA
+  let newTailExtra = mult(tailObject.extraMatrix, rotateY(PonyTailAngle))
+  Pony.setObjectExtraMatrix('tail', newTailExtra as Mat)
+}
+
 // 左方向键，左翻滚
 let processLAKey = () => {
   if (currentCoordSys != COORD_SYS.SELF) {
@@ -196,7 +217,8 @@ let processWKey = () => {
   } else {
     // 面向前进
     let newMat = mult(Pony.modelMat, translate(0, 0, TRANSLATE_DELTA))
-    Pony.setModelMat(newMat as Mat)
+    Pony.setModelMat(newMat as Mat);
+    rotateTail()
   }
   resetScene()
   helper.reRender(ctm)
@@ -223,6 +245,7 @@ let processSKey = () => {
     // 面向后退
     let newMat = mult(Pony.modelMat, translate(0, 0, -TRANSLATE_DELTA))
     Pony.setModelMat(newMat as Mat)
+    rotateTail()
   }
   resetScene()
   helper.reRender(ctm)
