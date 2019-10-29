@@ -30,6 +30,13 @@ define(["require", "exports", "../../framework/3d/WebGLHelper3d", "../../framewo
     var PonyTailAngle; // 小马尾部当前旋转角度（DEG）
     var PonyTailDirection; // 小马尾部旋转方向，-1或1
     var Floor; // 地板
+    var id; //计时器编号
+    var isMouseDown = false;
+    var mouseLastPos; //上一次鼠标位置
+    var vX = 0; //X轴旋转速度
+    var vY = 0; //Y轴旋转速度
+    var curTick;
+    var lastTick;
     // global status recorder
     var COORD_SYS = {
         SELF: 0, WORLD: 1
@@ -40,6 +47,10 @@ define(["require", "exports", "../../framework/3d/WebGLHelper3d", "../../framewo
     var TRANSLATE_DELTA = 0.010; // 每次平移多少距离，WebGL归一化系
     var TAIL_ROTATE_DELTA = 2;
     var TAIL_ROTATE_LIMIT = 6;
+    var FRICTION = 0.0006; //模拟摩擦力，每毫秒降低的速度
+    var INTERVAL = 40; //速度降低的毫秒间隔
+    var ROTATE_PER_X = 0.2; //X轴鼠标拖动旋转的比例
+    var ROTATE_PER_Y = 0.2; //Y轴鼠标拖动旋转的比例
     // main function
     var main = function () {
         // initialization
@@ -103,7 +114,7 @@ define(["require", "exports", "../../framework/3d/WebGLHelper3d", "../../framewo
         Pony.preloadTexture(renderAfterTextureLoad);
     };
     /**
-     * 重设Pony全身和地面、洗脚盆坐标，但不会重传材质，也不会重设模型视图矩阵
+     * 重设Pony全身和地面坐标，但不会重传材质，也不会重设模型视图矩阵
      */
     var resetScene = function () {
         helper.clearWaitingQueue();
@@ -282,7 +293,70 @@ define(["require", "exports", "../../framework/3d/WebGLHelper3d", "../../framewo
         resetScene();
         helper.reRender(ctm);
     };
+    /*
+    全局变量，调试完放到最顶上
+    **/
+    //鼠标按下时随鼠标旋转
+    var rotateWithMouse = function (e) {
+        if (!isMouseDown) {
+            return;
+        }
+        var mousePos = [e.offsetX, e.offsetY];
+        lastTick = curTick;
+        curTick = new Date().getTime();
+        var disX = (mousePos[0] - mouseLastPos[0]) * ROTATE_PER_X;
+        var disY = (mousePos[1] - mouseLastPos[1]) * ROTATE_PER_Y;
+        vX = disX / (curTick - lastTick);
+        vY = disY / (curTick - lastTick);
+        ctm = mult(rotateX(-disY), ctm);
+        ctm = mult(rotateY(-disX), ctm);
+        mouseLastPos = mousePos;
+        resetScene();
+        helper.reRender(ctm);
+    };
+    var abs = function (n) {
+        return n < 0 ? -n : n;
+    };
+    var sign = function (n) {
+        if (n == 0) {
+            return 0;
+        }
+        else {
+            return abs(n) / n;
+        }
+    };
+    //松开鼠标后每INTERVAL毫秒进行一次减速
+    var slowDown = function () {
+        if (vX == 0 && vY == 0) {
+            clearInterval(id);
+            return;
+        }
+        ctm = mult(rotateX(-vY * INTERVAL), ctm);
+        ctm = mult(rotateY(-vX * INTERVAL), ctm);
+        vX = abs(vX) <= FRICTION * INTERVAL ? 0 : vX - FRICTION * INTERVAL * sign(vX);
+        vY = abs(vY) <= FRICTION * INTERVAL ? 0 : vY - FRICTION * INTERVAL * sign(vY);
+        resetScene();
+        helper.reRender(ctm);
+    };
+    //鼠标侦听
+    var listenMouse = function () {
+        canvasDOM.onmousedown = function (e) {
+            isMouseDown = true;
+            mouseLastPos = [e.offsetX, e.offsetY];
+            clearInterval(id);
+            curTick = lastTick = new Date().getTime();
+        };
+        canvasDOM.onmouseup = function (e) {
+            isMouseDown = false;
+            clearInterval(id);
+            id = setInterval(slowDown, INTERVAL);
+        };
+        canvasDOM.onmousemove = function (e) {
+            rotateWithMouse(e);
+        };
+    };
     // do it
     main();
     listenKeyboard();
+    listenMouse();
 });
