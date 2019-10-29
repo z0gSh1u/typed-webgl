@@ -1,4 +1,5 @@
 // Core code of 2-Pony.
+// by z0gSh1u & LongChen
 var __spreadArrays = (this && this.__spreadArrays) || function () {
     for (var s = 0, i = 0, il = arguments.length; i < il; i++) s += arguments[i].length;
     for (var r = Array(s), k = 0, i = 0; i < il; i++)
@@ -30,11 +31,11 @@ define(["require", "exports", "../../framework/3d/WebGLHelper3d", "../../framewo
     var PonyTailAngle; // 小马尾部当前旋转角度（DEG）
     var PonyTailDirection; // 小马尾部旋转方向，-1或1
     var Floor; // 地板
-    var id; //计时器编号
+    var id; // 计时器编号
     var isMouseDown = false;
-    var mouseLastPos; //上一次鼠标位置
-    var vX = 0; //X轴旋转速度
-    var vY = 0; //Y轴旋转速度
+    var mouseLastPos; // 上一次鼠标位置
+    var vX = 0; // X轴旋转速度
+    var vY = 0; // Y轴旋转速度
     var curTick;
     var lastTick;
     // global status recorder
@@ -47,10 +48,10 @@ define(["require", "exports", "../../framework/3d/WebGLHelper3d", "../../framewo
     var TRANSLATE_DELTA = 0.010; // 每次平移多少距离，WebGL归一化系
     var TAIL_ROTATE_DELTA = 2;
     var TAIL_ROTATE_LIMIT = 6;
-    var FRICTION = 0.0006; //模拟摩擦力，每毫秒降低的速度
-    var INTERVAL = 40; //速度降低的毫秒间隔
-    var ROTATE_PER_X = 0.2; //X轴鼠标拖动旋转的比例
-    var ROTATE_PER_Y = 0.2; //Y轴鼠标拖动旋转的比例
+    var FRICTION = 0.0006; // 模拟摩擦力，每毫秒降低的速度
+    var INTERVAL = 40; // 速度降低的毫秒间隔
+    var ROTATE_PER_X = 0.2; // X轴鼠标拖动旋转的比例
+    var ROTATE_PER_Y = 0.2; // Y轴鼠标拖动旋转的比例
     // main function
     var main = function () {
         // initialization
@@ -293,10 +294,7 @@ define(["require", "exports", "../../framework/3d/WebGLHelper3d", "../../framewo
         resetScene();
         helper.reRender(ctm);
     };
-    /*
-    全局变量，调试完放到最顶上
-    **/
-    //鼠标按下时随鼠标旋转
+    // 鼠标按下时随鼠标旋转
     var rotateWithMouse = function (e) {
         if (!isMouseDown) {
             return;
@@ -325,7 +323,7 @@ define(["require", "exports", "../../framework/3d/WebGLHelper3d", "../../framewo
             return abs(n) / n;
         }
     };
-    //松开鼠标后每INTERVAL毫秒进行一次减速
+    // 松开鼠标后每INTERVAL毫秒进行一次减速
     var slowDown = function () {
         if (vX == 0 && vY == 0) {
             clearInterval(id);
@@ -338,7 +336,7 @@ define(["require", "exports", "../../framework/3d/WebGLHelper3d", "../../framewo
         resetScene();
         helper.reRender(ctm);
     };
-    //鼠标侦听
+    // 鼠标侦听
     var listenMouse = function () {
         canvasDOM.onmousedown = function (e) {
             isMouseDown = true;
@@ -349,7 +347,8 @@ define(["require", "exports", "../../framework/3d/WebGLHelper3d", "../../framewo
         canvasDOM.onmouseup = function (e) {
             isMouseDown = false;
             clearInterval(id);
-            id = setInterval(slowDown, INTERVAL);
+            // fixed `setInterval` conflict with NodeJS definition.
+            id = window.setInterval(slowDown, INTERVAL);
         };
         canvasDOM.onmousemove = function (e) {
             rotateWithMouse(e);
