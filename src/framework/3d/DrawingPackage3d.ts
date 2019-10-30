@@ -1,4 +1,6 @@
-// 
+// Drawing Package for 3d.
+// Written by z0gSh1u @ https://github.com/z0gSh1u/typed-webgl
+// for book `Interactive Computer Graphics` (7th Edition).
 
 import { DrawingObject3d } from './DrawingObject3d'
 import { normalize8bitColor } from '../WebGLUtils'
