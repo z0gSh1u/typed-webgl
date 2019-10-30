@@ -1,4 +1,5 @@
 // Core code of 2-Pony.
+// by z0gSh1u & LongChen
 
 import '../../3rd-party/MV'
 import '../../3rd-party/initShaders'
@@ -25,9 +26,9 @@ let Floor: DrawingPackage3d // 地板
 let slowDownId: number//减速计时器编号
 let autoRotateId: number//自动旋转计时器编号
 let isMouseDown = false
-let mouseLastPos: Vec2//上一次鼠标位置
-let vX = 0//X轴旋转速度
-let vY = 0//Y轴旋转速度
+let mouseLastPos: Vec2 // 上一次鼠标位置
+let vX = 0 // X轴旋转速度
+let vY = 0 // Y轴旋转速度
 let curTick: number
 let lastTick: number
 let isAutoRotating = false//是否正在自动旋转
@@ -57,7 +58,6 @@ let main = () => {
   program = WebGLUtils.initializeShaders(gl, './vShader.glsl', './fShader.glsl')
   helper = new WebGLHelper3d(canvasDOM, gl, program)
   gl.enable(gl.DEPTH_TEST)
-  // gl.enable(gl.CULL_FACE)
 
   vBuffer = helper.createBuffer()
   textureBuffer = helper.createBuffer()
@@ -340,12 +340,7 @@ let processZKey = () => {
   helper.reRender(ctm)
 }
 
-/*
-全局变量，调试完放到最顶上
-**/
-
-
-//鼠标按下时随鼠标旋转
+// 鼠标按下时随鼠标旋转
 let rotateWithMouse = (e: MouseEvent) => {
   if (!isMouseDown) {
     return
@@ -376,7 +371,7 @@ let sign = (n: number): number => {
   }
 }
 
-//松开鼠标后每INTERVAL毫秒进行一次减速
+// 松开鼠标后每INTERVAL毫秒进行一次减速
 let slowDown = () => {
   if (vX == 0 && vY == 0) {
     clearInterval(slowDownId)
@@ -390,7 +385,7 @@ let slowDown = () => {
   helper.reRender(ctm)
 }
 
-//鼠标侦听
+// 鼠标侦听
 let listenMouse = () => {
   canvasDOM.onmousedown = (e: MouseEvent) => {
     isMouseDown = true
@@ -401,14 +396,13 @@ let listenMouse = () => {
   canvasDOM.onmouseup = (e: MouseEvent) => {
     isMouseDown = false
     clearInterval(slowDownId)
-    slowDownId = setInterval(slowDown, INTERVAL)
+    slowDownId = window.setInterval(slowDown, INTERVAL)
+    // fixed `setInterval` conflict with NodeJS definition.
   }
   canvasDOM.onmousemove = (e: MouseEvent) => {
     rotateWithMouse(e)
   }
 }
-
-
 
 // do it
 main()

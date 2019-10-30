@@ -1,4 +1,5 @@
 // Core code of 2-Pony.
+// by z0gSh1u & LongChen
 var __spreadArrays = (this && this.__spreadArrays) || function () {
     for (var s = 0, i = 0, il = arguments.length; i < il; i++) s += arguments[i].length;
     for (var r = Array(s), k = 0, i = 0; i < il; i++)
@@ -33,9 +34,9 @@ define(["require", "exports", "../../framework/3d/WebGLHelper3d", "../../framewo
     var slowDownId; //减速计时器编号
     var autoRotateId; //自动旋转计时器编号
     var isMouseDown = false;
-    var mouseLastPos; //上一次鼠标位置
-    var vX = 0; //X轴旋转速度
-    var vY = 0; //Y轴旋转速度
+    var mouseLastPos; // 上一次鼠标位置
+    var vX = 0; // X轴旋转速度
+    var vY = 0; // Y轴旋转速度
     var curTick;
     var lastTick;
     var isAutoRotating = false; //是否正在自动旋转
@@ -61,7 +62,6 @@ define(["require", "exports", "../../framework/3d/WebGLHelper3d", "../../framewo
         program = WebGLUtils.initializeShaders(gl, './vShader.glsl', './fShader.glsl');
         helper = new WebGLHelper3d_1.WebGLHelper3d(canvasDOM, gl, program);
         gl.enable(gl.DEPTH_TEST);
-        // gl.enable(gl.CULL_FACE)
         vBuffer = helper.createBuffer();
         textureBuffer = helper.createBuffer();
         helper.setGlobalSettings(vBuffer, 'aPosition', textureBuffer, 'aTexCoord', 'uTexture', 'uWorldMatrix', 'uModelMatrix', 'uExtraMatrix');
@@ -334,10 +334,7 @@ define(["require", "exports", "../../framework/3d/WebGLHelper3d", "../../framewo
         resetScene();
         helper.reRender(ctm);
     };
-    /*
-    全局变量，调试完放到最顶上
-    **/
-    //鼠标按下时随鼠标旋转
+    // 鼠标按下时随鼠标旋转
     var rotateWithMouse = function (e) {
         if (!isMouseDown) {
             return;
@@ -366,7 +363,7 @@ define(["require", "exports", "../../framework/3d/WebGLHelper3d", "../../framewo
             return abs(n) / n;
         }
     };
-    //松开鼠标后每INTERVAL毫秒进行一次减速
+    // 松开鼠标后每INTERVAL毫秒进行一次减速
     var slowDown = function () {
         if (vX == 0 && vY == 0) {
             clearInterval(slowDownId);
@@ -379,7 +376,7 @@ define(["require", "exports", "../../framework/3d/WebGLHelper3d", "../../framewo
         resetScene();
         helper.reRender(ctm);
     };
-    //鼠标侦听
+    // 鼠标侦听
     var listenMouse = function () {
         canvasDOM.onmousedown = function (e) {
             isMouseDown = true;
@@ -390,7 +387,8 @@ define(["require", "exports", "../../framework/3d/WebGLHelper3d", "../../framewo
         canvasDOM.onmouseup = function (e) {
             isMouseDown = false;
             clearInterval(slowDownId);
-            slowDownId = setInterval(slowDown, INTERVAL);
+            slowDownId = window.setInterval(slowDown, INTERVAL);
+            // fixed `setInterval` conflict with NodeJS definition.
         };
         canvasDOM.onmousemove = function (e) {
             rotateWithMouse(e);
