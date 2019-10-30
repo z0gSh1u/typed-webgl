@@ -161,7 +161,7 @@ let resetScene = () => {
   if (isAutoRotating) {
     (document.querySelector('#autoRotateToggler') as HTMLButtonElement).innerText = '停止旋转'
     clearInterval(autoRotateId)
-    setInterval(() => {
+    autoRotateId = setInterval(() => {
       if (!isAutoRotating) {
         clearInterval(autoRotateId)
         return
