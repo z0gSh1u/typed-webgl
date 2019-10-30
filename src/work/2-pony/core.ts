@@ -22,13 +22,15 @@ let PonyTextureManager: Array<WebGLTexture> = [] // 小马材质管理器
 let PonyTailAngle: number // 小马尾部当前旋转角度（DEG）
 let PonyTailDirection: number // 小马尾部旋转方向，-1或1
 let Floor: DrawingPackage3d // 地板
-let id: number//计时器编号
+let slowDownId: number//减速计时器编号
+let autoRotateId: number//自动旋转计时器编号
 let isMouseDown = false
 let mouseLastPos: Vec2//上一次鼠标位置
 let vX = 0//X轴旋转速度
 let vY = 0//Y轴旋转速度
 let curTick: number
 let lastTick: number
+let isAutoRotating = false//是否正在自动旋转
 
 // global status recorder
 let COORD_SYS = {
@@ -45,6 +47,7 @@ const FRICTION = 0.0006//模拟摩擦力，每毫秒降低的速度
 const INTERVAL = 40//速度降低的毫秒间隔
 const ROTATE_PER_X = 0.2//X轴鼠标拖动旋转的比例
 const ROTATE_PER_Y = 0.2//Y轴鼠标拖动旋转的比例
+const AUTO_ROTATE_DELTA = 1//自动旋转速度
 
 // main function
 let main = () => {
@@ -144,6 +147,41 @@ let resetScene = () => {
     (document.querySelector('#curCoord_object') as HTMLParagraphElement).style.display = 'none';
   }
 }
+//重置所有对象位置
+(document.querySelector('#resetAll') as HTMLButtonElement).onclick = () =>{
+  ctm = mat4()
+  Pony.setModelMat(mult(translate(0, -0.3, 0), rotateY(180)) as Mat)
+  vX = vY = 0
+  resetScene()
+  helper.reRender(ctm)
+}
+// 自动旋转开启与停止
+(document.querySelector('#autoRotateToggler') as HTMLButtonElement).onclick = () => {
+  isAutoRotating = !isAutoRotating
+  if (isAutoRotating) {
+    (document.querySelector('#autoRotateToggler') as HTMLButtonElement).innerText = '停止旋转'
+    clearInterval(autoRotateId)
+    setInterval(() => {
+      if (!isAutoRotating) {
+        clearInterval(autoRotateId)
+        return
+      }
+      if(currentCoordSys == COORD_SYS.SELF){
+        let newMat = mult(Pony.modelMat, rotateY(AUTO_ROTATE_DELTA))
+        Pony.setModelMat(newMat as Mat)
+        resetScene()
+        helper.reRender(ctm)
+      }else{
+        ctm = mult(rotateY(AUTO_ROTATE_DELTA), ctm) as Mat
+        resetScene()
+        helper.reRender(ctm)
+      }
+    }, INTERVAL)
+  } else {
+    (document.querySelector('#autoRotateToggler') as HTMLButtonElement).innerText = '开始旋转'
+    clearInterval(autoRotateId)
+  }
+}
 
 // 键盘监听
 let listenKeyboard = () => {
@@ -180,8 +218,8 @@ let rotateTail = () => {
   Pony.setObjectExtraMatrix('tail', newTailExtra as Mat)
 }
 
-// 左方向键，左翻滚
-let processLAKey = () => {
+// 右方向键，右翻滚
+let processRAKey = () => {
   if (currentCoordSys != COORD_SYS.SELF) {
     return
   }
@@ -200,8 +238,8 @@ let processUAKey = () => {
   resetScene()
   helper.reRender(ctm)
 }
-// 右方向键，右翻滚
-let processRAKey = () => {
+// 左方向键，左翻滚
+let processLAKey = () => {
   if (currentCoordSys != COORD_SYS.SELF) {
     return
   }
@@ -341,7 +379,7 @@ let sign = (n: number): number => {
 //松开鼠标后每INTERVAL毫秒进行一次减速
 let slowDown = () => {
   if (vX == 0 && vY == 0) {
-    clearInterval(id)
+    clearInterval(slowDownId)
     return
   }
   ctm = mult(rotateX(-vY * INTERVAL), ctm) as Mat
@@ -357,13 +395,13 @@ let listenMouse = () => {
   canvasDOM.onmousedown = (e: MouseEvent) => {
     isMouseDown = true
     mouseLastPos = [e.offsetX, e.offsetY] as Vec2
-    clearInterval(id)
+    clearInterval(slowDownId)
     curTick = lastTick = new Date().getTime()
   }
   canvasDOM.onmouseup = (e: MouseEvent) => {
     isMouseDown = false
-    clearInterval(id)
-    id = setInterval(slowDown, INTERVAL)
+    clearInterval(slowDownId)
+    slowDownId = setInterval(slowDown, INTERVAL)
   }
   canvasDOM.onmousemove = (e: MouseEvent) => {
     rotateWithMouse(e)
