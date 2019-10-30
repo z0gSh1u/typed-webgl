@@ -89,6 +89,7 @@ let initializePony = () => {
     new DrawingObject3d('leftEye', './model/normed/Pony/leftEye.obj', './model/texture/Pony/leftEye.png', 5), // 左眼
     new DrawingObject3d('rightEye', './model/normed/Pony/rightEye.obj', './model/texture/Pony/rightEye.png', 6), // 右眼
     new DrawingObject3d('teeth', './model/normed/Pony/teeth.obj', './model/texture/Pony/teeth.png', 7), // 牙
+    new DrawingObject3d('eyelashes', './model/normed/Pony/eyelashes.obj', './model/texture/Pony/eyelashes.png', 8), // 睫毛
   ])
 
   // 设定地板模型
@@ -304,9 +305,7 @@ let processZKey = () => {
 
 // 鼠标按下时随鼠标旋转
 let rotateWithMouse = (e: MouseEvent) => {
-  if (!isMouseDown) {
-    return
-  }
+
   let mousePos = [e.offsetX, e.offsetY] as Vec2
   lastTick = curTick
   curTick = new Date().getTime()
@@ -362,7 +361,10 @@ let listenMouse = () => {
     id = window.setInterval(slowDown, INTERVAL)
   }
   canvasDOM.onmousemove = (e: MouseEvent) => {
-    rotateWithMouse(e)
+    if (isMouseDown) {
+      rotateWithMouse(e)
+    }
+    console.log(e)
   }
 }
 

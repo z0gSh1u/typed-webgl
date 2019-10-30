@@ -21,6 +21,10 @@ export class WebGLHelper3d {
   private globalModelMatrixUniform: string | null
   private globalExtraMatrixUniform: string | null
 
+  private rect: ClientRect | DOMRect
+  private cvsH: number
+  private cvsW: number
+
   private renderingLock:boolean
   private waitingQueue: Array<DrawingPackage3d>
 
@@ -38,6 +42,10 @@ export class WebGLHelper3d {
     this.globalExtraMatrixUniform = null
     this.waitingQueue = []
     this.renderingLock = false
+
+    this.rect = this.canvasDOM.getBoundingClientRect()
+    this.cvsW = this.canvasDOM.width
+    this.cvsH = this.canvasDOM.height
   }
 
   /**
@@ -293,6 +301,16 @@ export class WebGLHelper3d {
     })
     this.clearWaitingQueue()
     this.renderingLock = false
+  }
+
+   /**
+   * Convert a coordinate from canvas system (left-top to be O) to WebGL system (center to be O). (2d)
+   */
+  public convertCoordToWebGLSystem(canvasSystemCoord: Vec2) {
+    let cvsX = canvasSystemCoord[0], cvsY = canvasSystemCoord[1]
+    let x = ((cvsX - this.rect.left) - this.cvsW / 2) / this.cvsW * 2
+    let y = (this.cvsH / 2 - (cvsY - this.rect.top)) / this.cvsH * 2
+    return [x, y] as Vec2
   }
 
 }

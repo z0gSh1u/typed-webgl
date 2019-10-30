@@ -84,6 +84,7 @@ define(["require", "exports", "../../framework/3d/WebGLHelper3d", "../../framewo
             new DrawingObject3d_1.DrawingObject3d('leftEye', './model/normed/Pony/leftEye.obj', './model/texture/Pony/leftEye.png', 5),
             new DrawingObject3d_1.DrawingObject3d('rightEye', './model/normed/Pony/rightEye.obj', './model/texture/Pony/rightEye.png', 6),
             new DrawingObject3d_1.DrawingObject3d('teeth', './model/normed/Pony/teeth.obj', './model/texture/Pony/teeth.png', 7),
+            new DrawingObject3d_1.DrawingObject3d('eyelashes', './model/normed/Pony/eyelashes.obj', './model/texture/Pony/eyelashes.png', 8),
         ])))();
         // 设定地板模型
         Floor = new (DrawingPackage3d_1.DrawingPackage3d.bind.apply(DrawingPackage3d_1.DrawingPackage3d, __spreadArrays([void 0, mat4()], [
@@ -296,9 +297,6 @@ define(["require", "exports", "../../framework/3d/WebGLHelper3d", "../../framewo
     };
     // 鼠标按下时随鼠标旋转
     var rotateWithMouse = function (e) {
-        if (!isMouseDown) {
-            return;
-        }
         var mousePos = [e.offsetX, e.offsetY];
         lastTick = curTick;
         curTick = new Date().getTime();
@@ -351,7 +349,10 @@ define(["require", "exports", "../../framework/3d/WebGLHelper3d", "../../framewo
             id = window.setInterval(slowDown, INTERVAL);
         };
         canvasDOM.onmousemove = function (e) {
-            rotateWithMouse(e);
+            if (isMouseDown) {
+                rotateWithMouse(e);
+            }
+            console.log(e);
         };
     };
     // do it
