@@ -169,13 +169,11 @@ let resetScene = () => {
       if (currentCoordSys == COORD_SYS.SELF) {
         let newMat = mult(Pony.modelMat, rotateY(AUTO_ROTATE_DELTA))
         Pony.setModelMat(newMat as Mat)
-        resetScene()
-        helper.reRender(ctm)
       } else {
         ctm = mult(rotateY(AUTO_ROTATE_DELTA), ctm) as Mat
-        resetScene()
-        helper.reRender(ctm)
       }
+      resetScene()
+      helper.reRender(ctm)
     }, INTERVAL)
   } else {
     (document.querySelector('#autoRotateToggler') as HTMLButtonElement).innerText = '开始旋转'
