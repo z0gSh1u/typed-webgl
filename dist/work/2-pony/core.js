@@ -31,13 +31,15 @@ define(["require", "exports", "../../framework/3d/WebGLHelper3d", "../../framewo
     var PonyTailAngle; // 小马尾部当前旋转角度（DEG）
     var PonyTailDirection; // 小马尾部旋转方向，-1或1
     var Floor; // 地板
-    var id; // 计时器编号
+    var slowDownId; //减速计时器编号
+    var autoRotateId; //自动旋转计时器编号
     var isMouseDown = false;
     var mouseLastPos; // 上一次鼠标位置
     var vX = 0; // X轴旋转速度
     var vY = 0; // Y轴旋转速度
     var curTick;
     var lastTick;
+    var isAutoRotating = false; // 是否正在自动旋转
     // global status recorder
     var COORD_SYS = {
         SELF: 0, WORLD: 1
@@ -48,10 +50,11 @@ define(["require", "exports", "../../framework/3d/WebGLHelper3d", "../../framewo
     var TRANSLATE_DELTA = 0.010; // 每次平移多少距离，WebGL归一化系
     var TAIL_ROTATE_DELTA = 2;
     var TAIL_ROTATE_LIMIT = 6;
-    var FRICTION = 0.0006; // 模拟摩擦力，每毫秒降低的速度
-    var INTERVAL = 40; // 速度降低的毫秒间隔
-    var ROTATE_PER_X = 0.2; // X轴鼠标拖动旋转的比例
-    var ROTATE_PER_Y = 0.2; // Y轴鼠标拖动旋转的比例
+    var FRICTION = 0.0006; //模拟摩擦力，每毫秒降低的速度
+    var INTERVAL = 40; //速度降低的毫秒间隔
+    var ROTATE_PER_X = 0.2; //X轴鼠标拖动旋转的比例
+    var ROTATE_PER_Y = 0.2; //Y轴鼠标拖动旋转的比例
+    var AUTO_ROTATE_DELTA = 1; //自动旋转速度
     // main function
     var main = function () {
         // initialization
@@ -84,7 +87,6 @@ define(["require", "exports", "../../framework/3d/WebGLHelper3d", "../../framewo
             new DrawingObject3d_1.DrawingObject3d('leftEye', './model/normed/Pony/leftEye.obj', './model/texture/Pony/leftEye.png', 5),
             new DrawingObject3d_1.DrawingObject3d('rightEye', './model/normed/Pony/rightEye.obj', './model/texture/Pony/rightEye.png', 6),
             new DrawingObject3d_1.DrawingObject3d('teeth', './model/normed/Pony/teeth.obj', './model/texture/Pony/teeth.png', 7),
-            new DrawingObject3d_1.DrawingObject3d('eyelashes', './model/normed/Pony/eyelashes.obj', './model/texture/Pony/eyelashes.png', 8),
         ])))();
         // 设定地板模型
         Floor = new (DrawingPackage3d_1.DrawingPackage3d.bind.apply(DrawingPackage3d_1.DrawingPackage3d, __spreadArrays([void 0, mat4()], [
@@ -136,6 +138,43 @@ define(["require", "exports", "../../framework/3d/WebGLHelper3d", "../../framewo
             document.querySelector('#curCoord_object').style.display = 'none';
         }
     };
+    // 重置所有对象位置
+    document.querySelector('#resetAll').onclick = function () {
+        ctm = mat4();
+        Pony.setModelMat(mult(translate(0, -0.3, 0), rotateY(180)));
+        vX = vY = 0;
+        resetScene();
+        helper.reRender(ctm);
+    };
+    // 自动旋转开启与停止
+    document.querySelector('#autoRotateToggler').onclick = function () {
+        isAutoRotating = !isAutoRotating;
+        if (isAutoRotating) {
+            document.querySelector('#autoRotateToggler').innerText = '停止旋转';
+            clearInterval(autoRotateId);
+            setInterval(function () {
+                if (!isAutoRotating) {
+                    clearInterval(autoRotateId);
+                    return;
+                }
+                if (currentCoordSys == COORD_SYS.SELF) {
+                    var newMat = mult(Pony.modelMat, rotateY(AUTO_ROTATE_DELTA));
+                    Pony.setModelMat(newMat);
+                    resetScene();
+                    helper.reRender(ctm);
+                }
+                else {
+                    ctm = mult(rotateY(AUTO_ROTATE_DELTA), ctm);
+                    resetScene();
+                    helper.reRender(ctm);
+                }
+            }, INTERVAL);
+        }
+        else {
+            document.querySelector('#autoRotateToggler').innerText = '开始旋转';
+            clearInterval(autoRotateId);
+        }
+    };
     // 键盘监听
     var listenKeyboard = function () {
         var handlers = {
@@ -170,8 +209,8 @@ define(["require", "exports", "../../framework/3d/WebGLHelper3d", "../../framewo
         var newTailExtra = mult(tailObject.extraMatrix, rotateY(PonyTailAngle));
         Pony.setObjectExtraMatrix('tail', newTailExtra);
     };
-    // 左方向键，左翻滚
-    var processLAKey = function () {
+    // 右方向键，右翻滚
+    var processRAKey = function () {
         if (currentCoordSys != COORD_SYS.SELF) {
             return;
         }
@@ -190,8 +229,8 @@ define(["require", "exports", "../../framework/3d/WebGLHelper3d", "../../framewo
         resetScene();
         helper.reRender(ctm);
     };
-    // 右方向键，右翻滚
-    var processRAKey = function () {
+    // 左方向键，左翻滚
+    var processLAKey = function () {
         if (currentCoordSys != COORD_SYS.SELF) {
             return;
         }
@@ -324,7 +363,7 @@ define(["require", "exports", "../../framework/3d/WebGLHelper3d", "../../framewo
     // 松开鼠标后每INTERVAL毫秒进行一次减速
     var slowDown = function () {
         if (vX == 0 && vY == 0) {
-            clearInterval(id);
+            clearInterval(slowDownId);
             return;
         }
         ctm = mult(rotateX(-vY * INTERVAL), ctm);
@@ -339,20 +378,18 @@ define(["require", "exports", "../../framework/3d/WebGLHelper3d", "../../framewo
         canvasDOM.onmousedown = function (e) {
             isMouseDown = true;
             mouseLastPos = [e.offsetX, e.offsetY];
-            clearInterval(id);
+            clearInterval(slowDownId);
             curTick = lastTick = new Date().getTime();
         };
         canvasDOM.onmouseup = function (e) {
             isMouseDown = false;
-            clearInterval(id);
-            // fixed `setInterval` conflict with NodeJS definition.
-            id = window.setInterval(slowDown, INTERVAL);
+            clearInterval(slowDownId);
+            slowDownId = window.setInterval(slowDown, INTERVAL);
         };
         canvasDOM.onmousemove = function (e) {
             if (isMouseDown) {
                 rotateWithMouse(e);
             }
-            console.log(e);
         };
     };
     // do it
