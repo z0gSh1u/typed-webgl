@@ -185,7 +185,7 @@ let processLAKey = () => {
   if (currentCoordSys != COORD_SYS.SELF) {
     return
   }
-  let newMat = mult(Pony.modelMat, rotateZ(-ROTATE_DELTA))
+  let newMat = mult(Pony.modelMat, rotateZ(ROTATE_DELTA))
   Pony.setModelMat(newMat as Mat)
   resetScene()
   helper.reRender(ctm)
@@ -205,7 +205,7 @@ let processRAKey = () => {
   if (currentCoordSys != COORD_SYS.SELF) {
     return
   }
-  let newMat = mult(Pony.modelMat, rotateZ(ROTATE_DELTA))
+  let newMat = mult(Pony.modelMat, rotateZ(-ROTATE_DELTA))
   Pony.setModelMat(newMat as Mat)
   resetScene()
   helper.reRender(ctm)

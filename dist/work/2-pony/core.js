@@ -174,7 +174,7 @@ define(["require", "exports", "../../framework/3d/WebGLHelper3d", "../../framewo
         if (currentCoordSys != COORD_SYS.SELF) {
             return;
         }
-        var newMat = mult(Pony.modelMat, rotateZ(-ROTATE_DELTA));
+        var newMat = mult(Pony.modelMat, rotateZ(ROTATE_DELTA));
         Pony.setModelMat(newMat);
         resetScene();
         helper.reRender(ctm);
@@ -194,7 +194,7 @@ define(["require", "exports", "../../framework/3d/WebGLHelper3d", "../../framewo
         if (currentCoordSys != COORD_SYS.SELF) {
             return;
         }
-        var newMat = mult(Pony.modelMat, rotateZ(ROTATE_DELTA));
+        var newMat = mult(Pony.modelMat, rotateZ(-ROTATE_DELTA));
         Pony.setModelMat(newMat);
         resetScene();
         helper.reRender(ctm);
