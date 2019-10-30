@@ -84,7 +84,7 @@ declare function mult(u: Mat | Vec, v: Mat | Vec): Mat | Vec
 // basic transformation matrix generators
 // --------------------------------------
 /**
- * Translate a vector.
+ * Generate a translate matrix.
  */
 declare function translate(x: Vec | number, y: Vec | number, z: Vec | number): Mat
 /**

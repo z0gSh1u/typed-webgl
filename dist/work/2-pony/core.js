@@ -39,7 +39,7 @@ define(["require", "exports", "../../framework/3d/WebGLHelper3d", "../../framewo
     var vY = 0; // Y轴旋转速度
     var curTick;
     var lastTick;
-    var isAutoRotating = false; //是否正在自动旋转
+    var isAutoRotating = false; // 是否正在自动旋转
     // global status recorder
     var COORD_SYS = {
         SELF: 0, WORLD: 1
@@ -138,7 +138,7 @@ define(["require", "exports", "../../framework/3d/WebGLHelper3d", "../../framewo
             document.querySelector('#curCoord_object').style.display = 'none';
         }
     };
-    //重置所有对象位置
+    // 重置所有对象位置
     document.querySelector('#resetAll').onclick = function () {
         ctm = mat4();
         Pony.setModelMat(mult(translate(0, -0.3, 0), rotateY(180)));
@@ -214,7 +214,7 @@ define(["require", "exports", "../../framework/3d/WebGLHelper3d", "../../framewo
         if (currentCoordSys != COORD_SYS.SELF) {
             return;
         }
-        var newMat = mult(Pony.modelMat, rotateZ(ROTATE_DELTA));
+        var newMat = mult(Pony.modelMat, rotateZ(-ROTATE_DELTA));
         Pony.setModelMat(newMat);
         resetScene();
         helper.reRender(ctm);
@@ -234,7 +234,7 @@ define(["require", "exports", "../../framework/3d/WebGLHelper3d", "../../framewo
         if (currentCoordSys != COORD_SYS.SELF) {
             return;
         }
-        var newMat = mult(Pony.modelMat, rotateZ(-ROTATE_DELTA));
+        var newMat = mult(Pony.modelMat, rotateZ(ROTATE_DELTA));
         Pony.setModelMat(newMat);
         resetScene();
         helper.reRender(ctm);
@@ -336,9 +336,6 @@ define(["require", "exports", "../../framework/3d/WebGLHelper3d", "../../framewo
     };
     // 鼠标按下时随鼠标旋转
     var rotateWithMouse = function (e) {
-        if (!isMouseDown) {
-            return;
-        }
         var mousePos = [e.offsetX, e.offsetY];
         lastTick = curTick;
         curTick = new Date().getTime();
@@ -388,10 +385,11 @@ define(["require", "exports", "../../framework/3d/WebGLHelper3d", "../../framewo
             isMouseDown = false;
             clearInterval(slowDownId);
             slowDownId = window.setInterval(slowDown, INTERVAL);
-            // fixed `setInterval` conflict with NodeJS definition.
         };
         canvasDOM.onmousemove = function (e) {
-            rotateWithMouse(e);
+            if (isMouseDown) {
+                rotateWithMouse(e);
+            }
         };
     };
     // do it

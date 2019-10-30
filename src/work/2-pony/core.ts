@@ -31,7 +31,7 @@ let vX = 0 // X轴旋转速度
 let vY = 0 // Y轴旋转速度
 let curTick: number
 let lastTick: number
-let isAutoRotating = false//是否正在自动旋转
+let isAutoRotating = false // 是否正在自动旋转
 
 // global status recorder
 let COORD_SYS = {
@@ -147,8 +147,8 @@ let resetScene = () => {
     (document.querySelector('#curCoord_object') as HTMLParagraphElement).style.display = 'none';
   }
 }
-//重置所有对象位置
-(document.querySelector('#resetAll') as HTMLButtonElement).onclick = () =>{
+// 重置所有对象位置
+(document.querySelector('#resetAll') as HTMLButtonElement).onclick = () => {
   ctm = mat4()
   Pony.setModelMat(mult(translate(0, -0.3, 0), rotateY(180)) as Mat)
   vX = vY = 0
@@ -166,12 +166,12 @@ let resetScene = () => {
         clearInterval(autoRotateId)
         return
       }
-      if(currentCoordSys == COORD_SYS.SELF){
+      if (currentCoordSys == COORD_SYS.SELF) {
         let newMat = mult(Pony.modelMat, rotateY(AUTO_ROTATE_DELTA))
         Pony.setModelMat(newMat as Mat)
         resetScene()
         helper.reRender(ctm)
-      }else{
+      } else {
         ctm = mult(rotateY(AUTO_ROTATE_DELTA), ctm) as Mat
         resetScene()
         helper.reRender(ctm)
@@ -223,7 +223,7 @@ let processRAKey = () => {
   if (currentCoordSys != COORD_SYS.SELF) {
     return
   }
-  let newMat = mult(Pony.modelMat, rotateZ(ROTATE_DELTA))
+  let newMat = mult(Pony.modelMat, rotateZ(-ROTATE_DELTA))
   Pony.setModelMat(newMat as Mat)
   resetScene()
   helper.reRender(ctm)
@@ -243,7 +243,7 @@ let processLAKey = () => {
   if (currentCoordSys != COORD_SYS.SELF) {
     return
   }
-  let newMat = mult(Pony.modelMat, rotateZ(-ROTATE_DELTA))
+  let newMat = mult(Pony.modelMat, rotateZ(ROTATE_DELTA))
   Pony.setModelMat(newMat as Mat)
   resetScene()
   helper.reRender(ctm)
@@ -342,9 +342,6 @@ let processZKey = () => {
 
 // 鼠标按下时随鼠标旋转
 let rotateWithMouse = (e: MouseEvent) => {
-  if (!isMouseDown) {
-    return
-  }
   let mousePos = [e.offsetX, e.offsetY] as Vec2
   lastTick = curTick
   curTick = new Date().getTime()
@@ -397,10 +394,11 @@ let listenMouse = () => {
     isMouseDown = false
     clearInterval(slowDownId)
     slowDownId = window.setInterval(slowDown, INTERVAL)
-    // fixed `setInterval` conflict with NodeJS definition.
   }
   canvasDOM.onmousemove = (e: MouseEvent) => {
-    rotateWithMouse(e)
+    if (isMouseDown) {
+      rotateWithMouse(e)
+    }
   }
 }
 
