@@ -152,7 +152,7 @@ define(["require", "exports", "../../framework/3d/WebGLHelper3d", "../../framewo
         if (isAutoRotating) {
             document.querySelector('#autoRotateToggler').innerText = '停止旋转';
             clearInterval(autoRotateId);
-            setInterval(function () {
+            autoRotateId = setInterval(function () {
                 if (!isAutoRotating) {
                     clearInterval(autoRotateId);
                     return;
@@ -160,14 +160,12 @@ define(["require", "exports", "../../framework/3d/WebGLHelper3d", "../../framewo
                 if (currentCoordSys == COORD_SYS.SELF) {
                     var newMat = mult(Pony.modelMat, rotateY(AUTO_ROTATE_DELTA));
                     Pony.setModelMat(newMat);
-                    resetScene();
-                    helper.reRender(ctm);
                 }
                 else {
                     ctm = mult(rotateY(AUTO_ROTATE_DELTA), ctm);
-                    resetScene();
-                    helper.reRender(ctm);
                 }
+                resetScene();
+                helper.reRender(ctm);
             }, INTERVAL);
         }
         else {
