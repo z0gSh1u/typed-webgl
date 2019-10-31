@@ -18,6 +18,8 @@ let vBuffer: WebGLBuffer // 顶点缓冲区
 let textureBuffer: WebGLBuffer // 材质缓冲区
 let ctm: Mat // 当前世界矩阵
 
+let PonyWink: DrawingPackage3d // 闭眼小马
+let PonyWinkTextureManager: Array<WebGLTexture> = [] // 闭眼小马材质管理器
 let Pony: DrawingPackage3d // 小马全身
 let PonyTextureManager: Array<WebGLTexture> = [] // 小马材质管理器
 let PonyTailAngle: number // 小马尾部当前旋转角度（DEG）
@@ -49,6 +51,7 @@ const INTERVAL = 40 // 速度降低的毫秒间隔
 const ROTATE_PER_X = 0.2 // X轴鼠标拖动旋转的比例
 const ROTATE_PER_Y = 0.2 // Y轴鼠标拖动旋转的比例
 const AUTO_ROTATE_DELTA = 1 // 自动旋转速度
+const INIT_HEIGHT = 0.5 // 空降起始高度
 
 // main function
 let main = () => {
@@ -75,15 +78,12 @@ let main = () => {
  */
 let initializePony = () => {
 
-  // 不知道为什么小马一出来是背对的，而且还贼高。绕y轴先转180度，再微调一下y坐标位置
-  let initModelMap = mult(translate(0, -0.3, 0), rotateY(180)) as Mat
-
   // 设定小马尾部角度
   PonyTailAngle = 0
   PonyTailDirection = -1
 
   // 设定小马模型
-  Pony = new DrawingPackage3d(initModelMap, ...[
+  Pony = new DrawingPackage3d(mult(translate(0, -0.3, 0), rotateY(180)) as Mat, ...[
     new DrawingObject3d('body', './model/normed/Pony/pony.obj', './model/texture/Pony/pony.png', 0), // 身体
     new DrawingObject3d('tail', './model/normed/Pony/tail.obj', './model/texture/Pony/tail.png', 1), // 尾巴
     new DrawingObject3d('hairBack', './model/normed/Pony/hairBack.obj', './model/texture/Pony/hairBack.png', 2), // 头发后
@@ -95,36 +95,95 @@ let initializePony = () => {
     new DrawingObject3d('eyelashes', './model/normed/Pony/eyelashes.obj', './model/texture/Pony/eyelashes.png', 8), // 睫毛
   ])
 
+  PonyWink = new DrawingPackage3d(mult(translate(0, INIT_HEIGHT, 0), rotateY(180)) as Mat, ...[
+    new DrawingObject3d('body', './model/normed/Pony/pony_wink.obj', './model/texture/Pony/pony.png', 9), // 身体
+    new DrawingObject3d('tail', './model/normed/Pony/tail.obj', './model/texture/Pony/tail.png', 10), // 尾巴
+    new DrawingObject3d('hairBack', './model/normed/Pony/hairBack.obj', './model/texture/Pony/hairBack.png', 11), // 头发后
+    new DrawingObject3d('hairFront', './model/normed/Pony/hairFront.obj', './model/texture/Pony/hairFront.png', 12), // 头发前
+    new DrawingObject3d('horn', './model/normed/Pony/horn.obj', './model/texture/Pony/horn.png', 13), // 角
+    new DrawingObject3d('teeth', './model/normed/Pony/teeth.obj', './model/texture/Pony/teeth.png', 14), // 牙
+    new DrawingObject3d('eyelashes', './model/normed/Pony/eyelashes.obj', './model/texture/Pony/eyelashes.png', 15), // 睫毛
+  ])
+
   // 设定地板模型
   Floor = new DrawingPackage3d(mat4(), ...[
     new DrawingObject3d('floor', './model/normed/Floor/floor.obj')
   ])
   Floor.setMeshOnly(gl.LINE_LOOP, [0, 0, 0])
 
-  // 材质初次加载完成后渲染一次，把材质绑到WebGL预置变量上
-  let renderAfterTextureLoad = (loadedElements: HTMLImageElement[]) => {
-    // 把素材图像传送到GPU  
-    for (let i = 0; i < loadedElements.length; i++) {
-      let no = gl.createTexture() as WebGLTexture
-      gl.bindTexture(gl.TEXTURE_2D, no)
-      gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, loadedElements[i] as HTMLImageElement)
-      gl.generateMipmap(gl.TEXTURE_2D)
-      PonyTextureManager.push(no)
-    }
-    // 为预置的材质变量绑定上各部分的材质，材质编号从0开始
-    for (let i = 0; i < PonyTextureManager.length; i++) {
-      // PonyTextureManager.length == 8
-      let cmd1 = `gl.activeTexture(gl.TEXTURE${i})`, cmd2 = `gl.bindTexture(gl.TEXTURE_2D, PonyTextureManager[${i}])`
-      eval(cmd1); eval(cmd2)
-    }
-    // 渲染
-    resetScene()
-    helper.reRender(ctm)
+  // 从Wink态小马开始
+  PonyWink.preloadTexture(ponyWinkLoadedCallback)
+
+}
+
+// 材质初次加载完成后渲染一次，把材质绑到WebGL预置变量上
+let ponyLoadedCallback = (loadedElements: HTMLImageElement[]) => {
+  // 把素材图像传送到GPU  
+  for (let i = 0; i < loadedElements.length; i++) {
+    let no = gl.createTexture() as WebGLTexture
+    gl.bindTexture(gl.TEXTURE_2D, no)
+    gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, loadedElements[i] as HTMLImageElement)
+    gl.generateMipmap(gl.TEXTURE_2D)
+    PonyTextureManager.push(no)
+  }
+  // 为预置的材质变量绑定上各部分的材质，材质编号从0开始
+  for (let i = 0; i < PonyTextureManager.length; i++) {
+    // PonyTextureManager.length == 8
+    let cmd1 = `gl.activeTexture(gl.TEXTURE${i})`, cmd2 = `gl.bindTexture(gl.TEXTURE_2D, PonyTextureManager[${i}])`
+    eval(cmd1); eval(cmd2)
+  }
+  // 渲染
+  resetScene()
+  helper.reRender(ctm)
+}
+
+let ponyWinkLoadedCallback = (loadedElements: HTMLImageElement[]) => {
+  for (let i = 0; i < loadedElements.length; i++) {
+    let no = gl.createTexture() as WebGLTexture
+    gl.bindTexture(gl.TEXTURE_2D, no)
+    gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, loadedElements[i] as HTMLImageElement)
+    gl.generateMipmap(gl.TEXTURE_2D)
+    PonyWinkTextureManager.push(no)
+  }
+  for (let i = 0; i < PonyWinkTextureManager.length; i++) {
+    let cmd1 = `gl.activeTexture(gl.TEXTURE${i + 9})`, cmd2 = `gl.bindTexture(gl.TEXTURE_2D, PonyWinkTextureManager[${i}])`
+    eval(cmd1); eval(cmd2)
+  }
+  // 渲染
+  ponyBounce()
+}
+
+// 小马一开始的弹跳
+let ponyBounce = async () => {
+  let _myResetScene = () => {
+    helper.clearWaitingQueue()
+    helper.drawPackageLater(PonyWink)
+    helper.drawPackageLater(Floor)
+  }
+  let fallingDistance = 0
+
+  let round = (yTrans: number, fallingDis: number, callback: () => void) => {
+    let what = window.setInterval(() => {
+      let newMat = mult(PonyWink.modelMat, translate(0, yTrans, 0))
+      PonyWink.setModelMat(newMat as Mat)
+      fallingDistance += Math.abs(yTrans)
+      if (fallingDistance >= fallingDis) {
+        clearInterval(what)
+        fallingDistance = 0
+        callback()
+      }
+      _myResetScene()
+      helper.reRender(ctm)
+    }, 30)
   }
 
-  // 有需要加载外部材质的，在这里加载
-  Pony.preloadTexture(renderAfterTextureLoad)
-
+  round(-0.05, 0.8, () => {
+    round(0.02, 0.3, () => {
+      round(-0.01, 0.3, () => {
+        Pony.preloadTexture(ponyLoadedCallback)
+      })
+    })
+  })
 }
 
 /**
