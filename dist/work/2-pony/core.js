@@ -1,5 +1,41 @@
 // Core code of 2-Pony.
 // by z0gSh1u & LongChen
+var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, generator) {
+    function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
+    return new (P || (P = Promise))(function (resolve, reject) {
+        function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
+        function rejected(value) { try { step(generator["throw"](value)); } catch (e) { reject(e); } }
+        function step(result) { result.done ? resolve(result.value) : adopt(result.value).then(fulfilled, rejected); }
+        step((generator = generator.apply(thisArg, _arguments || [])).next());
+    });
+};
+var __generator = (this && this.__generator) || function (thisArg, body) {
+    var _ = { label: 0, sent: function() { if (t[0] & 1) throw t[1]; return t[1]; }, trys: [], ops: [] }, f, y, t, g;
+    return g = { next: verb(0), "throw": verb(1), "return": verb(2) }, typeof Symbol === "function" && (g[Symbol.iterator] = function() { return this; }), g;
+    function verb(n) { return function (v) { return step([n, v]); }; }
+    function step(op) {
+        if (f) throw new TypeError("Generator is already executing.");
+        while (_) try {
+            if (f = 1, y && (t = op[0] & 2 ? y["return"] : op[0] ? y["throw"] || ((t = y["return"]) && t.call(y), 0) : y.next) && !(t = t.call(y, op[1])).done) return t;
+            if (y = 0, t) op = [op[0] & 2, t.value];
+            switch (op[0]) {
+                case 0: case 1: t = op; break;
+                case 4: _.label++; return { value: op[1], done: false };
+                case 5: _.label++; y = op[1]; op = [0]; continue;
+                case 7: op = _.ops.pop(); _.trys.pop(); continue;
+                default:
+                    if (!(t = _.trys, t = t.length > 0 && t[t.length - 1]) && (op[0] === 6 || op[0] === 2)) { _ = 0; continue; }
+                    if (op[0] === 3 && (!t || (op[1] > t[0] && op[1] < t[3]))) { _.label = op[1]; break; }
+                    if (op[0] === 6 && _.label < t[1]) { _.label = t[1]; t = op; break; }
+                    if (t && _.label < t[2]) { _.label = t[2]; _.ops.push(op); break; }
+                    if (t[2]) _.ops.pop();
+                    _.trys.pop(); continue;
+            }
+            op = body.call(thisArg, _);
+        } catch (e) { op = [6, e]; y = 0; } finally { f = t = 0; }
+        if (op[0] & 5) throw op[1]; return { value: op[0] ? op[1] : void 0, done: true };
+    }
+};
 var __spreadArrays = (this && this.__spreadArrays) || function () {
     for (var s = 0, i = 0, il = arguments.length; i < il; i++) s += arguments[i].length;
     for (var r = Array(s), k = 0, i = 0; i < il; i++)
@@ -26,13 +62,15 @@ define(["require", "exports", "../../framework/3d/WebGLHelper3d", "../../framewo
     var vBuffer; // 顶点缓冲区
     var textureBuffer; // 材质缓冲区
     var ctm; // 当前世界矩阵
+    var PonyWink; // 闭眼小马
+    var PonyWinkTextureManager = []; // 闭眼小马材质管理器
     var Pony; // 小马全身
     var PonyTextureManager = []; // 小马材质管理器
     var PonyTailAngle; // 小马尾部当前旋转角度（DEG）
     var PonyTailDirection; // 小马尾部旋转方向，-1或1
     var Floor; // 地板
-    var slowDownId; //减速计时器编号
-    var autoRotateId; //自动旋转计时器编号
+    var slowDownId; // 减速计时器编号
+    var autoRotateId; // 自动旋转计时器编号
     var isMouseDown = false;
     var mouseLastPos; // 上一次鼠标位置
     var vX = 0; // X轴旋转速度
@@ -50,11 +88,12 @@ define(["require", "exports", "../../framework/3d/WebGLHelper3d", "../../framewo
     var TRANSLATE_DELTA = 0.010; // 每次平移多少距离，WebGL归一化系
     var TAIL_ROTATE_DELTA = 2;
     var TAIL_ROTATE_LIMIT = 6;
-    var FRICTION = 0.0006; //模拟摩擦力，每毫秒降低的速度
-    var INTERVAL = 40; //速度降低的毫秒间隔
-    var ROTATE_PER_X = 0.2; //X轴鼠标拖动旋转的比例
-    var ROTATE_PER_Y = 0.2; //Y轴鼠标拖动旋转的比例
-    var AUTO_ROTATE_DELTA = 1; //自动旋转速度
+    var FRICTION = 0.0006; // 模拟摩擦力，每毫秒降低的速度
+    var INTERVAL = 40; // 速度降低的毫秒间隔
+    var ROTATE_PER_X = 0.2; // X轴鼠标拖动旋转的比例
+    var ROTATE_PER_Y = 0.2; // Y轴鼠标拖动旋转的比例
+    var AUTO_ROTATE_DELTA = 1; // 自动旋转速度
+    var INIT_HEIGHT = 0.5; // 空降起始高度
     // main function
     var main = function () {
         // initialization
@@ -72,13 +111,11 @@ define(["require", "exports", "../../framework/3d/WebGLHelper3d", "../../framewo
      * 读入模型数据，初始化JS中的模型信息记录变量，传送材质，渲染小马
      */
     var initializePony = function () {
-        // 不知道为什么小马一出来是背对的，而且还贼高。绕y轴先转180度，再微调一下y坐标位置
-        var initModelMap = mult(translate(0, -0.3, 0), rotateY(180));
         // 设定小马尾部角度
         PonyTailAngle = 0;
         PonyTailDirection = -1;
         // 设定小马模型
-        Pony = new (DrawingPackage3d_1.DrawingPackage3d.bind.apply(DrawingPackage3d_1.DrawingPackage3d, __spreadArrays([void 0, initModelMap], [
+        Pony = new (DrawingPackage3d_1.DrawingPackage3d.bind.apply(DrawingPackage3d_1.DrawingPackage3d, __spreadArrays([void 0, mult(translate(0, -0.3, 0), rotateY(180))], [
             new DrawingObject3d_1.DrawingObject3d('body', './model/normed/Pony/pony.obj', './model/texture/Pony/pony.png', 0),
             new DrawingObject3d_1.DrawingObject3d('tail', './model/normed/Pony/tail.obj', './model/texture/Pony/tail.png', 1),
             new DrawingObject3d_1.DrawingObject3d('hairBack', './model/normed/Pony/hairBack.obj', './model/texture/Pony/hairBack.png', 2),
@@ -87,36 +124,96 @@ define(["require", "exports", "../../framework/3d/WebGLHelper3d", "../../framewo
             new DrawingObject3d_1.DrawingObject3d('leftEye', './model/normed/Pony/leftEye.obj', './model/texture/Pony/leftEye.png', 5),
             new DrawingObject3d_1.DrawingObject3d('rightEye', './model/normed/Pony/rightEye.obj', './model/texture/Pony/rightEye.png', 6),
             new DrawingObject3d_1.DrawingObject3d('teeth', './model/normed/Pony/teeth.obj', './model/texture/Pony/teeth.png', 7),
+            new DrawingObject3d_1.DrawingObject3d('eyelashes', './model/normed/Pony/eyelashes.obj', './model/texture/Pony/eyelashes.png', 8),
+        ])))();
+        PonyWink = new (DrawingPackage3d_1.DrawingPackage3d.bind.apply(DrawingPackage3d_1.DrawingPackage3d, __spreadArrays([void 0, mult(translate(0, INIT_HEIGHT, 0), rotateY(180))], [
+            new DrawingObject3d_1.DrawingObject3d('body', './model/normed/Pony/pony_wink.obj', './model/texture/Pony/pony.png', 9),
+            new DrawingObject3d_1.DrawingObject3d('tail', './model/normed/Pony/tail.obj', './model/texture/Pony/tail.png', 10),
+            new DrawingObject3d_1.DrawingObject3d('hairBack', './model/normed/Pony/hairBack.obj', './model/texture/Pony/hairBack.png', 11),
+            new DrawingObject3d_1.DrawingObject3d('hairFront', './model/normed/Pony/hairFront.obj', './model/texture/Pony/hairFront.png', 12),
+            new DrawingObject3d_1.DrawingObject3d('horn', './model/normed/Pony/horn.obj', './model/texture/Pony/horn.png', 13),
+            new DrawingObject3d_1.DrawingObject3d('teeth', './model/normed/Pony/teeth.obj', './model/texture/Pony/teeth.png', 14),
+            new DrawingObject3d_1.DrawingObject3d('eyelashes', './model/normed/Pony/eyelashes.obj', './model/texture/Pony/eyelashes.png', 15),
         ])))();
         // 设定地板模型
         Floor = new (DrawingPackage3d_1.DrawingPackage3d.bind.apply(DrawingPackage3d_1.DrawingPackage3d, __spreadArrays([void 0, mat4()], [
             new DrawingObject3d_1.DrawingObject3d('floor', './model/normed/Floor/floor.obj')
         ])))();
         Floor.setMeshOnly(gl.LINE_LOOP, [0, 0, 0]);
-        // 材质初次加载完成后渲染一次，把材质绑到WebGL预置变量上
-        var renderAfterTextureLoad = function (loadedElements) {
-            // 把素材图像传送到GPU  
-            for (var i = 0; i < loadedElements.length; i++) {
-                var no = gl.createTexture();
-                gl.bindTexture(gl.TEXTURE_2D, no);
-                gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, loadedElements[i]);
-                gl.generateMipmap(gl.TEXTURE_2D);
-                PonyTextureManager.push(no);
-            }
-            // 为预置的材质变量绑定上各部分的材质，材质编号从0开始
-            for (var i = 0; i < PonyTextureManager.length; i++) {
-                // PonyTextureManager.length == 8
-                var cmd1 = "gl.activeTexture(gl.TEXTURE" + i + ")", cmd2 = "gl.bindTexture(gl.TEXTURE_2D, PonyTextureManager[" + i + "])";
-                eval(cmd1);
-                eval(cmd2);
-            }
-            // 渲染
-            resetScene();
-            helper.reRender(ctm);
-        };
-        // 有需要加载外部材质的，在这里加载
-        Pony.preloadTexture(renderAfterTextureLoad);
+        // 从Wink态小马开始
+        PonyWink.preloadTexture(ponyWinkLoadedCallback);
     };
+    // 材质初次加载完成后渲染一次，把材质绑到WebGL预置变量上
+    var ponyLoadedCallback = function (loadedElements) {
+        // 把素材图像传送到GPU  
+        for (var i = 0; i < loadedElements.length; i++) {
+            var no = gl.createTexture();
+            gl.bindTexture(gl.TEXTURE_2D, no);
+            gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, loadedElements[i]);
+            gl.generateMipmap(gl.TEXTURE_2D);
+            PonyTextureManager.push(no);
+        }
+        // 为预置的材质变量绑定上各部分的材质，材质编号从0开始
+        for (var i = 0; i < PonyTextureManager.length; i++) {
+            // PonyTextureManager.length == 8
+            var cmd1 = "gl.activeTexture(gl.TEXTURE" + i + ")", cmd2 = "gl.bindTexture(gl.TEXTURE_2D, PonyTextureManager[" + i + "])";
+            eval(cmd1);
+            eval(cmd2);
+        }
+        // 渲染
+        resetScene();
+        helper.reRender(ctm);
+    };
+    var ponyWinkLoadedCallback = function (loadedElements) {
+        for (var i = 0; i < loadedElements.length; i++) {
+            var no = gl.createTexture();
+            gl.bindTexture(gl.TEXTURE_2D, no);
+            gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, loadedElements[i]);
+            gl.generateMipmap(gl.TEXTURE_2D);
+            PonyWinkTextureManager.push(no);
+        }
+        for (var i = 0; i < PonyWinkTextureManager.length; i++) {
+            var cmd1 = "gl.activeTexture(gl.TEXTURE" + (i + 9) + ")", cmd2 = "gl.bindTexture(gl.TEXTURE_2D, PonyWinkTextureManager[" + i + "])";
+            eval(cmd1);
+            eval(cmd2);
+        }
+        // 渲染
+        ponyBounce();
+    };
+    // 小马一开始的弹跳
+    var ponyBounce = function () { return __awaiter(void 0, void 0, void 0, function () {
+        var _myResetScene, fallingDistance, round;
+        return __generator(this, function (_a) {
+            _myResetScene = function () {
+                helper.clearWaitingQueue();
+                helper.drawPackageLater(PonyWink);
+                helper.drawPackageLater(Floor);
+            };
+            fallingDistance = 0;
+            round = function (yTrans, fallingDis, callback) {
+                var what = window.setInterval(function () {
+                    var newMat = mult(PonyWink.modelMat, translate(0, yTrans, 0));
+                    PonyWink.setModelMat(newMat);
+                    fallingDistance += Math.abs(yTrans);
+                    if (fallingDistance >= fallingDis) {
+                        clearInterval(what);
+                        fallingDistance = 0;
+                        callback();
+                    }
+                    _myResetScene();
+                    helper.reRender(ctm);
+                }, 30);
+            };
+            round(-0.05, 0.8, function () {
+                round(0.02, 0.3, function () {
+                    round(-0.01, 0.3, function () {
+                        Pony.preloadTexture(ponyLoadedCallback);
+                    });
+                });
+            });
+            return [2 /*return*/];
+        });
+    }); };
     /**
      * 重设Pony全身和地面坐标，但不会重传材质，也不会重设模型视图矩阵
      */
@@ -152,7 +249,7 @@ define(["require", "exports", "../../framework/3d/WebGLHelper3d", "../../framewo
         if (isAutoRotating) {
             document.querySelector('#autoRotateToggler').innerText = '停止旋转';
             clearInterval(autoRotateId);
-            autoRotateId = setInterval(function () {
+            autoRotateId = window.setInterval(function () {
                 if (!isAutoRotating) {
                     clearInterval(autoRotateId);
                     return;

@@ -13,8 +13,6 @@
   "dependencies": {
     "@types/node": "^12.11.7",
     "express": "^4.17.1",
-    "load-wavefront-obj": "^0.8.0",
-    "nodemon": "^1.19.3",
-    "wavefront-obj-parser": "^2.0.1"
+    "nodemon": "^1.19.3"
   }
 }
