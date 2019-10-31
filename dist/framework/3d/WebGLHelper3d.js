@@ -26,9 +26,6 @@ define(["require", "exports", "../WebGLUtils"], function (require, exports, WebG
             this.globalExtraMatrixUniform = null;
             this.waitingQueue = [];
             this.renderingLock = false;
-            this.rect = this.canvasDOM.getBoundingClientRect();
-            this.cvsW = this.canvasDOM.width;
-            this.cvsH = this.canvasDOM.height;
         }
         /**
          * Set some global settings so that you don't need to pass them every time you draw.
@@ -242,7 +239,8 @@ define(["require", "exports", "../WebGLUtils"], function (require, exports, WebG
             }
             this.renderingLock = true;
             this.setUniformMatrix4d(this.globalWorldMatrixUniform, ctm);
-            this.clearCanvas();
+            // comment `clearCanvas` so that the image no longer flikers
+            // this.clearCanvas()
             this.waitingQueue.forEach(function (ele) {
                 if (!ele.meshOnly) {
                     _this.drawPackageImmediately(ele);
@@ -253,15 +251,6 @@ define(["require", "exports", "../WebGLUtils"], function (require, exports, WebG
             });
             this.clearWaitingQueue();
             this.renderingLock = false;
-        };
-        /**
-        * Convert a coordinate from canvas system (left-top to be O) to WebGL system (center to be O). (2d)
-        */
-        WebGLHelper3d.prototype.convertCoordToWebGLSystem = function (canvasSystemCoord) {
-            var cvsX = canvasSystemCoord[0], cvsY = canvasSystemCoord[1];
-            var x = ((cvsX - this.rect.left) - this.cvsW / 2) / this.cvsW * 2;
-            var y = (this.cvsH / 2 - (cvsY - this.rect.top)) / this.cvsH * 2;
-            return [x, y];
         };
         return WebGLHelper3d;
     }());

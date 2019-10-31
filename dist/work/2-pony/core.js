@@ -31,8 +31,8 @@ define(["require", "exports", "../../framework/3d/WebGLHelper3d", "../../framewo
     var PonyTailAngle; // 小马尾部当前旋转角度（DEG）
     var PonyTailDirection; // 小马尾部旋转方向，-1或1
     var Floor; // 地板
-    var slowDownId; //减速计时器编号
-    var autoRotateId; //自动旋转计时器编号
+    var slowDownId; // 减速计时器编号
+    var autoRotateId; // 自动旋转计时器编号
     var isMouseDown = false;
     var mouseLastPos; // 上一次鼠标位置
     var vX = 0; // X轴旋转速度
@@ -50,11 +50,11 @@ define(["require", "exports", "../../framework/3d/WebGLHelper3d", "../../framewo
     var TRANSLATE_DELTA = 0.010; // 每次平移多少距离，WebGL归一化系
     var TAIL_ROTATE_DELTA = 2;
     var TAIL_ROTATE_LIMIT = 6;
-    var FRICTION = 0.0006; //模拟摩擦力，每毫秒降低的速度
-    var INTERVAL = 40; //速度降低的毫秒间隔
-    var ROTATE_PER_X = 0.2; //X轴鼠标拖动旋转的比例
-    var ROTATE_PER_Y = 0.2; //Y轴鼠标拖动旋转的比例
-    var AUTO_ROTATE_DELTA = 1; //自动旋转速度
+    var FRICTION = 0.0006; // 模拟摩擦力，每毫秒降低的速度
+    var INTERVAL = 40; // 速度降低的毫秒间隔
+    var ROTATE_PER_X = 0.2; // X轴鼠标拖动旋转的比例
+    var ROTATE_PER_Y = 0.2; // Y轴鼠标拖动旋转的比例
+    var AUTO_ROTATE_DELTA = 1; // 自动旋转速度
     // main function
     var main = function () {
         // initialization
@@ -87,6 +87,7 @@ define(["require", "exports", "../../framework/3d/WebGLHelper3d", "../../framewo
             new DrawingObject3d_1.DrawingObject3d('leftEye', './model/normed/Pony/leftEye.obj', './model/texture/Pony/leftEye.png', 5),
             new DrawingObject3d_1.DrawingObject3d('rightEye', './model/normed/Pony/rightEye.obj', './model/texture/Pony/rightEye.png', 6),
             new DrawingObject3d_1.DrawingObject3d('teeth', './model/normed/Pony/teeth.obj', './model/texture/Pony/teeth.png', 7),
+            new DrawingObject3d_1.DrawingObject3d('eyelashes', './model/normed/Pony/eyelashes.obj', './model/texture/Pony/eyelashes.png', 8),
         ])))();
         // 设定地板模型
         Floor = new (DrawingPackage3d_1.DrawingPackage3d.bind.apply(DrawingPackage3d_1.DrawingPackage3d, __spreadArrays([void 0, mat4()], [
@@ -152,7 +153,7 @@ define(["require", "exports", "../../framework/3d/WebGLHelper3d", "../../framewo
         if (isAutoRotating) {
             document.querySelector('#autoRotateToggler').innerText = '停止旋转';
             clearInterval(autoRotateId);
-            autoRotateId = setInterval(function () {
+            autoRotateId = window.setInterval(function () {
                 if (!isAutoRotating) {
                     clearInterval(autoRotateId);
                     return;

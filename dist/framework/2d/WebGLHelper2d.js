@@ -6,6 +6,7 @@ define(["require", "exports", "../WebGLUtils", "./WebGLDrawingPackage"], functio
     Object.defineProperty(exports, "__esModule", { value: true });
     var WebGLHelper2d = /** @class */ (function () {
         function WebGLHelper2d(_canvasDOM, _gl, _program) {
+            this.renderingLock = false;
             this.canvasDOM = _canvasDOM;
             this.gl = _gl;
             this.program = _program;
@@ -20,6 +21,7 @@ define(["require", "exports", "../WebGLUtils", "./WebGLDrawingPackage"], functio
             this.rect = this.canvasDOM.getBoundingClientRect();
             this.cvsW = this.canvasDOM.width;
             this.cvsH = this.canvasDOM.height;
+            this.renderingLock = false;
         }
         /**
          * Set global settings. So that you don't need to pass these arguments every time you call `drawImmediately`.

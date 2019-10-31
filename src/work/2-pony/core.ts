@@ -23,8 +23,8 @@ let PonyTextureManager: Array<WebGLTexture> = [] // 小马材质管理器
 let PonyTailAngle: number // 小马尾部当前旋转角度（DEG）
 let PonyTailDirection: number // 小马尾部旋转方向，-1或1
 let Floor: DrawingPackage3d // 地板
-let slowDownId: number//减速计时器编号
-let autoRotateId: number//自动旋转计时器编号
+let slowDownId: number // 减速计时器编号
+let autoRotateId: number// 自动旋转计时器编号
 let isMouseDown = false
 let mouseLastPos: Vec2 // 上一次鼠标位置
 let vX = 0 // X轴旋转速度
@@ -44,11 +44,11 @@ const ROTATE_DELTA = 5 // 每次转多少度，角度制
 const TRANSLATE_DELTA = 0.010 // 每次平移多少距离，WebGL归一化系
 const TAIL_ROTATE_DELTA = 2
 const TAIL_ROTATE_LIMIT = 6
-const FRICTION = 0.0006//模拟摩擦力，每毫秒降低的速度
-const INTERVAL = 40//速度降低的毫秒间隔
-const ROTATE_PER_X = 0.2//X轴鼠标拖动旋转的比例
-const ROTATE_PER_Y = 0.2//Y轴鼠标拖动旋转的比例
-const AUTO_ROTATE_DELTA = 1//自动旋转速度
+const FRICTION = 0.0006 // 模拟摩擦力，每毫秒降低的速度
+const INTERVAL = 40 // 速度降低的毫秒间隔
+const ROTATE_PER_X = 0.2 // X轴鼠标拖动旋转的比例
+const ROTATE_PER_Y = 0.2 // Y轴鼠标拖动旋转的比例
+const AUTO_ROTATE_DELTA = 1 // 自动旋转速度
 
 // main function
 let main = () => {
@@ -92,6 +92,7 @@ let initializePony = () => {
     new DrawingObject3d('leftEye', './model/normed/Pony/leftEye.obj', './model/texture/Pony/leftEye.png', 5), // 左眼
     new DrawingObject3d('rightEye', './model/normed/Pony/rightEye.obj', './model/texture/Pony/rightEye.png', 6), // 右眼
     new DrawingObject3d('teeth', './model/normed/Pony/teeth.obj', './model/texture/Pony/teeth.png', 7), // 牙
+    new DrawingObject3d('eyelashes', './model/normed/Pony/eyelashes.obj', './model/texture/Pony/eyelashes.png', 8), // 睫毛
   ])
 
   // 设定地板模型
@@ -161,7 +162,7 @@ let resetScene = () => {
   if (isAutoRotating) {
     (document.querySelector('#autoRotateToggler') as HTMLButtonElement).innerText = '停止旋转'
     clearInterval(autoRotateId)
-    autoRotateId = setInterval(() => {
+    autoRotateId = window.setInterval(() => {
       if (!isAutoRotating) {
         clearInterval(autoRotateId)
         return

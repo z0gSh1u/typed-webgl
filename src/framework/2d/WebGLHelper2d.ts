@@ -24,6 +24,8 @@ export class WebGLHelper2d {
 
   private waitingQueue: WebGLDrawingPackage
 
+  private renderingLock = false
+
   private lastRenderTick: number
   private INTERVAL_MIN: number
 
@@ -42,6 +44,7 @@ export class WebGLHelper2d {
     this.rect = this.canvasDOM.getBoundingClientRect()
     this.cvsW = this.canvasDOM.width
     this.cvsH = this.canvasDOM.height
+    this.renderingLock = false
   }
 
   /**
