@@ -5,7 +5,6 @@
 import { normalize8bitColor } from '../WebGLUtils'
 import { DrawingObject3d } from './DrawingObject3d'
 import { DrawingPackage3d } from './DrawingPackage3d'
-import { PhongLightModel } from './PhongLightModel'
 
 export class WebGLHelper3d {
 
@@ -21,15 +20,6 @@ export class WebGLHelper3d {
   private globalWorldMatrixUniform: string | null
   private globalModelMatrixUniform: string | null
   private globalExtraMatrixUniform: string | null
-  private globalNormalBuffer: WebGLBuffer | null
-  private globalNormalAttribute: string | null
-
-  private lighting: PhongLightModel | null
-  private globalLightPosUniform: string | null
-  private globalShinessUniform: string | null
-  private globalAmbientProductUniform: string | null
-  private globalDiffuseProductUniform: string | null
-  private globalSpecularProductUniform: string | null
 
   private renderingLock: boolean
   private waitingQueue: Array<DrawingPackage3d>
@@ -46,30 +36,8 @@ export class WebGLHelper3d {
     this.globalWorldMatrixUniform = null
     this.globalModelMatrixUniform = null
     this.globalExtraMatrixUniform = null
-    this.globalNormalBuffer = null
-    this.globalNormalAttribute = null
     this.waitingQueue = []
     this.renderingLock = false
-    this.lighting = null
-    this.globalLightPosUniform = null
-    this.globalShinessUniform = null
-    this.globalAmbientProductUniform = null
-    this.globalDiffuseProductUniform = null
-    this.globalSpecularProductUniform = null
-  }
-
-  /**
-   * Get the lighting.
-   */
-  public getLighting() {
-    return this.lighting
-  }
-
-  /**
-   * Set the lighting.
-   */
-  public setLighting(l: PhongLightModel) {
-    this.lighting = l
   }
 
   /**
@@ -83,15 +51,7 @@ export class WebGLHelper3d {
     _tSamplerAttr: string,
     _worldMatUniform: string,
     _modelMatUniform: string,
-    _extraMatUniform: string,
-    _nBuf: WebGLBuffer,
-    _nAttr: string,
-    _lightPosUniform: string,
-    _shinessUniform: string,
-    _ambientProductUniform: string,
-    _diffuseProductUniform: string,
-    _specularProductUniform: string,
-  ) {
+    _extraMatUniform: string) {
     this.globalTextureBuffer = _tBuf
     this.globalVertexAttribute = _vAttr
     this.globalVertexBuffer = _vBuf
@@ -100,13 +60,6 @@ export class WebGLHelper3d {
     this.globalWorldMatrixUniform = _worldMatUniform
     this.globalModelMatrixUniform = _modelMatUniform
     this.globalExtraMatrixUniform = _extraMatUniform
-    this.globalNormalBuffer = _nBuf
-    this.globalNormalAttribute = _nAttr
-    this.globalLightPosUniform = _lightPosUniform
-    this.globalShinessUniform = _shinessUniform
-    this.globalAmbientProductUniform = _ambientProductUniform
-    this.globalDiffuseProductUniform = _diffuseProductUniform
-    this.globalSpecularProductUniform = _specularProductUniform
   }
 
   /**
@@ -221,13 +174,6 @@ export class WebGLHelper3d {
   }
 
   /**
-   * Transform current mode to normalSetting.
-   */
-  public normalSettingMode(nBuf: WebGLBuffer, nAttr: string) {
-    this.vertexSettingMode(nBuf, nAttr, 3, this.gl.FLOAT)
-  }
-
-  /**
    * Draw a `DrawingObject3d` without texture. (Mesh only.)
    */
   public drawImmediatelyMeshOnly(obj: DrawingObject3d, method: number, color: Vec4) {
@@ -255,7 +201,6 @@ export class WebGLHelper3d {
    * Draw a `DrawingObject3d` immediately using the specified texture. `textureIndex` starts from 0.
    */
   public drawImmediately(obj: DrawingObject3d, textureIndex: number) {
-
     // 处理extraMatrix
     this.setUniformMatrix4d(this.globalExtraMatrixUniform as string, obj.extraMatrix)
     // 准备mesh绘制
@@ -266,7 +211,7 @@ export class WebGLHelper3d {
         meshVertices.push(obj.objProcessor.vs[subscript]) // xyzxyzxyz
       })
     })
-    // 发送三角形顶点信息，绘制mesh
+    // 发送三角形顶点信息
     this.vertexSettingMode(this.globalVertexBuffer as WebGLBuffer, this.globalVertexAttribute as string, 3)
     this.sendDataToBuffer(flatten(meshVertices))
 
@@ -288,44 +233,10 @@ export class WebGLHelper3d {
       throw "[drawImmediately] Cannot find texture vertices info. Framework doesn't support this situation."
     }
 
-    // !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-    // 处理光照相关信息（发送法向量）
-    this.normalSettingMode(this.globalNormalBuffer as WebGLBuffer, this.globalNormalAttribute as string)
-    let normalVectors: Array<Vec3> = []
-    obj.objProcessor.fns.forEach(nv => {
-      nv.forEach(vOfNV => {
-        let subscript = vOfNV - 1
-        normalVectors.push(obj.objProcessor.vns[subscript])
-      })
-    })
-    this.sendDataToBuffer(flatten(normalVectors))
-    // !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-
     // 综合绘制
     this.drawArrays(this.gl.TRIANGLES, 0, obj.objProcessor.getEffectiveVertexCount())
   }
 
-  /**
-   * Same as it says.
-   */
-  public setUniformVector4d(variableName: string, v: Vec4) {
-    this.gl.uniform4f(this.gl.getUniformLocation(this.program, variableName), ...v)
-  }
-
-  /**
-   * Re-send all lighting parameters to shader.
-   * You should call it always manually.
-   */
-  public updateLighting(posOnly: boolean = false) {
-    this.setUniformVector4d(this.globalLightPosUniform as string, [...(this.lighting as PhongLightModel).lightPosition, 1.0] as Vec4)
-    if (posOnly) {
-      return
-    }
-    this.setUniformVector4d(this.globalAmbientProductUniform as string, (this.lighting as PhongLightModel).ambientProduct)
-    this.setUniformVector4d(this.globalDiffuseProductUniform as string, (this.lighting as PhongLightModel).diffuseProduct)
-    this.setUniformVector4d(this.globalSpecularProductUniform as string, (this.lighting as PhongLightModel).specularProduct)
-    this.gl.uniform1f(this.gl.getUniformLocation(this.program, this.globalShinessUniform as string), (this.lighting as PhongLightModel).materialShiness)
-  }
 
   /**
    * Draw a `DrawingPackage3d` immediately using the specified texture.

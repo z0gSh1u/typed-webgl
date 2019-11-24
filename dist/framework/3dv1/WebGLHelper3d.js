@@ -24,33 +24,13 @@ define(["require", "exports", "../WebGLUtils"], function (require, exports, WebG
             this.globalWorldMatrixUniform = null;
             this.globalModelMatrixUniform = null;
             this.globalExtraMatrixUniform = null;
-            this.globalNormalBuffer = null;
-            this.globalNormalAttribute = null;
             this.waitingQueue = [];
             this.renderingLock = false;
-            this.lighting = null;
-            this.globalLightPosUniform = null;
-            this.globalShinessUniform = null;
-            this.globalAmbientProductUniform = null;
-            this.globalDiffuseProductUniform = null;
-            this.globalSpecularProductUniform = null;
         }
-        /**
-         * Get the lighting.
-         */
-        WebGLHelper3d.prototype.getLighting = function () {
-            return this.lighting;
-        };
-        /**
-         * Set the lighting.
-         */
-        WebGLHelper3d.prototype.setLighting = function (l) {
-            this.lighting = l;
-        };
         /**
          * Set some global settings so that you don't need to pass them every time you draw.
          */
-        WebGLHelper3d.prototype.setGlobalSettings = function (_vBuf, _vAttr, _tBuf, _tCoordAttr, _tSamplerAttr, _worldMatUniform, _modelMatUniform, _extraMatUniform, _nBuf, _nAttr, _lightPosUniform, _shinessUniform, _ambientProductUniform, _diffuseProductUniform, _specularProductUniform) {
+        WebGLHelper3d.prototype.setGlobalSettings = function (_vBuf, _vAttr, _tBuf, _tCoordAttr, _tSamplerAttr, _worldMatUniform, _modelMatUniform, _extraMatUniform) {
             this.globalTextureBuffer = _tBuf;
             this.globalVertexAttribute = _vAttr;
             this.globalVertexBuffer = _vBuf;
@@ -59,13 +39,6 @@ define(["require", "exports", "../WebGLUtils"], function (require, exports, WebG
             this.globalWorldMatrixUniform = _worldMatUniform;
             this.globalModelMatrixUniform = _modelMatUniform;
             this.globalExtraMatrixUniform = _extraMatUniform;
-            this.globalNormalBuffer = _nBuf;
-            this.globalNormalAttribute = _nAttr;
-            this.globalLightPosUniform = _lightPosUniform;
-            this.globalShinessUniform = _shinessUniform;
-            this.globalAmbientProductUniform = _ambientProductUniform;
-            this.globalDiffuseProductUniform = _diffuseProductUniform;
-            this.globalSpecularProductUniform = _specularProductUniform;
         };
         /**
          * Create a buffer.
@@ -162,12 +135,6 @@ define(["require", "exports", "../WebGLUtils"], function (require, exports, WebG
             this.vertexSettingMode(tBuf, tAttr, 2, this.gl.FLOAT);
         };
         /**
-         * Transform current mode to normalSetting.
-         */
-        WebGLHelper3d.prototype.normalSettingMode = function (nBuf, nAttr) {
-            this.vertexSettingMode(nBuf, nAttr, 3, this.gl.FLOAT);
-        };
-        /**
          * Draw a `DrawingObject3d` without texture. (Mesh only.)
          */
         WebGLHelper3d.prototype.drawImmediatelyMeshOnly = function (obj, method, color) {
@@ -204,7 +171,7 @@ define(["require", "exports", "../WebGLUtils"], function (require, exports, WebG
                     meshVertices.push(obj.objProcessor.vs[subscript]); // xyzxyzxyz
                 });
             });
-            // 发送三角形顶点信息，绘制mesh
+            // 发送三角形顶点信息
             this.vertexSettingMode(this.globalVertexBuffer, this.globalVertexAttribute, 3);
             this.sendDataToBuffer(flatten(meshVertices));
             if (obj.objProcessor.fts.length != 0) {
@@ -225,42 +192,8 @@ define(["require", "exports", "../WebGLUtils"], function (require, exports, WebG
             else {
                 throw "[drawImmediately] Cannot find texture vertices info. Framework doesn't support this situation.";
             }
-            // !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-            // 处理光照相关信息（发送法向量）
-            this.normalSettingMode(this.globalNormalBuffer, this.globalNormalAttribute);
-            var normalVectors = [];
-            obj.objProcessor.fns.forEach(function (nv) {
-                nv.forEach(function (vOfNV) {
-                    var subscript = vOfNV - 1;
-                    normalVectors.push(obj.objProcessor.vns[subscript]);
-                });
-            });
-            this.sendDataToBuffer(flatten(normalVectors));
-            // !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
             // 综合绘制
             this.drawArrays(this.gl.TRIANGLES, 0, obj.objProcessor.getEffectiveVertexCount());
-        };
-        /**
-         * Same as it says.
-         */
-        WebGLHelper3d.prototype.setUniformVector4d = function (variableName, v) {
-            var _a;
-            (_a = this.gl).uniform4f.apply(_a, __spreadArrays([this.gl.getUniformLocation(this.program, variableName)], v));
-        };
-        /**
-         * Re-send all lighting parameters to shader.
-         * You should call it always manually.
-         */
-        WebGLHelper3d.prototype.updateLighting = function (posOnly) {
-            if (posOnly === void 0) { posOnly = false; }
-            this.setUniformVector4d(this.globalLightPosUniform, __spreadArrays(this.lighting.lightPosition, [1.0]));
-            if (posOnly) {
-                return;
-            }
-            this.setUniformVector4d(this.globalAmbientProductUniform, this.lighting.ambientProduct);
-            this.setUniformVector4d(this.globalDiffuseProductUniform, this.lighting.diffuseProduct);
-            this.setUniformVector4d(this.globalSpecularProductUniform, this.lighting.specularProduct);
-            this.gl.uniform1f(this.gl.getUniformLocation(this.program, this.globalShinessUniform), this.lighting.materialShiness);
         };
         /**
          * Draw a `DrawingPackage3d` immediately using the specified texture.
