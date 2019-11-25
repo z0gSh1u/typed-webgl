@@ -182,6 +182,18 @@ define(["require", "exports", "../WebGLUtils"], function (require, exports, WebG
             // 发送三角形顶点信息
             this.vertexSettingMode(this.globalVertexBuffer, this.globalVertexAttribute, 3);
             this.sendDataToBuffer(flatten(meshVertices));
+            // !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+            // 处理光照相关信息（发送法向量）
+            this.normalSettingMode(this.globalNormalBuffer, this.globalNormalAttribute);
+            var normalVectors = [];
+            obj.objProcessor.fns.forEach(function (nv) {
+                nv.forEach(function (vOfNV) {
+                    var subscript = vOfNV - 1;
+                    normalVectors.push(obj.objProcessor.vns[subscript]);
+                });
+            });
+            this.sendDataToBuffer(flatten(normalVectors));
+            // !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
             // 纯色纹理
             var texture = this.gl.createTexture();
             this.gl.bindTexture(this.gl.TEXTURE_2D, texture);

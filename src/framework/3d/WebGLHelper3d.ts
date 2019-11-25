@@ -242,6 +242,21 @@ export class WebGLHelper3d {
     // 发送三角形顶点信息
     this.vertexSettingMode(this.globalVertexBuffer as WebGLBuffer, this.globalVertexAttribute as string, 3)
     this.sendDataToBuffer(flatten(meshVertices))
+
+
+    // !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+    // 处理光照相关信息（发送法向量）
+    this.normalSettingMode(this.globalNormalBuffer as WebGLBuffer, this.globalNormalAttribute as string)
+    let normalVectors: Array<Vec3> = []
+    obj.objProcessor.fns.forEach(nv => {
+      nv.forEach(vOfNV => {
+        let subscript = vOfNV - 1
+        normalVectors.push(obj.objProcessor.vns[subscript])
+      })
+    })
+    this.sendDataToBuffer(flatten(normalVectors))
+    // !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+
     // 纯色纹理
     let texture = this.gl.createTexture()
     this.gl.bindTexture(this.gl.TEXTURE_2D, texture)

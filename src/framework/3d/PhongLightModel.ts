@@ -51,6 +51,44 @@ export class PhongLightModel {
     this._lightPosition = [...newPos, 1.0] as Vec4
   }
 
+  public reCalculateProducts() {
+    this._ambientProduct = mult(this._ambientColor, this._ambientMaterial) as Vec4
+    this._diffuseProduct = mult(this._diffuseColor, this._diffuseMaterial) as Vec4
+    this._specularProduct = mult(this._specularColor, this._specularMaterial) as Vec4
+  }
+
+  get ambientMaterial() {
+    return this._ambientMaterial
+  }
+  
+  get diffuseMaterial() {
+    return this._diffuseMaterial
+  }
+
+  get specularMaterial() {
+    return this._specularMaterial
+  }
+
+  get materialShiness() {
+    return this._materialShiness
+  }
+
+  set ambientMaterial(v: Vec4) {
+    this._ambientMaterial = v
+  }
+  
+  set diffuseMaterial(v: Vec4) {
+    this._diffuseMaterial = v
+  }
+
+  set specularMaterial(v: Vec4) {
+    this._specularMaterial = v
+  }
+
+  set materialShiness(v: number) {
+    this._materialShiness = v
+  }
+
   get lightPosition() {
     return this._lightPosition.slice(0, 3) as Vec3
   }
@@ -65,10 +103,6 @@ export class PhongLightModel {
 
   get specularProduct() {
     return this._specularProduct
-  }
-
-  get materialShiness() {
-    return this._materialShiness
   }
 
 }

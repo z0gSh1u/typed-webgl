@@ -30,7 +30,21 @@ define(["require", "exports", "../../framework/3d/WebGLHelper3d", "../../framewo
     var Pony; // 小马全身
     var PonyTextureManager = []; // 小马材质管理器
     var Floor; // 地板
-    var lightBulbPosition = vec3(0.5, 0.5, 0.5);
+    var slowDownId; // 减速计时器编号
+    var isMouseDown = false;
+    var mouseLastPos; // 上一次鼠标位置
+    var vX = 0; // X轴旋转速度
+    var vY = 0; // Y轴旋转速度
+    var curTick;
+    var lastTick;
+    var PonyMaterialInputDOMs = [];
+    var PonyMaterialCorrespondings = [];
+    // global constant
+    var FRICTION = 0.0006; // 模拟摩擦力，每毫秒降低的速度
+    var INTERVAL = 40; // 速度降低的毫秒间隔
+    var ROTATE_PER_X = 0.2; // X轴鼠标拖动旋转的比例
+    var ROTATE_PER_Y = 0.2; // Y轴鼠标拖动旋转的比例
+    var lightBulbPosition = vec3(0, 0, 0);
     // material parameters
     var PonyMaterial = new PhongLightModel_1.PhongLightModel({
         lightPosition: lightBulbPosition,
@@ -86,7 +100,6 @@ define(["require", "exports", "../../framework/3d/WebGLHelper3d", "../../framewo
         Floor = new (DrawingPackage3d_1.DrawingPackage3d.bind.apply(DrawingPackage3d_1.DrawingPackage3d, __spreadArrays([void 0, mat4()], [
             new DrawingObject3d_1.DrawingObject3d('floor', './model/normed/Floor/floor.obj')
         ])))();
-        // Floor.setMeshOnly(gl.LINE_LOOP, [0, 0, 0])
         Floor.setMeshOnly(gl.TRIANGLE_STRIP, [111, 193, 255]);
         Pony.preloadTexture(ponyLoadedCallback);
     };
@@ -109,22 +122,156 @@ define(["require", "exports", "../../framework/3d/WebGLHelper3d", "../../framewo
         }
         // 渲染
         resetScene();
-        testLight();
-        helper.reRender(mult(ctm, rotateX(30)));
+        reRenderLighting();
+        helper.reRender(mat4());
     };
     /**
      * 重设Pony全身和地面坐标，但不会重传材质，也不会重设模型视图矩阵
      */
     var resetScene = function () {
         helper.clearWaitingQueue();
-        [Floor, Pony,].forEach(function (ele) {
+        [Floor, Pony].forEach(function (ele) {
             helper.drawPackageLater(ele);
         });
     };
-    var testLight = function () {
+    var reRenderLighting = function (posOnly) {
+        if (posOnly === void 0) { posOnly = false; }
+        [PonyMaterial, FloorMaterial].forEach(function (ele) {
+            ele.reCalculateProducts();
+        });
         helper.setLighting(PonyMaterial);
         helper.updateLighting();
     };
+    // ===============================
+    // 光源交互相关
+    // ===============================
+    /**
+     * 初始化位置输入框
+     */
+    var initPositionInput = function () {
+        document.querySelector('#lightPosX').value = lightBulbPosition[0].toString();
+        document.querySelector('#lightPosY').value = lightBulbPosition[1].toString();
+        document.querySelector('#lightPosZ').value = lightBulbPosition[2].toString();
+    };
+    /**
+     * 调节位置
+     */
+    var listenPositionInput = function () {
+        document.querySelector('#applyLightPos').onclick = function () {
+            var xx = document.querySelector('#lightPosX').value, yy = document.querySelector('#lightPosY').value, zz = document.querySelector('#lightPosZ').value;
+            lightBulbPosition = ([xx, yy, zz].map(function (_) { return parseFloat(_); }));
+            [PonyMaterial, FloorMaterial].forEach(function (ele) {
+                ele.setLightPosition(lightBulbPosition);
+            });
+            reRenderLighting(true);
+            helper.reRender(ctm);
+        };
+    };
+    /**
+     * 初始化材质颜色参量输入框
+     */
+    var initPonyMaterialInput = function () {
+        PonyMaterialInputDOMs = ['#colorinputAR', '#colorinputAG', '#colorinputAB', '#colorinputDR',
+            '#colorinputDG', '#colorinputDB', '#colorinputSR',
+            '#colorinputSG', '#colorinputSB', '#shinessinput'];
+        PonyMaterialCorrespondings = [
+            'PonyMaterial.ambientMaterial[0]', 'PonyMaterial.ambientMaterial[1]', 'PonyMaterial.ambientMaterial[2]',
+            'PonyMaterial.diffuseMaterial[0]', 'PonyMaterial.diffuseMaterial[1]', 'PonyMaterial.diffuseMaterial[2]',
+            'PonyMaterial.specularMaterial[0]', 'PonyMaterial.specularMaterial[1]', 'PonyMaterial.specularMaterial[2]',
+            'PonyMaterial.materialShiness'
+        ];
+        PonyMaterialCorrespondings.forEach(function (v, idx) {
+            if (idx == 9) {
+                eval("document.querySelector('" + PonyMaterialInputDOMs[idx] + "').value=(Math.floor(" + v + ")).toString()");
+            }
+            else {
+                eval("document.querySelector('" + PonyMaterialInputDOMs[idx] + "').value=(Math.floor(" + v + "*255)).toString()");
+            }
+        });
+    };
+    /**
+     * 调节小马材质颜色参量
+     */
+    var listenPonyMaterialInput = function () {
+        document.querySelector('#applyLightparam').onclick = function () {
+            PonyMaterialCorrespondings.forEach(function (v, idx) {
+                if (idx == 9) {
+                    eval(v + "=parseInt(document.querySelector('" + PonyMaterialInputDOMs[idx] + "').value)");
+                }
+                else {
+                    eval(v + "=parseInt(document.querySelector('" + PonyMaterialInputDOMs[idx] + "').value)/255");
+                }
+            });
+            reRenderLighting(false);
+            helper.reRender(ctm);
+        };
+    };
+    // ===============================
+    // 跟踪球实现
+    // ===============================
+    // 鼠标按下时随鼠标旋转
+    var rotateWithMouse = function (e) {
+        var mousePos = [e.offsetX, e.offsetY];
+        lastTick = curTick;
+        curTick = new Date().getTime();
+        var disX = (mousePos[0] - mouseLastPos[0]) * ROTATE_PER_X;
+        var disY = (mousePos[1] - mouseLastPos[1]) * ROTATE_PER_Y;
+        vX = disX / (curTick - lastTick);
+        vY = disY / (curTick - lastTick);
+        ctm = mult(rotateX(-disY), ctm);
+        ctm = mult(rotateY(-disX), ctm);
+        mouseLastPos = mousePos;
+        resetScene();
+        helper.reRender(ctm);
+    };
+    var abs = function (n) {
+        return n < 0 ? -n : n;
+    };
+    var sign = function (n) {
+        if (n == 0) {
+            return 0;
+        }
+        else {
+            return abs(n) / n;
+        }
+    };
+    // 松开鼠标后每INTERVAL毫秒进行一次减速
+    var slowDown = function () {
+        if (vX == 0 && vY == 0) {
+            clearInterval(slowDownId);
+            return;
+        }
+        ctm = mult(rotateX(-vY * INTERVAL), ctm);
+        ctm = mult(rotateY(-vX * INTERVAL), ctm);
+        vX = abs(vX) <= FRICTION * INTERVAL ? 0 : vX - FRICTION * INTERVAL * sign(vX);
+        vY = abs(vY) <= FRICTION * INTERVAL ? 0 : vY - FRICTION * INTERVAL * sign(vY);
+        resetScene();
+        helper.reRender(ctm);
+    };
+    // 鼠标侦听
+    var listenMouse = function () {
+        canvasDOM.onmousedown = function (e) {
+            isMouseDown = true;
+            mouseLastPos = [e.offsetX, e.offsetY];
+            clearInterval(slowDownId);
+            curTick = lastTick = new Date().getTime();
+        };
+        canvasDOM.onmouseup = function (e) {
+            isMouseDown = false;
+            clearInterval(slowDownId);
+            slowDownId = window.setInterval(slowDown, INTERVAL);
+        };
+        canvasDOM.onmousemove = function (e) {
+            if (isMouseDown) {
+                rotateWithMouse(e);
+            }
+        };
+    };
     // do it
     main();
+    initPositionInput();
+    initPonyMaterialInput();
+    listenPonyMaterialInput();
+    listenPositionInput();
+    listenMouse();
 });

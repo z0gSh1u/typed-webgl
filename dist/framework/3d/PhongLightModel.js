@@ -28,6 +28,51 @@ define(["require", "exports", "../WebGLUtils"], function (require, exports, WebG
         PhongLightModel.prototype.setLightPosition = function (newPos) {
             this._lightPosition = __spreadArrays(newPos, [1.0]);
         };
+        PhongLightModel.prototype.reCalculateProducts = function () {
+            this._ambientProduct = mult(this._ambientColor, this._ambientMaterial);
+            this._diffuseProduct = mult(this._diffuseColor, this._diffuseMaterial);
+            this._specularProduct = mult(this._specularColor, this._specularMaterial);
+        };
+        Object.defineProperty(PhongLightModel.prototype, "ambientMaterial", {
+            get: function () {
+                return this._ambientMaterial;
+            },
+            set: function (v) {
+                this._ambientMaterial = v;
+            },
+            enumerable: true,
+            configurable: true
+        });
+        Object.defineProperty(PhongLightModel.prototype, "diffuseMaterial", {
+            get: function () {
+                return this._diffuseMaterial;
+            },
+            set: function (v) {
+                this._diffuseMaterial = v;
+            },
+            enumerable: true,
+            configurable: true
+        });
+        Object.defineProperty(PhongLightModel.prototype, "specularMaterial", {
+            get: function () {
+                return this._specularMaterial;
+            },
+            set: function (v) {
+                this._specularMaterial = v;
+            },
+            enumerable: true,
+            configurable: true
+        });
+        Object.defineProperty(PhongLightModel.prototype, "materialShiness", {
+            get: function () {
+                return this._materialShiness;
+            },
+            set: function (v) {
+                this._materialShiness = v;
+            },
+            enumerable: true,
+            configurable: true
+        });
         Object.defineProperty(PhongLightModel.prototype, "lightPosition", {
             get: function () {
                 return this._lightPosition.slice(0, 3);
@@ -52,13 +97,6 @@ define(["require", "exports", "../WebGLUtils"], function (require, exports, WebG
         Object.defineProperty(PhongLightModel.prototype, "specularProduct", {
             get: function () {
                 return this._specularProduct;
-            },
-            enumerable: true,
-            configurable: true
-        });
-        Object.defineProperty(PhongLightModel.prototype, "materialShiness", {
-            get: function () {
-                return this._materialShiness;
             },
             enumerable: true,
             configurable: true

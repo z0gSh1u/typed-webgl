@@ -48,35 +48,34 @@
       width: 50px;
       margin-right: 5px;
     }
-    
+
     .colorinput {
       width: 50px;
       margin-right: 5px;
     }
 
-    .lightparam > p {
+    .lightparam>p {
       display: inline-block;
       margin: 0;
       padding: 0;
       font-family: 'Consolas';
     }
 
-    .lightparam > .r {
-      background-color:pink;
+    .lightparam>.r {
+      background-color: pink;
     }
 
-    .lightparam > .g {
-      background-color:greenyellow;
+    .lightparam>.g {
+      background-color: greenyellow;
     }
 
-    .lightparam > .b {
+    .lightparam>.b {
       background-color: skyblue;
     }
 
     #applyLightparam {
       margin-top: 10px;
     }
-
   </style>
 
 </head>
@@ -92,34 +91,39 @@
 
     <div class="requirement">
       <h4>A、交互式的视点变化，实现场景漫游</h4>
-      <p>...</p>
+      <div class="keyBlock">W</div>前进
+      <div class="keyBlock">S</div>后退
+      <div class="keyBlock">A</div>左旋
+      <div class="keyBlock">D</div>右旋<br>
     </div>
     <div class="requirement">
       <h4>B、光源位置可交互改变，参数可调</h4>
       <p>调节光源位置：</p>
       <div class="lightpos">
-        X=<input type="text" class="coordinput" id="lightposX">
-        Y=<input type="text" class="coordinput" id="lightposY">
-        Z=<input type="text" class="coordinput" id="lightposZ">
-        <button id="applyLightpos">应用</button>
+        X=<input type="text" class="coordinput" id="lightPosX">
+        Y=<input type="text" class="coordinput" id="lightPosY">
+        Z=<input type="text" class="coordinput" id="lightPosZ">
+        <button id="applyLightPos">应用</button>
       </div>
-      <p>调节光源参数：</p>
+      <p>调节小马材质参数：</p>
       <div class="lightparam">
         <p>Ambient:&nbsp;</p>
-        <input type="text" class="colorinput r">
-        <input type="text" class="colorinput g">
-        <input type="text" class="colorinput b">
+        <input type="text" class="colorinput r" id='colorinputAR'>
+        <input type="text" class="colorinput g" id='colorinputAG'>
+        <input type="text" class="colorinput b" id='colorinputAB'>
         <br>
         <p>Diffuse:&nbsp;</p>
-        <input type="text" class="colorinput r">
-        <input type="text" class="colorinput g">
-        <input type="text" class="colorinput b">
+        <input type="text" class="colorinput r" id='colorinputDR'>
+        <input type="text" class="colorinput g" id='colorinputDG'>
+        <input type="text" class="colorinput b" id='colorinputDB'>
         <br>
         <p>Specular:</p>
-        <input type="text" class="colorinput r">
-        <input type="text" class="colorinput g">
-        <input type="text" class="colorinput b">
+        <input type="text" class="colorinput r" id='colorinputSR'>
+        <input type="text" class="colorinput g" id='colorinputSG'>
+        <input type="text" class="colorinput b" id='colorinputSB'>
         <br>
+        <p>Shiness:&nbsp;</p>
+        <input type="text" class="coordinput" id='shinessinput'>
         <button id="applyLightparam">应用</button>
       </div>
     </div>
