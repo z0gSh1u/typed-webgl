@@ -1,5 +1,5 @@
 // Core code of 3-Shining.
-// by z0gSh1u
+// by z0gSh1u & LongChen.
 import '../../3rd-party/MV'
 import '../../3rd-party/initShaders'
 import { WebGLHelper3d } from '../../framework/3d/WebGLHelper3d'
@@ -19,7 +19,7 @@ let PROGRAMS = {
 // ==================================
 // 主体渲染使用
 // ==================================
-let lightBulbPosition = vec3(0.1, 0.02, 0.03) // 光源位置
+let lightBulbPosition = vec3(0.0, 0.0, 0.0) // 光源位置
 let vBuffer: WebGLBuffer // 顶点缓冲区
 let nBuffer: WebGLBuffer // 法向量缓冲区
 let tBuffer: WebGLBuffer // 材质顶点缓冲区
@@ -27,13 +27,13 @@ let ctm: Mat // 当前世界矩阵
 let Pony: DrawingPackage3d // 小马全身
 let PonyMaterial = new PhongLightModel({ // 小马光照参数
   lightPosition: lightBulbPosition,
-  ambientColor: [50, 50, 50],
-  ambientMaterial: [50, 50, 50],
-  diffuseColor: [192, 149, 83],
-  diffuseMaterial: [50, 100, 100],
+  ambientColor: [255, 255, 255],
+  ambientMaterial: [200, 200, 200],
+  diffuseColor: [255, 255, 255],
+  diffuseMaterial: [66, 66, 66],
   specularColor: [255, 255, 255],
-  specularMaterial: [45, 45, 45],
-  materialShiness: 10.0
+  specularMaterial: [200, 200, 200],
+  materialShiness: 30.0
 })
 // ==================================
 // 背景渲染使用
@@ -83,12 +83,13 @@ let initBackground = () => {
       // 分配背景材质位置为9
       initBackgroundCallback(data as HTMLImageElement[])
     })
+    .catch((what) => {
+      console.warn(what)
+    })
 }
 let initBackgroundCallback = (data: HTMLImageElement[]) => {
-  helper.switchProgram(PROGRAMS.BACKGROUND)
   helper.sendTextureImageToGPU(data as HTMLImageElement[], 9, 10)
-  reRenderBackground()
-  initializePony()
+  initPony()
 }
 // 重绘背景
 let reRenderBackground = () => {
@@ -108,15 +109,15 @@ let reRenderBackground = () => {
       { buffer: bgTBuffer, data: flatten(vTBack), varName: 'aTexCoord', attrPer: 2, type: gl.FLOAT }
     ],
     uniforms: [
-      { varName: 'uSampler', data: 9, method: '1i' }
+      { varName: 'uTexture', data: 9, method: '1i' }
     ]
   })
   helper.drawArrays(gl.TRIANGLE_FAN, 0, 4)
 }
 // 读入模型数据，初始化JS中的模型信息记录变量，传送材质，渲染小马
-let initializePony = () => {
+let initPony = () => {
   // 设定小马模型
-  Pony = new DrawingPackage3d(mult(translate(0, -0.3, 0), mult(rotateZ(180), rotateX(270))) as Mat, ...[
+  Pony = new DrawingPackage3d(mult(translate(0, -0.35, 0), mult(rotateZ(180), rotateX(270))) as Mat, ...[
     new DrawingObject3d('body', './model/normed/Pony/pony.obj', './model/texture/Pony/pony.png', 0), // 身体
     new DrawingObject3d('tail', './model/normed/Pony/tail.obj', './model/texture/Pony/tail.png', 1), // 尾巴
     new DrawingObject3d('hairBack', './model/normed/Pony/hairBack.obj', './model/texture/Pony/hairBack.png', 2), // 头发后
@@ -174,9 +175,10 @@ let reRenderMain = (ctm: Mat) => {
   })
 }
 // reRender
-let reRender = (ctm: Mat) => {
-  reRenderMain(ctm)
+let reRender = (ctm: Mat, reCalulateMaterialProducts: boolean = false) => {
+  reCalulateMaterialProducts && PonyMaterial.reCalculateProducts()
   reRenderBackground()
+  reRenderMain(ctm)
 }
 // ===============================
 // 光源交互相关
@@ -195,7 +197,7 @@ let listenPositionInput = () => {
       zz = (document.querySelector('#lightPosZ') as HTMLInputElement).value
     lightBulbPosition = ([xx, yy, zz].map(_ => parseFloat(_))) as Vec3
     PonyMaterial.setLightPosition(lightBulbPosition)
-    reRender(ctm)
+    reRender(ctm, true)
   }
 }
 // 初始化材质颜色参量输入框
@@ -227,7 +229,7 @@ let listenPonyMaterialInput = () => {
         eval(`${v}=parseInt(document.querySelector('${PonyMaterialInputDOMs[idx]}').value)/255`)
       }
     })
-    reRender(ctm)
+    reRender(ctm, true)
   }
 }
 // ===============================

@@ -18,7 +18,6 @@ export function initializeCanvas(gl: WebGLRenderingContext, canvasDOM: HTMLCanva
  * Initialize two shaders and returns the WebGLProgram.
  */
 export function initializeShaders(gl: WebGLRenderingContext, vShaderPath: string, fShaderPath: string): WebGLProgram {
-  console.log('init---' + vShaderPath)
   let program = initShaders(gl, vShaderPath, fShaderPath) as WebGLProgram
   gl.useProgram(program)
   return program

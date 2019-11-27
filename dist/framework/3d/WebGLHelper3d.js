@@ -86,8 +86,8 @@ define(["require", "exports"], function (require, exports) {
             if (normalize === void 0) { normalize = false; }
             if (stride === void 0) { stride = 0; }
             if (offset === void 0) { offset = 0; }
-            this.gl.vertexAttribPointer(this.getAttributeLocation(variableName), attributePerVertex, dataType, normalize, stride, offset);
             this.gl.enableVertexAttribArray(this.getAttributeLocation(variableName));
+            this.gl.vertexAttribPointer(this.getAttributeLocation(variableName), attributePerVertex, dataType, normalize, stride, offset);
         };
         /**
          * Generate pure color texture and bind it to `gl.TEXTURE_2D`.
@@ -105,12 +105,6 @@ define(["require", "exports"], function (require, exports) {
          */
         WebGLHelper3d.prototype.prepare = function (cfg) {
             var that = this;
-            // deal with attributes
-            cfg.attributes.forEach(function (ele) {
-                that.useBuffer(ele.buffer);
-                that.startFlowingDataToAttribute(ele.varName, ele.attrPer, ele.type);
-                that.sendDataToBuffer(ele.data);
-            });
             // deal with uniforms
             cfg.uniforms.forEach(function (ele) {
                 var toEval = '';
@@ -125,30 +119,30 @@ define(["require", "exports"], function (require, exports) {
                 }
                 eval(toEval);
             });
+            // deal with attributes
+            cfg.attributes.forEach(function (ele) {
+                that.useBuffer(ele.buffer);
+                that.startFlowingDataToAttribute(ele.varName, ele.attrPer, ele.type);
+                that.sendDataToBuffer(ele.data);
+            });
         };
         /**
          * Send texture image to GPU. Subscript is using [posFrom, posTo).
          */
         WebGLHelper3d.prototype.sendTextureImageToGPU = function (images, posFrom, posTo) {
-            var manager = [], gl = this.gl;
-            for (var i = 0; i < images.length; i++) {
-                var tex = gl.createTexture();
-                gl.bindTexture(gl.TEXTURE_2D, tex);
-                gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, images[i]);
-                gl.generateMipmap(gl.TEXTURE_2D);
-                manager.push(tex);
-            }
             // 检查空位
-            if (posTo - posFrom != manager.length) {
+            if (posTo - posFrom != images.length) {
                 console.log(images);
-                throw '[WebGLHelper3d.sendTextureImageToGPU] No enough position to store texture. Above is the images.';
+                throw '[WebGLHelper3d.sendTextureImageToGPU] Too many / no enough positions. Above is the images.';
             }
+            var tex;
+            var gl = this.gl;
             for (var i = posFrom; i < posTo; i++) {
-                console.log('bind: ' + i);
-                console.log('using: ' + (i - posFrom));
-                var cmd1 = "gl.activeTexture(gl.TEXTURE" + i + ")", cmd2 = "gl.bindTexture(gl.TEXTURE_2D, manager[" + (i - posFrom) + "])";
-                eval(cmd1);
-                eval(cmd2);
+                tex = gl.createTexture();
+                eval("gl.activeTexture(gl.TEXTURE" + i + ");");
+                gl.bindTexture(gl.TEXTURE_2D, tex);
+                eval("gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, images[" + (i - posFrom) + "]);");
+                gl.generateMipmap(gl.TEXTURE_2D);
             }
         };
         /**

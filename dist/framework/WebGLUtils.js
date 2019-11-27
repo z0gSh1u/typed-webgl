@@ -25,7 +25,6 @@ define(["require", "exports", "../3rd-party/MV", "../3rd-party/initShaders"], fu
      * Initialize two shaders and returns the WebGLProgram.
      */
     function initializeShaders(gl, vShaderPath, fShaderPath) {
-        console.log('init---' + vShaderPath);
         var program = initShaders(gl, vShaderPath, fShaderPath);
         gl.useProgram(program);
         return program;

@@ -94,8 +94,8 @@ export class WebGLHelper3d {
     normalize: boolean = false,
     stride: number = 0,
     offset: number = 0) {
-    this.gl.vertexAttribPointer(this.getAttributeLocation(variableName), attributePerVertex, dataType, normalize, stride, offset)
     this.gl.enableVertexAttribArray(this.getAttributeLocation(variableName))
+    this.gl.vertexAttribPointer(this.getAttributeLocation(variableName), attributePerVertex, dataType, normalize, stride, offset)
   }
 
   /**
@@ -130,12 +130,6 @@ export class WebGLHelper3d {
     }[]
   }) {
     let that = this
-    // deal with attributes
-    cfg.attributes.forEach((ele) => {
-      that.useBuffer(ele.buffer)
-      that.startFlowingDataToAttribute(ele.varName, ele.attrPer, ele.type)
-      that.sendDataToBuffer(ele.data)
-    })
     // deal with uniforms
     cfg.uniforms.forEach((ele) => {
       let toEval: string = ''
@@ -148,32 +142,30 @@ export class WebGLHelper3d {
       }
       eval(toEval)
     })
+    // deal with attributes
+    cfg.attributes.forEach((ele) => {
+      that.useBuffer(ele.buffer)
+      that.startFlowingDataToAttribute(ele.varName, ele.attrPer, ele.type)
+      that.sendDataToBuffer(ele.data)
+    })
   }
 
   /**
    * Send texture image to GPU. Subscript is using [posFrom, posTo).
    */
   public sendTextureImageToGPU(images: HTMLImageElement[], posFrom: number, posTo: number) {
-    let manager: Array<WebGLTexture> = [], gl = this.gl
-    for (let i = 0; i < images.length; i++) {
-      let tex = gl.createTexture() as WebGLTexture
-      gl.bindTexture(gl.TEXTURE_2D, tex)
-      gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, images[i] as HTMLImageElement)
-      gl.generateMipmap(gl.TEXTURE_2D)
-      manager.push(tex)
-    }
     // 检查空位
-    if (posTo - posFrom != manager.length) {
+    if (posTo - posFrom != images.length) {
       console.log(images)
-      throw '[WebGLHelper3d.sendTextureImageToGPU] No enough position to store texture. Above is the images.'
+      throw '[WebGLHelper3d.sendTextureImageToGPU] Too many / no enough positions. Above is the images.'
     }
+    let tex; let gl = this.gl
     for (let i = posFrom; i < posTo; i++) {
-
-      console.log('bind: ' + i)
-      console.log('using: ' + (i-posFrom))
-
-      let cmd1 = `gl.activeTexture(gl.TEXTURE${i})`, cmd2 = `gl.bindTexture(gl.TEXTURE_2D, manager[${i - posFrom}])`
-      eval(cmd1); eval(cmd2)
+      tex = gl.createTexture() as WebGLTexture;
+      eval(`gl.activeTexture(gl.TEXTURE${i});`)
+      gl.bindTexture(gl.TEXTURE_2D, tex);
+      eval(`gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, images[${i - posFrom}]);`)
+      gl.generateMipmap(gl.TEXTURE_2D);
     }
   }
 

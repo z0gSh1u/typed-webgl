@@ -90,10 +90,16 @@
     <hr>
 
     <div class="requirement">
+
+      <h3 style="display: inline-block; margin: 0 auto;">当前模式：</h3>
+      <p id="mode_trackball" style="color: red; display: inline-block; font-size: 20px; margin: 0 auto;">跟踪球</p>
+      <p id="mode_fp" style="color: blue; display: none; font-size: 20px; margin: 0 auto;">第一人称</p>
+      <p id="mode_light" style="color: green; display: none; font-size: 20px; margin: 0 auto;">光源互动</p>
+      &nbsp;&nbsp;<button id="coordToggler">切换</button>
+      <p style="margin: 0 auto;">跟踪球模式，光源随动；第一人称模式，光源固定；光源互动模式，位置可调。</p>
+
       <h4>A、交互式的视点变化，实现场景漫游</h4>
-      <p>当前状态：</p>
-      <p id='reqALock'>已锁定</p>
-      <p id='reqAUnlock'>已解锁</p>
+      <p>在第一人称模式下：</p>
       <div class="keyBlock">W</div>前进
       <div class="keyBlock">S</div>后退
       <div class="keyBlock">A</div>左转
@@ -101,12 +107,14 @@
       <br>
       <div class="keyBlock">空格</div>跳跃
       <div class="keyBlock">Ctrl</div>下蹲
-      <div class="keyBlock">鼠标</div>观察
+      <div class="keyBlock" style="background-image: url('./mouse.png'); background-repeat: no-repeat;">&nbsp;</div>观察
       <br>
     </div>
     <div class="requirement">
       <h4>B、光源位置可交互改变，参数可调</h4>
-      <p>调节光源位置：</p>
+
+      <p style="margin-bottom: 0;"><b>在任何模式下：</b></p>
+      <p style="margin-top: 0;">手动调节光源位置：</p>
       <div class="lightpos">
         X=<input type="text" class="coordinput" id="lightPosX">
         Y=<input type="text" class="coordinput" id="lightPosY">
@@ -133,11 +141,15 @@
         <p>Shiness:&nbsp;</p>
         <input type="text" class="coordinput" id='shinessinput'>
         <button id="applyLightparam">应用</button>
+        <br><br>
+        <p><b>在光源互动模式下：</b></p>
+        <p>拖动光球以在X-Y平面移动光源，卷动鼠标滚轮以在Z向纵深移动。</p>
+
       </div>
     </div>
     <div class="requirement">
       <h4>C、场景中至少包含两种以上的材质</h4>
-      <p>小马身体（类塑料）与地板（类金属）是两种不同的材质。</p>
+      <p>小马身体（类塑料）与头发（类丝绸）是两种不同的材质。</p>
     </div>
   </div>
 

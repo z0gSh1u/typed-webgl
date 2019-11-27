@@ -28,7 +28,7 @@ define(["require", "exports", "../../framework/3d/WebGLHelper3d", "../../framewo
     // ==================================
     // 主体渲染使用
     // ==================================
-    var lightBulbPosition = vec3(0.1, 0.02, 0.03); // 光源位置
+    var lightBulbPosition = vec3(0.0, 0.0, 0.0); // 光源位置
     var vBuffer; // 顶点缓冲区
     var nBuffer; // 法向量缓冲区
     var tBuffer; // 材质顶点缓冲区
@@ -36,13 +36,13 @@ define(["require", "exports", "../../framework/3d/WebGLHelper3d", "../../framewo
     var Pony; // 小马全身
     var PonyMaterial = new PhongLightModel_1.PhongLightModel({
         lightPosition: lightBulbPosition,
-        ambientColor: [50, 50, 50],
-        ambientMaterial: [50, 50, 50],
-        diffuseColor: [192, 149, 83],
-        diffuseMaterial: [50, 100, 100],
+        ambientColor: [255, 255, 255],
+        ambientMaterial: [200, 200, 200],
+        diffuseColor: [255, 255, 255],
+        diffuseMaterial: [66, 66, 66],
         specularColor: [255, 255, 255],
-        specularMaterial: [45, 45, 45],
-        materialShiness: 10.0
+        specularMaterial: [200, 200, 200],
+        materialShiness: 30.0
     });
     // ==================================
     // 背景渲染使用
@@ -91,13 +91,14 @@ define(["require", "exports", "../../framework/3d/WebGLHelper3d", "../../framewo
             .then(function (data) {
             // 分配背景材质位置为9
             initBackgroundCallback(data);
+        })
+            .catch(function (what) {
+            console.warn(what);
         });
     };
     var initBackgroundCallback = function (data) {
-        helper.switchProgram(PROGRAMS.BACKGROUND);
         helper.sendTextureImageToGPU(data, 9, 10);
-        reRenderBackground();
-        initializePony();
+        initPony();
     };
     // 重绘背景
     var reRenderBackground = function () {
@@ -116,15 +117,15 @@ define(["require", "exports", "../../framework/3d/WebGLHelper3d", "../../framewo
                 { buffer: bgTBuffer, data: flatten(vTBack), varName: 'aTexCoord', attrPer: 2, type: gl.FLOAT }
             ],
             uniforms: [
-                { varName: 'uSampler', data: 9, method: '1i' }
+                { varName: 'uTexture', data: 9, method: '1i' }
             ]
         });
         helper.drawArrays(gl.TRIANGLE_FAN, 0, 4);
     };
     // 读入模型数据，初始化JS中的模型信息记录变量，传送材质，渲染小马
-    var initializePony = function () {
+    var initPony = function () {
         // 设定小马模型
-        Pony = new (DrawingPackage3d_1.DrawingPackage3d.bind.apply(DrawingPackage3d_1.DrawingPackage3d, __spreadArrays([void 0, mult(translate(0, -0.3, 0), mult(rotateZ(180), rotateX(270)))], [
+        Pony = new (DrawingPackage3d_1.DrawingPackage3d.bind.apply(DrawingPackage3d_1.DrawingPackage3d, __spreadArrays([void 0, mult(translate(0, -0.35, 0), mult(rotateZ(180), rotateX(270)))], [
             new DrawingObject3d_1.DrawingObject3d('body', './model/normed/Pony/pony.obj', './model/texture/Pony/pony.png', 0),
             new DrawingObject3d_1.DrawingObject3d('tail', './model/normed/Pony/tail.obj', './model/texture/Pony/tail.png', 1),
             new DrawingObject3d_1.DrawingObject3d('hairBack', './model/normed/Pony/hairBack.obj', './model/texture/Pony/hairBack.png', 2),
@@ -180,9 +181,11 @@ define(["require", "exports", "../../framework/3d/WebGLHelper3d", "../../framewo
         });
     };
     // reRender
-    var reRender = function (ctm) {
-        reRenderMain(ctm);
+    var reRender = function (ctm, reCalulateMaterialProducts) {
+        if (reCalulateMaterialProducts === void 0) { reCalulateMaterialProducts = false; }
+        reCalulateMaterialProducts && PonyMaterial.reCalculateProducts();
         reRenderBackground();
+        reRenderMain(ctm);
     };
     // ===============================
     // 光源交互相关
@@ -199,7 +202,7 @@ define(["require", "exports", "../../framework/3d/WebGLHelper3d", "../../framewo
             var xx = document.querySelector('#lightPosX').value, yy = document.querySelector('#lightPosY').value, zz = document.querySelector('#lightPosZ').value;
             lightBulbPosition = ([xx, yy, zz].map(function (_) { return parseFloat(_); }));
             PonyMaterial.setLightPosition(lightBulbPosition);
-            reRender(ctm);
+            reRender(ctm, true);
         };
     };
     // 初始化材质颜色参量输入框
@@ -233,7 +236,7 @@ define(["require", "exports", "../../framework/3d/WebGLHelper3d", "../../framewo
                     eval(v + "=parseInt(document.querySelector('" + PonyMaterialInputDOMs[idx] + "').value)/255");
                 }
             });
-            reRender(ctm);
+            reRender(ctm, true);
         };
     };
     // ===============================
