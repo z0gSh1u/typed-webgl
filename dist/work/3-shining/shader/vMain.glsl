@@ -11,8 +11,6 @@ varying vec2 vTexCoord;
 uniform mat4 uWorldMatrix;
 // transformation matrix under self coordinate system
 uniform mat4 uModelMatrix;
-// extra matrix for some specified transformation of some drawingObject
-uniform mat4 uExtraMatrix;
 // light position
 uniform vec4 uLightPosition;
 // specular shiness
@@ -44,7 +42,7 @@ void main() {
 		specular = vec4(0.0, 0.0, 0.0, 1.0);
 	}
 
-	gl_Position = uWorldMatrix * uModelMatrix * uExtraMatrix * aPosition;
+	gl_Position = uWorldMatrix * uModelMatrix * aPosition;
 
 	vTexCoord = aTexCoord;
 	vLight = ambient + diffuse + specular;

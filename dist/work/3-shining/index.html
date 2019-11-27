@@ -17,7 +17,7 @@
 
     #cvs {
       border: 5px solid gray;
-      padding: 15px;
+      padding: 5px;
     }
 
     canvas {
@@ -91,10 +91,18 @@
 
     <div class="requirement">
       <h4>A、交互式的视点变化，实现场景漫游</h4>
+      <p>当前状态：</p>
+      <p id='reqALock'>已锁定</p>
+      <p id='reqAUnlock'>已解锁</p>
       <div class="keyBlock">W</div>前进
       <div class="keyBlock">S</div>后退
-      <div class="keyBlock">A</div>左旋
-      <div class="keyBlock">D</div>右旋<br>
+      <div class="keyBlock">A</div>左转
+      <div class="keyBlock">D</div>右转
+      <br>
+      <div class="keyBlock">空格</div>跳跃
+      <div class="keyBlock">Ctrl</div>下蹲
+      <div class="keyBlock">鼠标</div>观察
+      <br>
     </div>
     <div class="requirement">
       <h4>B、光源位置可交互改变，参数可调</h4>

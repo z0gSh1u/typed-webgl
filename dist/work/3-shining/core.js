@@ -1,5 +1,3 @@
-// Core code of 3-Shining.
-// by z0gSh1u
 var __spreadArrays = (this && this.__spreadArrays) || function () {
     for (var s = 0, i = 0, il = arguments.length; i < il; i++) s += arguments[i].length;
     for (var r = Array(s), k = 0, i = 0; i < il; i++)
@@ -18,34 +16,24 @@ define(["require", "exports", "../../framework/3d/WebGLHelper3d", "../../framewo
     "use strict";
     Object.defineProperty(exports, "__esModule", { value: true });
     WebGLUtils = __importStar(WebGLUtils);
-    // common variables
+    // ==================================
+    // 主要变量
+    // ==================================
     var canvasDOM = document.querySelector('#cvs');
     var gl = canvasDOM.getContext('webgl');
-    var program;
     var helper;
+    var PROGRAMS = {
+        MAIN: 0, BACKGROUND: 1, RECT: 2
+    };
+    // ==================================
+    // 主体渲染使用
+    // ==================================
+    var lightBulbPosition = vec3(0.1, 0.02, 0.03); // 光源位置
     var vBuffer; // 顶点缓冲区
-    var textureBuffer; // 材质缓冲区
     var nBuffer; // 法向量缓冲区
+    var tBuffer; // 材质顶点缓冲区
     var ctm; // 当前世界矩阵
     var Pony; // 小马全身
-    var PonyTextureManager = []; // 小马材质管理器
-    var Floor; // 地板
-    var slowDownId; // 减速计时器编号
-    var isMouseDown = false;
-    var mouseLastPos; // 上一次鼠标位置
-    var vX = 0; // X轴旋转速度
-    var vY = 0; // Y轴旋转速度
-    var curTick;
-    var lastTick;
-    var PonyMaterialInputDOMs = [];
-    var PonyMaterialCorrespondings = [];
-    // global constant
-    var FRICTION = 0.0006; // 模拟摩擦力，每毫秒降低的速度
-    var INTERVAL = 40; // 速度降低的毫秒间隔
-    var ROTATE_PER_X = 0.2; // X轴鼠标拖动旋转的比例
-    var ROTATE_PER_Y = 0.2; // Y轴鼠标拖动旋转的比例
-    var lightBulbPosition = vec3(0, 0, 0);
-    // material parameters
     var PonyMaterial = new PhongLightModel_1.PhongLightModel({
         lightPosition: lightBulbPosition,
         ambientColor: [50, 50, 50],
@@ -56,33 +44,84 @@ define(["require", "exports", "../../framework/3d/WebGLHelper3d", "../../framewo
         specularMaterial: [45, 45, 45],
         materialShiness: 10.0
     });
-    var FloorMaterial = new PhongLightModel_1.PhongLightModel({
-        lightPosition: lightBulbPosition,
-        ambientColor: [50, 50, 50],
-        ambientMaterial: [50, 50, 50],
-        diffuseColor: [192, 149, 83],
-        diffuseMaterial: [50, 100, 100],
-        specularColor: [255, 255, 255],
-        specularMaterial: [45, 45, 45],
-        materialShiness: 10.0
-    });
-    // main function
+    // ==================================
+    // 背景渲染使用
+    // ==================================
+    var BackgroundTexture;
+    var bgVBuffer;
+    var bgTBuffer;
+    // ==================================
+    // 跟踪球使用
+    // ==================================
+    var FRICTION = 0.0006; // 模拟摩擦力，每毫秒降低的速度
+    var INTERVAL = 40; // 速度降低的毫秒间隔
+    var ROTATE_PER_X = 0.2; // X轴鼠标拖动旋转的比例
+    var ROTATE_PER_Y = 0.2; // Y轴鼠标拖动旋转的比例
+    var slowDownId; // 减速计时器编号
+    var isMouseDown = false;
+    var mouseLastPos; // 上一次鼠标位置
+    var vX = 0; // X轴旋转速度
+    var vY = 0; // Y轴旋转速度
+    var curTick;
+    var lastTick;
+    var PonyMaterialInputDOMs = [];
+    var PonyMaterialCorrespondings = [];
+    // 初始化
     var main = function () {
-        // initialization
         WebGLUtils.initializeCanvas(gl, canvasDOM);
-        program = WebGLUtils.initializeShaders(gl, './vShader.glsl', './fShader.glsl');
-        helper = new WebGLHelper3d_1.WebGLHelper3d(canvasDOM, gl, program);
+        helper = new WebGLHelper3d_1.WebGLHelper3d(canvasDOM, gl, [
+            WebGLUtils.initializeShaders(gl, './shader/vMain.glsl', './shader/fMain.glsl'),
+            WebGLUtils.initializeShaders(gl, './shader/vBackground.glsl', './shader/fBackground.glsl'),
+            WebGLUtils.initializeShaders(gl, './shader/vRect.glsl', './shader/fRect.glsl'),
+        ]);
         gl.enable(gl.DEPTH_TEST);
+        // 初始化各buffer
         vBuffer = helper.createBuffer();
-        textureBuffer = helper.createBuffer();
+        tBuffer = helper.createBuffer();
         nBuffer = helper.createBuffer();
-        helper.setGlobalSettings(vBuffer, 'aPosition', textureBuffer, 'aTexCoord', 'uTexture', 'uWorldMatrix', 'uModelMatrix', 'uExtraMatrix', nBuffer, 'aNormal', 'uLightPosition', 'uShiness', 'uAmbientProduct', 'uDiffuseProduct', 'uSpecularProduct');
+        bgVBuffer = helper.createBuffer();
+        bgTBuffer = helper.createBuffer();
         ctm = mat4();
+        // 保证背景渲染
+        initBackground();
+    };
+    // 初始化背景图
+    var initBackground = function () {
+        WebGLUtils.loadImageAsync(['./model/bg.png'])
+            .then(function (data) {
+            // 分配背景材质位置为9
+            initBackgroundCallback(data);
+        });
+    };
+    var initBackgroundCallback = function (data) {
+        helper.switchProgram(PROGRAMS.BACKGROUND);
+        helper.sendTextureImageToGPU(data, 9, 10);
+        reRenderBackground();
         initializePony();
     };
-    /**
-     * 读入模型数据，初始化JS中的模型信息记录变量，传送材质，渲染小马
-     */
+    // 重绘背景
+    var reRenderBackground = function () {
+        helper.switchProgram(PROGRAMS.BACKGROUND);
+        var VBack = [
+            [-1.0, -1.0], [1.0, -1.0],
+            [1.0, 1.0], [-1.0, 1.0]
+        ], vTBack = [
+            [0.0, 0.0], [1.0, 0.0],
+            [1.0, 1.0], [0.0, 1.0]
+        ];
+        // 发送背景顶点信息
+        helper.prepare({
+            attributes: [
+                { buffer: bgVBuffer, data: flatten(VBack), varName: 'aPosition', attrPer: 2, type: gl.FLOAT },
+                { buffer: bgTBuffer, data: flatten(vTBack), varName: 'aTexCoord', attrPer: 2, type: gl.FLOAT }
+            ],
+            uniforms: [
+                { varName: 'uSampler', data: 9, method: '1i' }
+            ]
+        });
+        helper.drawArrays(gl.TRIANGLE_FAN, 0, 4);
+    };
+    // 读入模型数据，初始化JS中的模型信息记录变量，传送材质，渲染小马
     var initializePony = function () {
         // 设定小马模型
         Pony = new (DrawingPackage3d_1.DrawingPackage3d.bind.apply(DrawingPackage3d_1.DrawingPackage3d, __spreadArrays([void 0, mult(translate(0, -0.3, 0), mult(rotateZ(180), rotateX(270)))], [
@@ -96,80 +135,74 @@ define(["require", "exports", "../../framework/3d/WebGLHelper3d", "../../framewo
             new DrawingObject3d_1.DrawingObject3d('teeth', './model/normed/Pony/teeth.obj', './model/texture/Pony/teeth.png', 7),
             new DrawingObject3d_1.DrawingObject3d('eyelashes', './model/normed/Pony/eyelashes.obj', './model/texture/Pony/eyelashes.png', 8),
         ])))();
-        // 设定地板模型
-        Floor = new (DrawingPackage3d_1.DrawingPackage3d.bind.apply(DrawingPackage3d_1.DrawingPackage3d, __spreadArrays([void 0, mat4()], [
-            new DrawingObject3d_1.DrawingObject3d('floor', './model/normed/Floor/floor.obj')
-        ])))();
-        Floor.setMeshOnly(gl.TRIANGLE_STRIP, [111, 193, 255]);
-        Pony.preloadTexture(ponyLoadedCallback);
+        var urls = [];
+        Pony.innerList.forEach(function (obj) {
+            urls.push(obj.texturePath);
+        });
+        WebGLUtils.loadImageAsync(urls)
+            .then(function (data) {
+            ponyLoadedCallback(data);
+        });
     };
-    // 材质初次加载完成后渲染一次，把材质绑到WebGL预置变量上
+    // 材质初次加载完成后渲染一次
     var ponyLoadedCallback = function (loadedElements) {
-        // 把素材图像传送到GPU  
-        for (var i = 0; i < loadedElements.length; i++) {
-            var no = gl.createTexture();
-            gl.bindTexture(gl.TEXTURE_2D, no);
-            gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, loadedElements[i]);
-            gl.generateMipmap(gl.TEXTURE_2D);
-            PonyTextureManager.push(no);
-        }
-        // 为预置的材质变量绑定上各部分的材质，材质编号从0开始
-        for (var i = 0; i < PonyTextureManager.length; i++) {
-            // PonyTextureManager.length == 8
-            var cmd1 = "gl.activeTexture(gl.TEXTURE" + i + ")", cmd2 = "gl.bindTexture(gl.TEXTURE_2D, PonyTextureManager[" + i + "])";
-            eval(cmd1);
-            eval(cmd2);
-        }
-        // 渲染
-        resetScene();
-        reRenderLighting();
-        helper.reRender(mat4());
+        helper.sendTextureImageToGPU(loadedElements, 0, 9);
+        reRender(ctm);
     };
-    /**
-     * 重设Pony全身和地面坐标，但不会重传材质，也不会重设模型视图矩阵
-     */
-    var resetScene = function () {
-        helper.clearWaitingQueue();
-        [Floor, Pony].forEach(function (ele) {
-            helper.drawPackageLater(ele);
+    // 重绘MAIN
+    var reRenderMain = function (ctm) {
+        helper.switchProgram(PROGRAMS.MAIN);
+        helper.prepare({
+            attributes: [],
+            uniforms: [
+                { varName: 'uWorldMatrix', data: flatten(ctm), method: 'Matrix4fv' },
+                { varName: 'uModelMatrix', data: flatten(Pony.modelMat), method: 'Matrix4fv' },
+                { varName: 'uLightPosition', data: __spreadArrays(PonyMaterial.lightPosition, [1.0]), method: '4fv' },
+                { varName: 'uShiness', data: PonyMaterial.materialShiness, method: '1f' },
+                { varName: 'uAmbientProduct', data: PonyMaterial.ambientProduct, method: '4fv' },
+                { varName: 'uDiffuseProduct', data: PonyMaterial.diffuseProduct, method: '4fv' },
+                { varName: 'uSpecularProduct', data: PonyMaterial.specularProduct, method: '4fv' },
+            ]
+        });
+        Pony.innerList.forEach(function (obj) {
+            var vs = helper.analyzeFtoV(obj, 'fs'), vts = helper.analyzeFtoV(obj, 'fts'), vns = helper.analyzeFtoV(obj, 'fns');
+            helper.prepare({
+                attributes: [
+                    { buffer: vBuffer, data: flatten(vs), varName: 'aPosition', attrPer: 3, type: gl.FLOAT },
+                    { buffer: tBuffer, data: flatten(vts), varName: 'aTexCoord', attrPer: 2, type: gl.FLOAT },
+                    { buffer: nBuffer, data: flatten(vns), varName: 'aNormal', attrPer: 3, type: gl.FLOAT },
+                ],
+                uniforms: [
+                    { varName: 'uTexture', data: obj.textureIndex, method: '1i' },
+                ]
+            });
+            helper.drawArrays(gl.TRIANGLES, 0, obj.objProcessor.getEffectiveVertexCount());
         });
     };
-    var reRenderLighting = function (posOnly) {
-        if (posOnly === void 0) { posOnly = false; }
-        [PonyMaterial, FloorMaterial].forEach(function (ele) {
-            ele.reCalculateProducts();
-        });
-        helper.setLighting(PonyMaterial);
-        helper.updateLighting();
+    // reRender
+    var reRender = function (ctm) {
+        reRenderMain(ctm);
+        reRenderBackground();
     };
     // ===============================
     // 光源交互相关
     // ===============================
-    /**
-     * 初始化位置输入框
-     */
+    // 初始化位置输入框
     var initPositionInput = function () {
         document.querySelector('#lightPosX').value = lightBulbPosition[0].toString();
         document.querySelector('#lightPosY').value = lightBulbPosition[1].toString();
         document.querySelector('#lightPosZ').value = lightBulbPosition[2].toString();
     };
-    /**
-     * 调节位置
-     */
+    // 调节位置
     var listenPositionInput = function () {
         document.querySelector('#applyLightPos').onclick = function () {
             var xx = document.querySelector('#lightPosX').value, yy = document.querySelector('#lightPosY').value, zz = document.querySelector('#lightPosZ').value;
             lightBulbPosition = ([xx, yy, zz].map(function (_) { return parseFloat(_); }));
-            [PonyMaterial, FloorMaterial].forEach(function (ele) {
-                ele.setLightPosition(lightBulbPosition);
-            });
-            reRenderLighting(true);
-            helper.reRender(ctm);
+            PonyMaterial.setLightPosition(lightBulbPosition);
+            reRender(ctm);
         };
     };
-    /**
-     * 初始化材质颜色参量输入框
-     */
+    // 初始化材质颜色参量输入框
     var initPonyMaterialInput = function () {
         PonyMaterialInputDOMs = ['#colorinputAR', '#colorinputAG', '#colorinputAB', '#colorinputDR',
             '#colorinputDG', '#colorinputDB', '#colorinputSR',
@@ -189,9 +222,7 @@ define(["require", "exports", "../../framework/3d/WebGLHelper3d", "../../framewo
             }
         });
     };
-    /**
-     * 调节小马材质颜色参量
-     */
+    // 调节小马材质颜色参量
     var listenPonyMaterialInput = function () {
         document.querySelector('#applyLightparam').onclick = function () {
             PonyMaterialCorrespondings.forEach(function (v, idx) {
@@ -202,8 +233,7 @@ define(["require", "exports", "../../framework/3d/WebGLHelper3d", "../../framewo
                     eval(v + "=parseInt(document.querySelector('" + PonyMaterialInputDOMs[idx] + "').value)/255");
                 }
             });
-            reRenderLighting(false);
-            helper.reRender(ctm);
+            reRender(ctm);
         };
     };
     // ===============================
@@ -214,15 +244,13 @@ define(["require", "exports", "../../framework/3d/WebGLHelper3d", "../../framewo
         var mousePos = [e.offsetX, e.offsetY];
         lastTick = curTick;
         curTick = new Date().getTime();
-        var disX = (mousePos[0] - mouseLastPos[0]) * ROTATE_PER_X;
-        var disY = (mousePos[1] - mouseLastPos[1]) * ROTATE_PER_Y;
+        var disX = (mousePos[0] - mouseLastPos[0]) * ROTATE_PER_X, disY = (mousePos[1] - mouseLastPos[1]) * ROTATE_PER_Y;
         vX = disX / (curTick - lastTick);
         vY = disY / (curTick - lastTick);
         ctm = mult(rotateX(-disY), ctm);
         ctm = mult(rotateY(-disX), ctm);
         mouseLastPos = mousePos;
-        resetScene();
-        helper.reRender(ctm);
+        reRender(ctm);
     };
     var abs = function (n) {
         return n < 0 ? -n : n;
@@ -245,8 +273,7 @@ define(["require", "exports", "../../framework/3d/WebGLHelper3d", "../../framewo
         ctm = mult(rotateY(-vX * INTERVAL), ctm);
         vX = abs(vX) <= FRICTION * INTERVAL ? 0 : vX - FRICTION * INTERVAL * sign(vX);
         vY = abs(vY) <= FRICTION * INTERVAL ? 0 : vY - FRICTION * INTERVAL * sign(vY);
-        resetScene();
-        helper.reRender(ctm);
+        reRender(ctm);
     };
     // 鼠标侦听
     var listenMouse = function () {
@@ -275,3 +302,6 @@ define(["require", "exports", "../../framework/3d/WebGLHelper3d", "../../framewo
     listenPositionInput();
     listenMouse();
 });
+// ===============================
+// Fin. 2019-11-27.
+// ===============================
