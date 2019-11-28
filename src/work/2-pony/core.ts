@@ -1,5 +1,5 @@
 // Core code of 2-Pony.
-// by z0gSh1u & LongChen
+// by z0gSh1u & LongChen & Twileon
 
 import '../../3rd-party/MV'
 import '../../3rd-party/initShaders'
