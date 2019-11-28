@@ -11,11 +11,15 @@ import { PhongLightModel } from '../../framework/3d/PhongLightModel'
 // 主要变量
 // ==================================
 let canvasDOM: HTMLCanvasElement = document.querySelector('#cvs') as HTMLCanvasElement
-let gl: WebGLRenderingContext = canvasDOM.getContext('webgl') as WebGLRenderingContext
+let gl: WebGLRenderingContext = canvasDOM.getContext('webgl', { alpha: true,  premultipliedAlpha: false }) as WebGLRenderingContext
 let helper: WebGLHelper3d
 let PROGRAMS = {
   MAIN: 0, BACKGROUND: 1, RECT: 2
 }
+let MODES = {
+  TRACKBALL: 0, FPV: 1, LIGHT: 2
+}
+let currentMode = MODES.TRACKBALL
 // ==================================
 // 主体渲染使用
 // ==================================
@@ -42,6 +46,12 @@ let BackgroundTexture: WebGLTexture
 let bgVBuffer: WebGLBuffer
 let bgTBuffer: WebGLBuffer
 // ==================================
+// 光球渲染使用
+// ==================================
+let lightBallPosition = lightBulbPosition
+let lbVBuffer: WebGLBuffer
+let lbTBuffer: WebGLBuffer
+// ==================================
 // 跟踪球使用
 // ==================================
 const FRICTION = 0.0006 // 模拟摩擦力，每毫秒降低的速度
@@ -58,7 +68,8 @@ let lastTick: number
 let PonyMaterialInputDOMs: Array<string> = []
 let PonyMaterialCorrespondings: Array<string> = []
 // 初始化
-let main = () => {
+// TODO: 消除Callback-Hell
+let main = async () => {
   WebGLUtils.initializeCanvas(gl, canvasDOM)
   helper = new WebGLHelper3d(canvasDOM, gl, [
     WebGLUtils.initializeShaders(gl, './shader/vMain.glsl', './shader/fMain.glsl'),
@@ -66,12 +77,16 @@ let main = () => {
     WebGLUtils.initializeShaders(gl, './shader/vRect.glsl', './shader/fRect.glsl'),
   ])
   gl.enable(gl.DEPTH_TEST)
+  gl.blendFunc(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA)
+  gl.enable(gl.BLEND)
   // 初始化各buffer
   vBuffer = helper.createBuffer()
   tBuffer = helper.createBuffer()
   nBuffer = helper.createBuffer()
   bgVBuffer = helper.createBuffer()
   bgTBuffer = helper.createBuffer()
+  lbVBuffer = helper.createBuffer()
+  lbTBuffer = helper.createBuffer()
   ctm = mat4()
   // 保证背景渲染
   initBackground()
@@ -89,7 +104,7 @@ let initBackground = () => {
 }
 let initBackgroundCallback = (data: HTMLImageElement[]) => {
   helper.sendTextureImageToGPU(data as HTMLImageElement[], 9, 10)
-  initPony()
+  initLightBall()
 }
 // 重绘背景
 let reRenderBackground = () => {
@@ -174,9 +189,48 @@ let reRenderMain = (ctm: Mat) => {
     helper.drawArrays(gl.TRIANGLES, 0, obj.objProcessor.getEffectiveVertexCount())
   })
 }
+
+// 绘制光球
+let initLightBall = () => {
+  WebGLUtils.loadImageAsync(['./model/lightBall.png'])
+    .then(data => {
+      lightBallLoadedCallback(data as HTMLImageElement[])
+    })
+}
+let lightBallLoadedCallback = (loadedImages: HTMLImageElement[]) => {
+  // 分配10号材质位置
+  helper.sendTextureImageToGPU(loadedImages, 10, 11)
+  initPony()
+}
+let reRenderLightBall = () => {
+  helper.switchProgram(PROGRAMS.BACKGROUND)
+  let VRect = [
+    [0.7, 0.7, -0.01],
+    [0.7, 0.95, -0.01],
+    [0.95, 0.95, -0.01],
+    [0.95, 0.7, -0.01]
+  ],
+    vTRect = [
+      [0.0, 0.0], [1.0, 0.0],
+      [1.0, 1.0], [0.0, 1.0]
+    ]
+  // 发送背景顶点信息
+  helper.prepare({
+    attributes: [
+      { buffer: lbVBuffer, data: flatten(VRect), varName: 'aPosition', attrPer: 3, type: gl.FLOAT },
+      { buffer: lbTBuffer, data: flatten(vTRect), varName: 'aTexCoord', attrPer: 2, type: gl.FLOAT }
+    ],
+    uniforms: [
+      { varName: 'uTexture', data: 10, method: '1i' }
+    ]
+  })
+  helper.drawArrays(gl.TRIANGLE_FAN, 0, 4)
+}
+
 // reRender
 let reRender = (ctm: Mat, reCalulateMaterialProducts: boolean = false) => {
   reCalulateMaterialProducts && PonyMaterial.reCalculateProducts()
+  //reRenderLightBall()
   reRenderBackground()
   reRenderMain(ctm)
 }
@@ -232,6 +286,12 @@ let listenPonyMaterialInput = () => {
     reRender(ctm, true)
   }
 }
+// 光源互动模式
+let listenMouseLightInteract = () => {
+
+}
+
+
 // ===============================
 // 跟踪球实现
 // ===============================
@@ -270,7 +330,7 @@ let slowDown = () => {
   reRender(ctm)
 }
 // 鼠标侦听
-let listenMouse = () => {
+let listenMouseTrackBall = () => {
   canvasDOM.onmousedown = (e: MouseEvent) => {
     isMouseDown = true
     mouseLastPos = [e.offsetX, e.offsetY] as Vec2
@@ -288,14 +348,33 @@ let listenMouse = () => {
     }
   }
 }
-// do it
-main()
-initPositionInput()
-initPonyMaterialInput()
-listenPonyMaterialInput()
-listenPositionInput()
-listenMouse()
+// ===============================
+// 模式切换
+// ===============================
+let listenModeToggler = () => {
+  (document.querySelector('#modeToggler') as HTMLButtonElement).onclick = () => {
+    eval(`document.querySelector('#mode_${currentMode}').style.display = 'none'`)
+    currentMode = (currentMode + 1) % 3
+    eval(`document.querySelector('#mode_${currentMode}').style.display = 'inline-block'`)
+  }
+}
+let clearMouseHooks = () => {
+  canvasDOM.onmousedown = () => { }
+  canvasDOM.onmouseup = () => { }
+  canvasDOM.onmousemove = () => { }
+}
 
+
+// do it
+window.onload = () => {
+  main()
+  initPositionInput()
+  initPonyMaterialInput()
+  listenPonyMaterialInput()
+  listenPositionInput()
+  listenModeToggler()
+  listenMouseTrackBall()
+}
 // ===============================
 // Fin. 2019-11-27.
 // ===============================

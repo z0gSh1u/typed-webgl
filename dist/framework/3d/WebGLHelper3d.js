@@ -1,3 +1,6 @@
+// WebGL Helper (3d).
+// Written by z0gSh1u @ https://github.com/z0gSh1u/typed-webgl
+// for book `Interactive Computer Graphics` (7th Edition).
 var __spreadArrays = (this && this.__spreadArrays) || function () {
     for (var s = 0, i = 0, il = arguments.length; i < il; i++) s += arguments[i].length;
     for (var r = Array(s), k = 0, i = 0; i < il; i++)
@@ -8,9 +11,6 @@ var __spreadArrays = (this && this.__spreadArrays) || function () {
 define(["require", "exports"], function (require, exports) {
     "use strict";
     Object.defineProperty(exports, "__esModule", { value: true });
-    // WebGL Helper (3d).
-    // Written by z0gSh1u @ https://github.com/z0gSh1u/typed-webgl
-    // for book `Interactive Computer Graphics` (7th Edition).
     var WebGLHelper3d = /** @class */ (function () {
         function WebGLHelper3d(_canvasDOM, _gl, _programs) {
             this.programList = [];
@@ -98,7 +98,6 @@ define(["require", "exports"], function (require, exports) {
             this.gl.texImage2D(this.gl.TEXTURE_2D, 0, this.gl.RGBA, 1, 1, 0, this.gl.RGBA, this.gl.UNSIGNED_BYTE, 
             // notice it is Uint8 here, no need to normalize
             new Uint8Array(__spreadArrays(color.map(function (x) { return Math.floor(x * 255); }))));
-            this.gl.FLOAT;
         };
         /**
          * Very simple to use.

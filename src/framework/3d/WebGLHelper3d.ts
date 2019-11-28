@@ -1,9 +1,9 @@
-import { DrawingObject3d } from "./DrawingObject3d"
-import { DrawingPackage3d } from "./DrawingPackage3d"
-
 // WebGL Helper (3d).
 // Written by z0gSh1u @ https://github.com/z0gSh1u/typed-webgl
 // for book `Interactive Computer Graphics` (7th Edition).
+
+import { DrawingObject3d } from "./DrawingObject3d"
+import { DrawingPackage3d } from "./DrawingPackage3d"
 
 export class WebGLHelper3d {
 
@@ -107,7 +107,6 @@ export class WebGLHelper3d {
     this.gl.texImage2D(this.gl.TEXTURE_2D, 0, this.gl.RGBA, 1, 1, 0, this.gl.RGBA, this.gl.UNSIGNED_BYTE,
       // notice it is Uint8 here, no need to normalize
       new Uint8Array([...color.map(x => Math.floor(x * 255))] as Vec3))
-    this.gl.FLOAT
   }
 
   /**
