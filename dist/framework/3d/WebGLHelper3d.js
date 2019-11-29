@@ -8,37 +8,30 @@ var __spreadArrays = (this && this.__spreadArrays) || function () {
             r[k] = a[j];
     return r;
 };
-define(["require", "exports", "../WebGLUtils"], function (require, exports, WebGLUtils_1) {
+define(["require", "exports"], function (require, exports) {
     "use strict";
     Object.defineProperty(exports, "__esModule", { value: true });
     var WebGLHelper3d = /** @class */ (function () {
-        function WebGLHelper3d(_canvasDOM, _gl, _program) {
+        function WebGLHelper3d(_canvasDOM, _gl, _programs) {
+            this.programList = [];
             this.canvasDOM = _canvasDOM;
             this.gl = _gl;
-            this.program = _program;
-            this.globalTextureBuffer = null;
-            this.globalVertexAttribute = null;
-            this.globalVertexBuffer = null;
-            this.globalTextureCoordAttribute = null;
-            this.globalTextureSamplerAttribute = null;
-            this.globalWorldMatrixUniform = null;
-            this.globalModelMatrixUniform = null;
-            this.globalExtraMatrixUniform = null;
-            this.waitingQueue = [];
-            this.renderingLock = false;
+            this.programList = _programs;
+            this.program = _programs[0];
         }
+        Object.defineProperty(WebGLHelper3d.prototype, "currentProgram", {
+            get: function () {
+                return this.program;
+            },
+            enumerable: true,
+            configurable: true
+        });
         /**
-         * Set some global settings so that you don't need to pass them every time you draw.
+         * Switch to another program.
          */
-        WebGLHelper3d.prototype.setGlobalSettings = function (_vBuf, _vAttr, _tBuf, _tCoordAttr, _tSamplerAttr, _worldMatUniform, _modelMatUniform, _extraMatUniform) {
-            this.globalTextureBuffer = _tBuf;
-            this.globalVertexAttribute = _vAttr;
-            this.globalVertexBuffer = _vBuf;
-            this.globalTextureCoordAttribute = _tCoordAttr;
-            this.globalTextureSamplerAttribute = _tSamplerAttr;
-            this.globalWorldMatrixUniform = _worldMatUniform;
-            this.globalModelMatrixUniform = _modelMatUniform;
-            this.globalExtraMatrixUniform = _extraMatUniform;
+        WebGLHelper3d.prototype.switchProgram = function (index) {
+            this.program = this.programList[index];
+            this.gl.useProgram(this.program);
         };
         /**
          * Create a buffer.
@@ -93,164 +86,105 @@ define(["require", "exports", "../WebGLUtils"], function (require, exports, WebG
             if (normalize === void 0) { normalize = false; }
             if (stride === void 0) { stride = 0; }
             if (offset === void 0) { offset = 0; }
-            this.gl.vertexAttribPointer(this.getAttributeLocation(variableName), attributePerVertex, dataType, normalize, stride, offset);
             this.gl.enableVertexAttribArray(this.getAttributeLocation(variableName));
+            this.gl.vertexAttribPointer(this.getAttributeLocation(variableName), attributePerVertex, dataType, normalize, stride, offset);
         };
         /**
-         * Transform current mode to `vertexSetting`.
+         * Generate pure color texture and bind it to `gl.TEXTURE_2D`.
          */
-        WebGLHelper3d.prototype.vertexSettingMode = function (vertexBuffer, vertexAttribute, attributePerVertex, dataType, normalize, stride, offset) {
-            if (dataType === void 0) { dataType = this.gl.FLOAT; }
-            if (normalize === void 0) { normalize = false; }
-            if (stride === void 0) { stride = 0; }
-            if (offset === void 0) { offset = 0; }
-            this.useBuffer(vertexBuffer);
-            this.startFlowingDataToAttribute(vertexAttribute, attributePerVertex, dataType, normalize, stride, offset);
-        };
-        /**
-         * Transform current mode to `colorSetting`.
-         */
-        WebGLHelper3d.prototype.colorSettingMode = function (colorBuffer, colorAttribute) {
-            this.useBuffer(colorBuffer);
-            this.startFlowingDataToAttribute(colorAttribute, 4, this.gl.FLOAT);
-        };
-        /**
-         * Set uniform color variable in fragment shader. No need to transform to `colorSetting` mode.
-         */
-        WebGLHelper3d.prototype.setUniformColor = function (variableName, color8bit) {
-            var _a;
-            (_a = this.gl).uniform4f.apply(_a, __spreadArrays([this.getUniformLocation(variableName)], WebGLUtils_1.normalize8bitColor(color8bit)));
-        };
-        /**
-         * Set uniform matrix (4d) in shader.
-         */
-        WebGLHelper3d.prototype.setUniformMatrix4d = function (variableName, data, transpose) {
-            if (transpose === void 0) { transpose = false; }
-            this.gl.uniformMatrix4fv(this.getUniformLocation(variableName), transpose, flatten(data));
-        };
-        /**
-         * Transform current mode to textureSetting.
-         */
-        WebGLHelper3d.prototype.textureSettingMode = function (tBuf, tAttr) {
-            this.vertexSettingMode(tBuf, tAttr, 2, this.gl.FLOAT);
-        };
-        /**
-         * Draw a `DrawingObject3d` without texture. (Mesh only.)
-         */
-        WebGLHelper3d.prototype.drawImmediatelyMeshOnly = function (obj, method, color) {
-            // 准备mesh绘制
-            var meshVertices = [];
-            obj.objProcessor.fs.forEach(function (face) {
-                face.forEach(function (vOfFace) {
-                    var subscript = vOfFace - 1;
-                    meshVertices.push(obj.objProcessor.vs[subscript]); // xyzxyzxyz
-                });
-            });
-            // 发送三角形顶点信息
-            this.vertexSettingMode(this.globalVertexBuffer, this.globalVertexAttribute, 3);
-            this.sendDataToBuffer(flatten(meshVertices));
-            // 纯色纹理
+        WebGLHelper3d.prototype.bindPureColorTexture = function (color) {
             var texture = this.gl.createTexture();
             this.gl.bindTexture(this.gl.TEXTURE_2D, texture);
             this.gl.texImage2D(this.gl.TEXTURE_2D, 0, this.gl.RGBA, 1, 1, 0, this.gl.RGBA, this.gl.UNSIGNED_BYTE, 
             // notice it is Uint8 here, no need to normalize
             new Uint8Array(__spreadArrays(color.map(function (x) { return Math.floor(x * 255); }))));
-            this.drawArrays(method, 0, obj.objProcessor.getEffectiveVertexCount());
         };
         /**
-         * Draw a `DrawingObject3d` immediately using the specified texture. `textureIndex` starts from 0.
+         * Very simple to use.
          */
-        WebGLHelper3d.prototype.drawImmediately = function (obj, textureIndex) {
-            // 处理extraMatrix
-            this.setUniformMatrix4d(this.globalExtraMatrixUniform, obj.extraMatrix);
-            // 准备mesh绘制
-            var meshVertices = [];
-            obj.objProcessor.fs.forEach(function (face) {
-                face.forEach(function (vOfFace) {
-                    var subscript = vOfFace - 1;
-                    meshVertices.push(obj.objProcessor.vs[subscript]); // xyzxyzxyz
-                });
-            });
-            // 发送三角形顶点信息
-            this.vertexSettingMode(this.globalVertexBuffer, this.globalVertexAttribute, 3);
-            this.sendDataToBuffer(flatten(meshVertices));
-            if (obj.objProcessor.fts.length != 0) {
-                // 准备材质绘制
-                this.textureSettingMode(this.globalTextureBuffer, this.globalTextureCoordAttribute);
-                // 发送材质顶点信息
-                var textureVertices_1 = [];
-                obj.objProcessor.fts.forEach(function (face) {
-                    face.forEach(function (vOfFace) {
-                        var subscript = vOfFace - 1;
-                        textureVertices_1.push(obj.objProcessor.vts[subscript]);
-                    });
-                });
-                this.sendDataToBuffer(flatten(textureVertices_1));
-                // 根据前端传来的材质要求，让着色器调取显存中对应的材质
-                this.gl.uniform1i(this.getUniformLocation(this.globalTextureSamplerAttribute), textureIndex);
-            }
-            else {
-                throw "[drawImmediately] Cannot find texture vertices info. Framework doesn't support this situation.";
-            }
-            // 综合绘制
-            this.drawArrays(this.gl.TRIANGLES, 0, obj.objProcessor.getEffectiveVertexCount());
-        };
-        /**
-         * Draw a `DrawingPackage3d` immediately using the specified texture.
-         */
-        WebGLHelper3d.prototype.drawPackageImmediatelyMeshOnly = function (pkg) {
-            var _this = this;
-            // 设置该物体的自身视图矩阵
-            this.setUniformMatrix4d(this.globalModelMatrixUniform, pkg.modelMat);
-            pkg.innerList.forEach(function (ele) {
-                _this.drawImmediatelyMeshOnly(ele, pkg.methodMeshOnly, pkg.colorMeshOnly);
-            });
-        };
-        /**
-         * Draw a `DrawingPackage3d` immediately using the specified texture.
-         */
-        WebGLHelper3d.prototype.drawPackageImmediately = function (pkg) {
-            var _this = this;
-            // 设置该物体的自身视图矩阵
-            this.setUniformMatrix4d(this.globalModelMatrixUniform, pkg.modelMat);
-            pkg.innerList.forEach(function (ele) {
-                _this.drawImmediately(ele, ele.textureIndex);
-            });
-        };
-        /**
-         * Push a `DrawingPackage3d` into `waitingQueue`.
-         */
-        WebGLHelper3d.prototype.drawPackageLater = function (toDraw) {
-            this.waitingQueue.push(toDraw);
-        };
-        /**
-         * Clear `waitingQueue`.
-         */
-        WebGLHelper3d.prototype.clearWaitingQueue = function () {
-            this.waitingQueue = [];
-        };
-        /**
-         * Re-render the canvas using `waitingQueue`. Need the `ctm`.
-         */
-        WebGLHelper3d.prototype.reRender = function (ctm) {
-            var _this = this;
-            if (this.renderingLock) {
-                return;
-            }
-            this.renderingLock = true;
-            this.setUniformMatrix4d(this.globalWorldMatrixUniform, ctm);
-            // comment `clearCanvas` so that the image no longer flikers
-            // this.clearCanvas()
-            this.waitingQueue.forEach(function (ele) {
-                if (!ele.meshOnly) {
-                    _this.drawPackageImmediately(ele);
+        WebGLHelper3d.prototype.prepare = function (cfg) {
+            var that = this;
+            // deal with uniforms
+            cfg.uniforms.forEach(function (ele) {
+                var toEval = '';
+                if (ele.method.charAt(0) == 'M') {
+                    toEval = "that.gl.uniform" + ele.method + "(that.getUniformLocation('" + ele.varName + "'), false, [" + ele.data + "])";
+                }
+                else if (ele.method.charAt(ele.method.length - 1) == 'v') {
+                    toEval = "that.gl.uniform" + ele.method + "(that.getUniformLocation('" + ele.varName + "'), [" + ele.data + "])";
                 }
                 else {
-                    _this.drawPackageImmediatelyMeshOnly(ele);
+                    toEval = "that.gl.uniform" + ele.method + "(that.getUniformLocation('" + ele.varName + "'), " + ele.data + ")";
                 }
+                eval(toEval);
             });
-            this.clearWaitingQueue();
-            this.renderingLock = false;
+            // deal with attributes
+            cfg.attributes.forEach(function (ele) {
+                that.useBuffer(ele.buffer);
+                that.startFlowingDataToAttribute(ele.varName, ele.attrPer, ele.type);
+                that.sendDataToBuffer(ele.data);
+            });
+        };
+        /**
+         * Send texture image to GPU. Subscript is using [posFrom, posTo).
+         */
+        WebGLHelper3d.prototype.sendTextureImageToGPU = function (images, posFrom, posTo) {
+            // 检查空位
+            if (posTo - posFrom != images.length) {
+                console.log(images);
+                throw '[WebGLHelper3d.sendTextureImageToGPU] Too many / no enough positions. Above is the images.';
+            }
+            var tex;
+            var gl = this.gl;
+            for (var i = posFrom; i < posTo; i++) {
+                tex = gl.createTexture();
+                eval("gl.activeTexture(gl.TEXTURE" + i + ");");
+                gl.bindTexture(gl.TEXTURE_2D, tex);
+                eval("gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, images[" + (i - posFrom) + "]);");
+                gl.generateMipmap(gl.TEXTURE_2D);
+            }
+        };
+        /**
+         * Analyze f?s to v?s.
+         */
+        WebGLHelper3d.prototype.analyzeFtoV = function (obj, which) {
+            // TODO: Can anybody make this pile of shit prettier?
+            var meshVertices = [];
+            switch (which) {
+                case 'fs':
+                    if (obj.objProcessor.fs.length <= 0) {
+                        throw '[WebGLHelper3d.analyzeFtoV] fs.length <= 0.';
+                    }
+                    obj.objProcessor.fs.forEach(function (face) {
+                        face.forEach(function (vOfFace) {
+                            var subscript = vOfFace - 1;
+                            meshVertices.push(obj.objProcessor.vs[subscript]); // xyzxyzxyz
+                        });
+                    });
+                    return meshVertices;
+                case 'fts':
+                    if (obj.objProcessor.fts.length <= 0) {
+                        throw '[WebGLHelper3d.analyzeFtoV] fts.length <= 0.';
+                    }
+                    obj.objProcessor.fts.forEach(function (face) {
+                        face.forEach(function (vOfFace) {
+                            var subscript = vOfFace - 1;
+                            meshVertices.push(obj.objProcessor.vts[subscript]); // xyzxyzxyz
+                        });
+                    });
+                    return meshVertices;
+                case 'fns':
+                    if (obj.objProcessor.fns.length <= 0) {
+                        throw '[WebGLHelper3d.analyzeFtoV] fns.length <= 0.';
+                    }
+                    obj.objProcessor.fns.forEach(function (face) {
+                        face.forEach(function (vOfFace) {
+                            var subscript = vOfFace - 1;
+                            meshVertices.push(obj.objProcessor.vns[subscript]); // xyzxyzxyz
+                        });
+                    });
+                    return meshVertices;
+            }
         };
         return WebGLHelper3d;
     }());

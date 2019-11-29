@@ -2,7 +2,7 @@
 // Written by z0gSh1u @ https://github.com/z0gSh1u/typed-webgl
 // for book `Interactive Computer Graphics` (7th Edition).
 
-export class WebGLDrawingObject {
+export class DrawingObject2d {
 
   private name: string
   private data: Array<any>

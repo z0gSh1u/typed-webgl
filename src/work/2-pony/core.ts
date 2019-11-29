@@ -1,12 +1,12 @@
 // Core code of 2-Pony.
-// by z0gSh1u & LongChen
+// by z0gSh1u & LongChen & Twileon  
 
 import '../../3rd-party/MV'
 import '../../3rd-party/initShaders'
-import { WebGLHelper3d } from '../../framework/3d/WebGLHelper3d'
+import { WebGLHelper3d } from '../../framework/3dv1/WebGLHelper3d'
 import * as WebGLUtils from '../../framework/WebGLUtils'
-import { DrawingObject3d } from '../../framework/3d/DrawingObject3d'
-import { DrawingPackage3d } from '../../framework/3d/DrawingPackage3d'
+import { DrawingObject3d } from '../../framework/3dv1/DrawingObject3d'
+import { DrawingPackage3d } from '../../framework/3dv1/DrawingPackage3d'
 
 // common variables
 let canvasDOM: HTMLCanvasElement = document.querySelector('#cvs') as HTMLCanvasElement

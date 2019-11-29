@@ -45,3 +45,25 @@ export function getDistance2d(pointA: Vec2, pointB: Vec2): number {
 export function radToDeg(angle: number): number {
   return angle * 57.32
 }
+
+/**
+ * Load image async.
+ */
+export function loadImageAsync(urls: Array<string>) {
+  return new Promise((resolve, reject) => {
+    let newImages: Array<HTMLImageElement> = [], loadedImagesCount = 0,
+      arr = (typeof urls != "object") ? [urls] : urls
+    function cb() {
+      loadedImagesCount++
+      if (loadedImagesCount == arr.length) {
+        resolve(newImages)
+      }
+    }
+    for (let i = 0; i < arr.length; i++) {
+      newImages[i] = new Image()
+      newImages[i].src = arr[i]
+      newImages[i].onload = () => { cb() }
+      newImages[i].onerror = () => { reject() }
+    }
+  })
+}
