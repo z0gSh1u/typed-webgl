@@ -1,0 +1,158 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta http-equiv="X-UA-Compatible" content="ie=edge">
+  <title>Shining - 《计算机图形学》研讨 03</title>
+
+  <script src="../../3rd-party/require.js" data-main="./core.js"></script>
+
+  <style>
+    html {
+      margin: 0;
+      padding: 0;
+    }
+
+    #cvs {
+      border: 5px solid gray;
+      padding: 5px;
+    }
+
+    canvas {
+      float: left;
+    }
+
+    .right {
+      float: right;
+      margin-right: 30px;
+      max-width: 600px;
+    }
+
+    .requirement {
+      margin: 5px auto;
+      display: inline;
+    }
+
+    .keyBlock {
+      height: 38px;
+      width: 38px;
+      display: inline-block;
+      margin: 5px 8px;
+      border: 3px solid gray;
+      padding: 2px;
+    }
+
+    .coordinput {
+      width: 50px;
+      margin-right: 5px;
+    }
+
+    .colorinput {
+      width: 50px;
+      margin-right: 5px;
+    }
+
+    .lightparam>p {
+      display: inline-block;
+      margin: 0;
+      padding: 0;
+      font-family: 'Consolas';
+    }
+
+    .lightparam>.r {
+      background-color: pink;
+    }
+
+    .lightparam>.g {
+      background-color: greenyellow;
+    }
+
+    .lightparam>.b {
+      background-color: skyblue;
+    }
+
+    #applyLightparam {
+      margin-top: 10px;
+    }
+  </style>
+
+</head>
+
+<body>
+
+  <canvas id="cvs" height="700px" width="700px"></canvas>
+
+  <div class="right">
+    <h1>《计算机图形学》研讨 03 - Shining</h1>
+    <h4>组长：沈汉唐&nbsp;&nbsp;组员：高钰铭 卓旭</h4>
+    <hr>
+
+    <div class="requirement">
+
+      <h3 style="display: inline-block; margin: 0 auto;">当前模式：</h3>
+      <p id="mode_0" style="color: red; display: inline-block; font-size: 20px; margin: 0 auto;">跟踪球　</p>
+      <p id="mode_1" style="color: blue; display: none; font-size: 20px; margin: 0 auto;">第一人称</p>
+      <p id="mode_2" style="color: green; display: none; font-size: 20px; margin: 0 auto;">光源互动</p>
+      &nbsp;&nbsp;<button id="modeToggler">切换</button>
+      <p style="margin: 0 auto;">跟踪球模式，光源随动；第一人称模式，光源固定；光源互动模式，位置可调。</p>
+
+      <h4>A、交互式的视点变化，实现场景漫游</h4>
+      <p>在第一人称模式下：</p>
+      <div class="keyBlock">W</div>前进
+      <div class="keyBlock">S</div>后退
+      <div class="keyBlock">A</div>左转
+      <div class="keyBlock">D</div>右转
+      <br>
+      <div class="keyBlock">空格</div>跳跃
+      <div class="keyBlock">Ctrl</div>下蹲
+      <div class="keyBlock" style="background-image: url('./mouse.png'); background-repeat: no-repeat;">&nbsp;</div>观察
+      <br>
+    </div>
+    <div class="requirement">
+      <h4>B、光源位置可交互改变，参数可调</h4>
+
+      <p style="margin-bottom: 0;"><b>在任何模式下：</b></p>
+      <p style="margin-top: 0;">手动调节光源位置：</p>
+      <div class="lightpos">
+        X=<input type="text" class="coordinput" id="lightPosX">
+        Y=<input type="text" class="coordinput" id="lightPosY">
+        Z=<input type="text" class="coordinput" id="lightPosZ">
+        <button id="applyLightPos">应用</button>
+      </div>
+      <p>调节小马材质参数：</p>
+      <div class="lightparam">
+        <p>Ambient:&nbsp;</p>
+        <input type="text" class="colorinput r" id='colorinputAR'>
+        <input type="text" class="colorinput g" id='colorinputAG'>
+        <input type="text" class="colorinput b" id='colorinputAB'>
+        <br>
+        <p>Diffuse:&nbsp;</p>
+        <input type="text" class="colorinput r" id='colorinputDR'>
+        <input type="text" class="colorinput g" id='colorinputDG'>
+        <input type="text" class="colorinput b" id='colorinputDB'>
+        <br>
+        <p>Specular:</p>
+        <input type="text" class="colorinput r" id='colorinputSR'>
+        <input type="text" class="colorinput g" id='colorinputSG'>
+        <input type="text" class="colorinput b" id='colorinputSB'>
+        <br>
+        <p>Shiness:&nbsp;</p>
+        <input type="text" class="coordinput" id='shinessinput'>
+        <button id="applyLightparam">应用</button>
+        <br><br>
+        <p><b>在光源互动模式下：</b></p>
+        <p>拖动光球以在X-Y平面移动光源，卷动鼠标滚轮以在Z向纵深移动。</p>
+
+      </div>
+    </div>
+    <div class="requirement">
+      <h4>C、场景中至少包含两种以上的材质</h4>
+      <p>小马身体（类塑料）与头发（类丝绸）是两种不同的材质。</p>
+    </div>
+  </div>
+
+</body>
+
+</html>

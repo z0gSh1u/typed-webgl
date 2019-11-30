@@ -2,21 +2,21 @@
 // Written by z0gSh1u @ https://github.com/z0gSh1u/typed-webgl
 // for book `Interactive Computer Graphics` (7th Edition).
 
-import { WebGLDrawingObject } from "./WebGLDrawingObject";
+import { DrawingObject2d } from "./DrawingObject2d";
 
 /**
- * A `WebGLDrawingPackage` is something that contains many `WebGLDrawingObject`.
+ * A `WebGLDrawingPackage` is something that contains many `DrawingObject2d`.
  * You can use it to store a specific part of your entity.
  */
-export class WebGLDrawingPackage {
+export class DrawingPackage2d {
 
-  private innerList: Array<WebGLDrawingObject>
+  private innerList: Array<DrawingObject2d>
 
-  constructor(...objects: Array<WebGLDrawingObject>) {
+  constructor(...objects: Array<DrawingObject2d>) {
     this.innerList = objects.length == 0 ? [] : objects
   }
 
-  public push(obj: WebGLDrawingObject) {
+  public push(obj: DrawingObject2d) {
     this.innerList.push(obj)
   }
 
@@ -88,7 +88,7 @@ export class WebGLDrawingPackage {
   /**
    * Modify an object in `innerList` using `name`. If not found, do nothing. 
    */
-  public modifyAnObject(name: string, newObject: WebGLDrawingObject) {
+  public modifyAnObject(name: string, newObject: DrawingObject2d) {
     for (let i = 0; i < this.innerList.length; i++) {
       if (this.innerList[i].getName() == name) {
         this.innerList[i] = newObject

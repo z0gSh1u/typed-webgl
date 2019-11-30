@@ -1,7 +1,7 @@
 // WebGL Helper (2d).
 // Written by z0gSh1u @ https://github.com/z0gSh1u/typed-webgl
 // for book `Interactive Computer Graphics` (7th Edition).
-define(["require", "exports", "../WebGLUtils", "./WebGLDrawingPackage"], function (require, exports, WebGLUtils_1, WebGLDrawingPackage_1) {
+define(["require", "exports", "../WebGLUtils", "./DrawingPackage2d"], function (require, exports, WebGLUtils_1, DrawingPackage2d_1) {
     "use strict";
     Object.defineProperty(exports, "__esModule", { value: true });
     var WebGLHelper2d = /** @class */ (function () {
@@ -15,7 +15,7 @@ define(["require", "exports", "../WebGLUtils", "./WebGLDrawingPackage"], functio
             this.globalVertexAttribute = null;
             this.globalAttributesPerVertex = null;
             this.globalColorAttribute = null;
-            this.waitingQueue = new WebGLDrawingPackage_1.WebGLDrawingPackage();
+            this.waitingQueue = new DrawingPackage2d_1.DrawingPackage2d();
             this.INTERVAL_MIN = 20;
             this.lastRenderTick = 0;
             this.rect = this.canvasDOM.getBoundingClientRect();
@@ -152,7 +152,7 @@ define(["require", "exports", "../WebGLUtils", "./WebGLDrawingPackage"], functio
             this.drawArrays(method, arg1, arg2);
         };
         /**
-         * Push a `WebGLDrawingObject` to `watingQueue`. If you want to use this, make sure
+         * Push a `DrawingObject2d` to `watingQueue`. If you want to use this, make sure
          * you have already set the global settings. Call `reRender` when you want to draw
          * these buffered objects.
          */
@@ -160,7 +160,7 @@ define(["require", "exports", "../WebGLUtils", "./WebGLDrawingPackage"], functio
             this.waitingQueue.push(object);
         };
         /**
-         * Unzip `WebGLDrawingPackage` and push all objects to `waitingQueue`.
+         * Unzip `DrawingPackage2d` and push all objects to `waitingQueue`.
          */
         WebGLHelper2d.prototype.drawPackageLater = function (pkg) {
             var _this = this;
@@ -188,7 +188,7 @@ define(["require", "exports", "../WebGLUtils", "./WebGLDrawingPackage"], functio
          * Clear `waitingQueue` manually.
          */
         WebGLHelper2d.prototype.clearWaitingQueue = function () {
-            this.waitingQueue = new WebGLDrawingPackage_1.WebGLDrawingPackage();
+            this.waitingQueue = new DrawingPackage2d_1.DrawingPackage2d();
         };
         /**
          * Convert to WebGL system and flatten.

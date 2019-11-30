@@ -3,8 +3,8 @@
 // for book `Interactive Computer Graphics` (7th Edition).
 
 import { normalize8bitColor } from '../WebGLUtils'
-import { WebGLDrawingPackage } from './WebGLDrawingPackage'
-import { WebGLDrawingObject } from './WebGLDrawingObject'
+import { DrawingPackage2d } from './DrawingPackage2d'
+import { DrawingObject2d } from './DrawingObject2d'
 
 export class WebGLHelper2d {
 
@@ -22,7 +22,7 @@ export class WebGLHelper2d {
   private globalAttributesPerVertex: number | null
   private globalColorAttribute: string | null
 
-  private waitingQueue: WebGLDrawingPackage
+  private waitingQueue: DrawingPackage2d
 
   private renderingLock = false
 
@@ -38,7 +38,7 @@ export class WebGLHelper2d {
     this.globalVertexAttribute = null
     this.globalAttributesPerVertex = null
     this.globalColorAttribute = null
-    this.waitingQueue = new WebGLDrawingPackage()
+    this.waitingQueue = new DrawingPackage2d()
     this.INTERVAL_MIN = 20
     this.lastRenderTick = 0
     this.rect = this.canvasDOM.getBoundingClientRect()
@@ -201,18 +201,18 @@ export class WebGLHelper2d {
   }
 
   /**
-   * Push a `WebGLDrawingObject` to `watingQueue`. If you want to use this, make sure
+   * Push a `DrawingObject2d` to `watingQueue`. If you want to use this, make sure
    * you have already set the global settings. Call `reRender` when you want to draw
    * these buffered objects.
    */
-  public drawLater(object: WebGLDrawingObject) {
+  public drawLater(object: DrawingObject2d) {
     this.waitingQueue.push(object)
   }
 
   /**
-   * Unzip `WebGLDrawingPackage` and push all objects to `waitingQueue`.
+   * Unzip `DrawingPackage2d` and push all objects to `waitingQueue`.
    */
-  public drawPackageLater(pkg: WebGLDrawingPackage) {
+  public drawPackageLater(pkg: DrawingPackage2d) {
     pkg.getInnerList().forEach(ele => {
       this.drawLater(ele)
     })
@@ -238,7 +238,7 @@ export class WebGLHelper2d {
    * Clear `waitingQueue` manually.
    */
   public clearWaitingQueue() {
-    this.waitingQueue = new WebGLDrawingPackage()
+    this.waitingQueue = new DrawingPackage2d()
   }
 
   /**

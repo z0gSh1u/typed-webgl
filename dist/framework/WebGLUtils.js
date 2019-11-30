@@ -53,4 +53,25 @@ define(["require", "exports", "../3rd-party/MV", "../3rd-party/initShaders"], fu
         return angle * 57.32;
     }
     exports.radToDeg = radToDeg;
+    /**
+     * Load image async.
+     */
+    function loadImageAsync(urls) {
+        return new Promise(function (resolve, reject) {
+            var newImages = [], loadedImagesCount = 0, arr = (typeof urls != "object") ? [urls] : urls;
+            function cb() {
+                loadedImagesCount++;
+                if (loadedImagesCount == arr.length) {
+                    resolve(newImages);
+                }
+            }
+            for (var i = 0; i < arr.length; i++) {
+                newImages[i] = new Image();
+                newImages[i].src = arr[i];
+                newImages[i].onload = function () { cb(); };
+                newImages[i].onerror = function () { reject(); };
+            }
+        });
+    }
+    exports.loadImageAsync = loadImageAsync;
 });
