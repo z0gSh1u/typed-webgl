@@ -11,14 +11,10 @@ import { PhongLightModel } from '../../framework/3d/PhongLightModel'
 // 主要变量
 // ==================================
 let canvasDOM: HTMLCanvasElement = document.querySelector('#cvs') as HTMLCanvasElement
-let gl: WebGLRenderingContext = canvasDOM.getContext('webgl', { alpha: true,  premultipliedAlpha: false }) as WebGLRenderingContext
+let gl: WebGLRenderingContext = canvasDOM.getContext('webgl', { alpha: true, premultipliedAlpha: false }) as WebGLRenderingContext
 let helper: WebGLHelper3d
-let PROGRAMS = {
-  MAIN: 0, BACKGROUND: 1, RECT: 2
-}
-let MODES = {
-  TRACKBALL: 0, FPV: 1, LIGHT: 2
-}
+let PROGRAMS = { MAIN: 0, BACKGROUND: 1, BALL: 2 }
+let MODES = { TRACKBALL: 0, FPV: 1, LIGHT: 2 }
 let currentMode = MODES.TRACKBALL
 // ==================================
 // 主体渲染使用
@@ -39,6 +35,17 @@ let PonyMaterial = new PhongLightModel({ // 小马光照参数
   specularMaterial: [200, 200, 200],
   materialShiness: 30.0
 })
+// TODO: 头发换一种材质
+let HairMaterial = new PhongLightModel({
+  lightPosition: lightBulbPosition,
+  ambientColor: [255, 255, 255],
+  ambientMaterial: [200, 200, 200],
+  diffuseColor: [255, 255, 255],
+  diffuseMaterial: [66, 66, 66],
+  specularColor: [255, 255, 255],
+  specularMaterial: [200, 200, 200],
+  materialShiness: 50.0
+})
 // ==================================
 // 背景渲染使用
 // ==================================
@@ -48,9 +55,12 @@ let bgTBuffer: WebGLBuffer
 // ==================================
 // 光球渲染使用
 // ==================================
-let lightBallPosition = lightBulbPosition
-let lbVBuffer: WebGLBuffer
-let lbTBuffer: WebGLBuffer
+let Ball: DrawingPackage3d
+let ballVBuffer: WebGLBuffer
+let lastLightBulbPosition = vec3(0.0, 0.0, 0.0)
+const LIGHT_TRANSLATE_FACTOR = 0.0005
+const LIGHT_Z_PLUS = 0.015
+const LIGHT_SCALE_RATE = 0.1
 // ==================================
 // 跟踪球使用
 // ==================================
@@ -68,43 +78,59 @@ let lastTick: number
 let PonyMaterialInputDOMs: Array<string> = []
 let PonyMaterialCorrespondings: Array<string> = []
 // 初始化
-// TODO: 消除Callback-Hell
-let main = async () => {
+let main = () => {
   WebGLUtils.initializeCanvas(gl, canvasDOM)
   helper = new WebGLHelper3d(canvasDOM, gl, [
     WebGLUtils.initializeShaders(gl, './shader/vMain.glsl', './shader/fMain.glsl'),
     WebGLUtils.initializeShaders(gl, './shader/vBackground.glsl', './shader/fBackground.glsl'),
-    WebGLUtils.initializeShaders(gl, './shader/vRect.glsl', './shader/fRect.glsl'),
+    WebGLUtils.initializeShaders(gl, './shader/vBall.glsl', './shader/fBall.glsl'),
   ])
   gl.enable(gl.DEPTH_TEST)
-  gl.blendFunc(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA)
-  gl.enable(gl.BLEND)
+  // gl.blendFunc(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA)
+  // gl.enable(gl.BLEND)
   // 初始化各buffer
   vBuffer = helper.createBuffer()
   tBuffer = helper.createBuffer()
   nBuffer = helper.createBuffer()
   bgVBuffer = helper.createBuffer()
   bgTBuffer = helper.createBuffer()
-  lbVBuffer = helper.createBuffer()
-  lbTBuffer = helper.createBuffer()
+  ballVBuffer = helper.createBuffer()
   ctm = mat4()
-  // 保证背景渲染
-  initBackground()
+  startSceneInit()
 }
-// 初始化背景图
-let initBackground = () => {
-  WebGLUtils.loadImageAsync(['./model/bg.png'])
-    .then((data) => {
-      // 分配背景材质位置为9
-      initBackgroundCallback(data as HTMLImageElement[])
-    })
-    .catch((what) => {
-      console.warn(what)
-    })
+// 必须使用该函数修改前端光照位置
+let modifyLightBulbPosition = (newPos: Vec3) => {
+  lastLightBulbPosition = lightBulbPosition
+  lightBulbPosition = newPos
+  initPositionInput()
 }
-let initBackgroundCallback = (data: HTMLImageElement[]) => {
-  helper.sendTextureImageToGPU(data as HTMLImageElement[], 9, 10)
-  initLightBall()
+// 场景初始化
+let startSceneInit = async () => {
+  // 初始化背景图，分配9号纹理
+  helper.sendTextureImageToGPU(await WebGLUtils.loadImageAsync(['./model/bg.png']), 9, 10)
+  // 设定光球模型
+  Ball = new DrawingPackage3d(WebGLUtils.scaleMat(0.5, 0.5, 0.5), ...[
+    new DrawingObject3d('ball', './model/normed/ball.obj')
+  ])
+  // 设定小马模型
+  Pony = new DrawingPackage3d(mult(translate(0, -0.35, 0), mult(rotateZ(180), rotateX(270))) as Mat, ...[
+    new DrawingObject3d('body', './model/normed/Pony/pony.obj', './model/texture/Pony/pony.png', 0), // 身体
+    new DrawingObject3d('tail', './model/normed/Pony/tail.obj', './model/texture/Pony/tail.png', 1), // 尾巴
+    new DrawingObject3d('hairBack', './model/normed/Pony/hairBack.obj', './model/texture/Pony/hairBack.png', 2), // 头发后
+    new DrawingObject3d('hairFront', './model/normed/Pony/hairFront.obj', './model/texture/Pony/hairFront.png', 3), // 头发前
+    new DrawingObject3d('horn', './model/normed/Pony/horn.obj', './model/texture/Pony/horn.png', 4), // 角
+    new DrawingObject3d('leftEye', './model/normed/Pony/leftEye.obj', './model/texture/Pony/leftEye.png', 5), // 左眼
+    new DrawingObject3d('rightEye', './model/normed/Pony/rightEye.obj', './model/texture/Pony/rightEye.png', 6), // 右眼
+    new DrawingObject3d('teeth', './model/normed/Pony/teeth.obj', './model/texture/Pony/teeth.png', 7), // 牙
+    new DrawingObject3d('eyelashes', './model/normed/Pony/eyelashes.obj', './model/texture/Pony/eyelashes.png', 8), // 睫毛
+  ])
+  // 设置小马纹理，0-8号
+  let urls: Array<string> = []
+  Pony.innerList.forEach(obj => {
+    urls.push(obj.texturePath)
+  })
+  helper.sendTextureImageToGPU(await WebGLUtils.loadImageAsync(urls), 0, 9)
+  reRender(ctm)
 }
 // 重绘背景
 let reRenderBackground = () => {
@@ -129,34 +155,6 @@ let reRenderBackground = () => {
   })
   helper.drawArrays(gl.TRIANGLE_FAN, 0, 4)
 }
-// 读入模型数据，初始化JS中的模型信息记录变量，传送材质，渲染小马
-let initPony = () => {
-  // 设定小马模型
-  Pony = new DrawingPackage3d(mult(translate(0, -0.35, 0), mult(rotateZ(180), rotateX(270))) as Mat, ...[
-    new DrawingObject3d('body', './model/normed/Pony/pony.obj', './model/texture/Pony/pony.png', 0), // 身体
-    new DrawingObject3d('tail', './model/normed/Pony/tail.obj', './model/texture/Pony/tail.png', 1), // 尾巴
-    new DrawingObject3d('hairBack', './model/normed/Pony/hairBack.obj', './model/texture/Pony/hairBack.png', 2), // 头发后
-    new DrawingObject3d('hairFront', './model/normed/Pony/hairFront.obj', './model/texture/Pony/hairFront.png', 3), // 头发前
-    new DrawingObject3d('horn', './model/normed/Pony/horn.obj', './model/texture/Pony/horn.png', 4), // 角
-    new DrawingObject3d('leftEye', './model/normed/Pony/leftEye.obj', './model/texture/Pony/leftEye.png', 5), // 左眼
-    new DrawingObject3d('rightEye', './model/normed/Pony/rightEye.obj', './model/texture/Pony/rightEye.png', 6), // 右眼
-    new DrawingObject3d('teeth', './model/normed/Pony/teeth.obj', './model/texture/Pony/teeth.png', 7), // 牙
-    new DrawingObject3d('eyelashes', './model/normed/Pony/eyelashes.obj', './model/texture/Pony/eyelashes.png', 8), // 睫毛
-  ])
-  let urls: Array<string> = []
-  Pony.innerList.forEach(obj => {
-    urls.push(obj.texturePath)
-  })
-  WebGLUtils.loadImageAsync(urls)
-    .then((data) => {
-      ponyLoadedCallback(data as HTMLImageElement[])
-    })
-}
-// 材质初次加载完成后渲染一次
-let ponyLoadedCallback = (loadedElements: HTMLImageElement[]) => {
-  helper.sendTextureImageToGPU(loadedElements, 0, 9)
-  reRender(ctm)
-}
 // 重绘MAIN
 let reRenderMain = (ctm: Mat) => {
   helper.switchProgram(PROGRAMS.MAIN)
@@ -165,11 +163,18 @@ let reRenderMain = (ctm: Mat) => {
     uniforms: [
       { varName: 'uWorldMatrix', data: flatten(ctm), method: 'Matrix4fv' },
       { varName: 'uModelMatrix', data: flatten(Pony.modelMat), method: 'Matrix4fv' },
-      { varName: 'uLightPosition', data: [...PonyMaterial.lightPosition, 1.0], method: '4fv' },
+      { varName: 'uLightPosition', data: [...lightBulbPosition, 1.0], method: '4fv' },
       { varName: 'uShiness', data: PonyMaterial.materialShiness, method: '1f' },
       { varName: 'uAmbientProduct', data: PonyMaterial.ambientProduct, method: '4fv' },
       { varName: 'uDiffuseProduct', data: PonyMaterial.diffuseProduct, method: '4fv' },
       { varName: 'uSpecularProduct', data: PonyMaterial.specularProduct, method: '4fv' },
+      {
+        varName: 'uWorldMatrixTransInv', data: flatten(transpose(inverse(mat3(
+          Pony.modelMat[0][0], Pony.modelMat[0][1], Pony.modelMat[0][2],
+          Pony.modelMat[1][0], Pony.modelMat[1][1], Pony.modelMat[1][2],
+          Pony.modelMat[2][0], Pony.modelMat[2][1], Pony.modelMat[2][2],
+        )))), method: 'Matrix3fv'
+      },
     ]
   })
   Pony.innerList.forEach(obj => {
@@ -189,48 +194,33 @@ let reRenderMain = (ctm: Mat) => {
     helper.drawArrays(gl.TRIANGLES, 0, obj.objProcessor.getEffectiveVertexCount())
   })
 }
-
-// 绘制光球
-let initLightBall = () => {
-  WebGLUtils.loadImageAsync(['./model/lightBall.png'])
-    .then(data => {
-      lightBallLoadedCallback(data as HTMLImageElement[])
+let reRenderLightBall = (posChanged: boolean = false) => {
+  helper.switchProgram(PROGRAMS.BALL)
+  if (posChanged) {
+    Ball.setModelMat(mult(Ball.modelMat, translate(
+      lightBulbPosition[0] - lastLightBulbPosition[0],
+      lightBulbPosition[1] - lastLightBulbPosition[1],
+      lightBulbPosition[2] - lastLightBulbPosition[2],
+    )) as Mat)
+  }
+  Ball.innerList.forEach(obj => {
+    let vs = helper.analyzeFtoV(obj, 'fs')
+    helper.prepare({
+      attributes: [
+        { buffer: ballVBuffer, data: flatten(vs), varName: 'aPosition', attrPer: 3, type: gl.FLOAT }
+      ],
+      uniforms: [
+        { varName: 'uColor', data: WebGLUtils.normalize8bitColor([255, 181, 41]), method: '4fv' },
+        { varName: 'uMatrix', data: flatten(Ball.modelMat), method: 'Matrix4fv' },
+      ]
     })
-}
-let lightBallLoadedCallback = (loadedImages: HTMLImageElement[]) => {
-  // 分配10号材质位置
-  helper.sendTextureImageToGPU(loadedImages, 10, 11)
-  initPony()
-}
-let reRenderLightBall = () => {
-  helper.switchProgram(PROGRAMS.BACKGROUND)
-  let VRect = [
-    [0.7, 0.7, -0.01],
-    [0.7, 0.95, -0.01],
-    [0.95, 0.95, -0.01],
-    [0.95, 0.7, -0.01]
-  ],
-    vTRect = [
-      [0.0, 0.0], [1.0, 0.0],
-      [1.0, 1.0], [0.0, 1.0]
-    ]
-  // 发送背景顶点信息
-  helper.prepare({
-    attributes: [
-      { buffer: lbVBuffer, data: flatten(VRect), varName: 'aPosition', attrPer: 3, type: gl.FLOAT },
-      { buffer: lbTBuffer, data: flatten(vTRect), varName: 'aTexCoord', attrPer: 2, type: gl.FLOAT }
-    ],
-    uniforms: [
-      { varName: 'uTexture', data: 10, method: '1i' }
-    ]
+    helper.drawArrays(gl.TRIANGLES, 0, obj.objProcessor.getEffectiveVertexCount())
   })
-  helper.drawArrays(gl.TRIANGLE_FAN, 0, 4)
 }
-
 // reRender
-let reRender = (ctm: Mat, reCalulateMaterialProducts: boolean = false) => {
+let reRender = (ctm: Mat, reCalulateMaterialProducts: boolean = false, lightPosChanged: boolean = false) => {
   reCalulateMaterialProducts && PonyMaterial.reCalculateProducts()
-  //reRenderLightBall()
+  reRenderLightBall(lightPosChanged)
   reRenderBackground()
   reRenderMain(ctm)
 }
@@ -241,7 +231,8 @@ let reRender = (ctm: Mat, reCalulateMaterialProducts: boolean = false) => {
 let initPositionInput = () => {
   (document.querySelector('#lightPosX') as HTMLInputElement).value = lightBulbPosition[0].toString();
   (document.querySelector('#lightPosY') as HTMLInputElement).value = lightBulbPosition[1].toString();
-  (document.querySelector('#lightPosZ') as HTMLInputElement).value = lightBulbPosition[2].toString()
+  (document.querySelector('#lightPosZ') as HTMLInputElement).value = (-lightBulbPosition[2]).toString()
+  // TODO: Why here is a fucking negative sign?
 }
 // 调节位置
 let listenPositionInput = () => {
@@ -249,9 +240,8 @@ let listenPositionInput = () => {
     let xx = (document.querySelector('#lightPosX') as HTMLInputElement).value,
       yy = (document.querySelector('#lightPosY') as HTMLInputElement).value,
       zz = (document.querySelector('#lightPosZ') as HTMLInputElement).value
-    lightBulbPosition = ([xx, yy, zz].map(_ => parseFloat(_))) as Vec3
-    PonyMaterial.setLightPosition(lightBulbPosition)
-    reRender(ctm, true)
+    modifyLightBulbPosition(([xx, yy, zz].map(_ => parseFloat(_))) as Vec3)
+    reRender(ctm, true, true)
   }
 }
 // 初始化材质颜色参量输入框
@@ -288,10 +278,35 @@ let listenPonyMaterialInput = () => {
 }
 // 光源互动模式
 let listenMouseLightInteract = () => {
-
+  // 拖动处理
+  canvasDOM.onmousedown = (evt: MouseEvent) => {
+    let mousePoint = [evt.offsetX, evt.offsetY] as Vec2
+    canvasDOM.onmousemove = (evt2: MouseEvent) => {
+      let newMousePoint = [evt2.offsetX, evt2.offsetY] as Vec2
+      let translateVector = newMousePoint.map((v, i) => v - mousePoint[i]) as Vec2
+      translateVector[0] /= canvasDOM.width; translateVector[1] /= canvasDOM.height; translateVector[1] *= -1
+      translateVector.map(x => x * LIGHT_TRANSLATE_FACTOR)
+      modifyLightBulbPosition([lightBulbPosition[0] + translateVector[0], lightBulbPosition[1] + translateVector[1], lightBulbPosition[2]])
+      Ball.setModelMat(mult(Ball.modelMat, translate(translateVector[0], translateVector[1], 0.0)) as Mat)
+      reRender(ctm, true, true)
+    }
+  }
+  canvasDOM.onmouseup = () => {
+    canvasDOM.onmousemove = () => { }
+  }
+  // @ts-ignore
+  canvasDOM.onmousewheel = (evt: any) => {
+    let dir = evt.wheelDelta > 0 ? -1 : 1 // 1 Down -1 Up
+    modifyLightBulbPosition(
+      [lightBulbPosition[0], lightBulbPosition[1], lightBulbPosition[2] + dir * LIGHT_Z_PLUS]
+    )
+    // TODO: Not so simple.
+    // Ball.setModelMat(mult(Ball.modelMat, WebGLUtils.scaleMat(
+    //   1.0 - dir * LIGHT_SCALE_RATE, 1.0 - dir * LIGHT_SCALE_RATE, 1.0 - dir * LIGHT_SCALE_RATE)) as Mat)
+    Ball.setModelMat(mult(Ball.modelMat, translate(0.0, 0.0, dir * LIGHT_Z_PLUS)) as Mat)
+    reRender(ctm, true, true)
+  }
 }
-
-
 // ===============================
 // 跟踪球实现
 // ===============================
@@ -305,7 +320,7 @@ let rotateWithMouse = (e: MouseEvent) => {
   ctm = mult(rotateX(-disY), ctm) as Mat
   ctm = mult(rotateY(-disX), ctm) as Mat
   mouseLastPos = mousePos
-  reRender(ctm)
+  reRender(ctm, true, false)
 }
 let abs = (n: number): number => {
   return n < 0 ? -n : n
@@ -327,7 +342,7 @@ let slowDown = () => {
   ctm = mult(rotateY(-vX * INTERVAL), ctm) as Mat
   vX = abs(vX) <= FRICTION * INTERVAL ? 0 : vX - FRICTION * INTERVAL * sign(vX)
   vY = abs(vY) <= FRICTION * INTERVAL ? 0 : vY - FRICTION * INTERVAL * sign(vY)
-  reRender(ctm)
+  reRender(ctm, true, false)
 }
 // 鼠标侦听
 let listenMouseTrackBall = () => {
@@ -353,18 +368,26 @@ let listenMouseTrackBall = () => {
 // ===============================
 let listenModeToggler = () => {
   (document.querySelector('#modeToggler') as HTMLButtonElement).onclick = () => {
+    // 前端响应
     eval(`document.querySelector('#mode_${currentMode}').style.display = 'none'`)
     currentMode = (currentMode + 1) % 3
     eval(`document.querySelector('#mode_${currentMode}').style.display = 'inline-block'`)
+    // 内部模式切换
+    clearMouseHooks()
+    switch (currentMode) {
+      case MODES.TRACKBALL: listenMouseTrackBall(); break
+      case MODES.LIGHT: listenMouseLightInteract(); break
+      case MODES.FPV: /* TODO: Add something here. */break
+    }
   }
 }
 let clearMouseHooks = () => {
   canvasDOM.onmousedown = () => { }
   canvasDOM.onmouseup = () => { }
   canvasDOM.onmousemove = () => { }
+  // @ts-ignore
+  canvasDOM.onmousewheel = () => { }
 }
-
-
 // do it
 window.onload = () => {
   main()
