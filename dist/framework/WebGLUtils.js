@@ -54,6 +54,13 @@ define(["require", "exports", "../3rd-party/MV", "../3rd-party/initShaders"], fu
     }
     exports.radToDeg = radToDeg;
     /**
+     * Generate scaling matrix.
+     */
+    function scaleMat(x, y, z) {
+        return mat4(x, 0.0, 0.0, 0.0, 0.0, y, 0.0, 0.0, 0.0, 0.0, z, 0.0, 0.0, 0.0, 0.0, 1.0);
+    }
+    exports.scaleMat = scaleMat;
+    /**
      * Load image async.
      */
     function loadImageAsync(urls) {

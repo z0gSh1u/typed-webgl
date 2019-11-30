@@ -58,12 +58,8 @@ define(["require", "exports", "../../framework/3d/WebGLHelper3d", "../../framewo
     var canvasDOM = document.querySelector('#cvs');
     var gl = canvasDOM.getContext('webgl');
     var helper;
-    var PROGRAMS = {
-        MAIN: 0, BACKGROUND: 1, RECT: 2
-    };
-    var MODES = {
-        TRACKBALL: 0, FPV: 1, LIGHT: 2
-    };
+    var PROGRAMS = { MAIN: 0, BACKGROUND: 1, BALL: 2 };
+    var MODES = { TRACKBALL: 0, FPV: 1, LIGHT: 2 };
     var currentMode = MODES.TRACKBALL;
     // ==================================
     // 主体渲染使用
@@ -84,6 +80,17 @@ define(["require", "exports", "../../framework/3d/WebGLHelper3d", "../../framewo
         specularMaterial: [200, 200, 200],
         materialShiness: 30.0
     });
+    // TODO: 头发换一种材质
+    var HairMaterial = new PhongLightModel_1.PhongLightModel({
+        lightPosition: lightBulbPosition,
+        ambientColor: [255, 255, 255],
+        ambientMaterial: [200, 200, 200],
+        diffuseColor: [255, 255, 255],
+        diffuseMaterial: [66, 66, 66],
+        specularColor: [255, 255, 255],
+        specularMaterial: [200, 200, 200],
+        materialShiness: 50.0
+    });
     // ==================================
     // 背景渲染使用
     // ==================================
@@ -93,9 +100,12 @@ define(["require", "exports", "../../framework/3d/WebGLHelper3d", "../../framewo
     // ==================================
     // 光球渲染使用
     // ==================================
-    var lightBallPosition = lightBulbPosition;
-    var lbVBuffer;
-    var lbTBuffer;
+    var Ball;
+    var ballVBuffer;
+    var lastLightBulbPosition = vec3(0.0, 0.0, 0.0);
+    var LIGHT_TRANSLATE_FACTOR = 0.0005;
+    var LIGHT_Z_PLUS = 0.015;
+    var LIGHT_SCALE_RATE = 0.1;
     // ==================================
     // 跟踪球使用
     // ==================================
@@ -113,47 +123,73 @@ define(["require", "exports", "../../framework/3d/WebGLHelper3d", "../../framewo
     var PonyMaterialInputDOMs = [];
     var PonyMaterialCorrespondings = [];
     // 初始化
-    // TODO: 消除Callback-Hell
-    var main = function () { return __awaiter(void 0, void 0, void 0, function () {
-        return __generator(this, function (_a) {
-            WebGLUtils.initializeCanvas(gl, canvasDOM);
-            helper = new WebGLHelper3d_1.WebGLHelper3d(canvasDOM, gl, [
-                WebGLUtils.initializeShaders(gl, './shader/vMain.glsl', './shader/fMain.glsl'),
-                WebGLUtils.initializeShaders(gl, './shader/vBackground.glsl', './shader/fBackground.glsl'),
-                WebGLUtils.initializeShaders(gl, './shader/vRect.glsl', './shader/fRect.glsl'),
-            ]);
-            gl.enable(gl.DEPTH_TEST);
-            gl.blendFunc(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA);
-            gl.enable(gl.BLEND);
-            // 初始化各buffer
-            vBuffer = helper.createBuffer();
-            tBuffer = helper.createBuffer();
-            nBuffer = helper.createBuffer();
-            bgVBuffer = helper.createBuffer();
-            bgTBuffer = helper.createBuffer();
-            lbVBuffer = helper.createBuffer();
-            lbTBuffer = helper.createBuffer();
-            ctm = mat4();
-            // 保证背景渲染
-            initBackground();
-            return [2 /*return*/];
+    var main = function () {
+        WebGLUtils.initializeCanvas(gl, canvasDOM);
+        helper = new WebGLHelper3d_1.WebGLHelper3d(canvasDOM, gl, [
+            WebGLUtils.initializeShaders(gl, './shader/vMain.glsl', './shader/fMain.glsl'),
+            WebGLUtils.initializeShaders(gl, './shader/vBackground.glsl', './shader/fBackground.glsl'),
+            WebGLUtils.initializeShaders(gl, './shader/vBall.glsl', './shader/fBall.glsl'),
+        ]);
+        gl.enable(gl.DEPTH_TEST);
+        // gl.blendFunc(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA)
+        // gl.enable(gl.BLEND)
+        // 初始化各buffer
+        vBuffer = helper.createBuffer();
+        tBuffer = helper.createBuffer();
+        nBuffer = helper.createBuffer();
+        bgVBuffer = helper.createBuffer();
+        bgTBuffer = helper.createBuffer();
+        ballVBuffer = helper.createBuffer();
+        ctm = mat4();
+        startSceneInit();
+    };
+    // 必须使用该函数修改前端光照位置
+    var modifyLightBulbPosition = function (newPos) {
+        lastLightBulbPosition = lightBulbPosition;
+        lightBulbPosition = newPos;
+        initPositionInput();
+    };
+    // 场景初始化
+    var startSceneInit = function () { return __awaiter(void 0, void 0, void 0, function () {
+        var _a, _b, urls, _c, _d;
+        return __generator(this, function (_e) {
+            switch (_e.label) {
+                case 0:
+                    // 初始化背景图，分配9号纹理
+                    _b = (_a = helper).sendTextureImageToGPU;
+                    return [4 /*yield*/, WebGLUtils.loadImageAsync(['./model/bg.png'])];
+                case 1:
+                    // 初始化背景图，分配9号纹理
+                    _b.apply(_a, [_e.sent(), 9, 10]);
+                    // 设定光球模型
+                    Ball = new (DrawingPackage3d_1.DrawingPackage3d.bind.apply(DrawingPackage3d_1.DrawingPackage3d, __spreadArrays([void 0, WebGLUtils.scaleMat(0.5, 0.5, 0.5)], [
+                        new DrawingObject3d_1.DrawingObject3d('ball', './model/normed/ball.obj')
+                    ])))();
+                    // 设定小马模型
+                    Pony = new (DrawingPackage3d_1.DrawingPackage3d.bind.apply(DrawingPackage3d_1.DrawingPackage3d, __spreadArrays([void 0, mult(translate(0, -0.35, 0), mult(rotateZ(180), rotateX(270)))], [
+                        new DrawingObject3d_1.DrawingObject3d('body', './model/normed/Pony/pony.obj', './model/texture/Pony/pony.png', 0),
+                        new DrawingObject3d_1.DrawingObject3d('tail', './model/normed/Pony/tail.obj', './model/texture/Pony/tail.png', 1),
+                        new DrawingObject3d_1.DrawingObject3d('hairBack', './model/normed/Pony/hairBack.obj', './model/texture/Pony/hairBack.png', 2),
+                        new DrawingObject3d_1.DrawingObject3d('hairFront', './model/normed/Pony/hairFront.obj', './model/texture/Pony/hairFront.png', 3),
+                        new DrawingObject3d_1.DrawingObject3d('horn', './model/normed/Pony/horn.obj', './model/texture/Pony/horn.png', 4),
+                        new DrawingObject3d_1.DrawingObject3d('leftEye', './model/normed/Pony/leftEye.obj', './model/texture/Pony/leftEye.png', 5),
+                        new DrawingObject3d_1.DrawingObject3d('rightEye', './model/normed/Pony/rightEye.obj', './model/texture/Pony/rightEye.png', 6),
+                        new DrawingObject3d_1.DrawingObject3d('teeth', './model/normed/Pony/teeth.obj', './model/texture/Pony/teeth.png', 7),
+                        new DrawingObject3d_1.DrawingObject3d('eyelashes', './model/normed/Pony/eyelashes.obj', './model/texture/Pony/eyelashes.png', 8),
+                    ])))();
+                    urls = [];
+                    Pony.innerList.forEach(function (obj) {
+                        urls.push(obj.texturePath);
+                    });
+                    _d = (_c = helper).sendTextureImageToGPU;
+                    return [4 /*yield*/, WebGLUtils.loadImageAsync(urls)];
+                case 2:
+                    _d.apply(_c, [_e.sent(), 0, 9]);
+                    reRender(ctm);
+                    return [2 /*return*/];
+            }
         });
     }); };
-    // 初始化背景图
-    var initBackground = function () {
-        WebGLUtils.loadImageAsync(['./model/bg.png'])
-            .then(function (data) {
-            // 分配背景材质位置为9
-            initBackgroundCallback(data);
-        })
-            .catch(function (what) {
-            console.warn(what);
-        });
-    };
-    var initBackgroundCallback = function (data) {
-        helper.sendTextureImageToGPU(data, 9, 10);
-        initLightBall();
-    };
     // 重绘背景
     var reRenderBackground = function () {
         helper.switchProgram(PROGRAMS.BACKGROUND);
@@ -176,34 +212,6 @@ define(["require", "exports", "../../framework/3d/WebGLHelper3d", "../../framewo
         });
         helper.drawArrays(gl.TRIANGLE_FAN, 0, 4);
     };
-    // 读入模型数据，初始化JS中的模型信息记录变量，传送材质，渲染小马
-    var initPony = function () {
-        // 设定小马模型
-        Pony = new (DrawingPackage3d_1.DrawingPackage3d.bind.apply(DrawingPackage3d_1.DrawingPackage3d, __spreadArrays([void 0, mult(translate(0, -0.35, 0), mult(rotateZ(180), rotateX(270)))], [
-            new DrawingObject3d_1.DrawingObject3d('body', './model/normed/Pony/pony.obj', './model/texture/Pony/pony.png', 0),
-            new DrawingObject3d_1.DrawingObject3d('tail', './model/normed/Pony/tail.obj', './model/texture/Pony/tail.png', 1),
-            new DrawingObject3d_1.DrawingObject3d('hairBack', './model/normed/Pony/hairBack.obj', './model/texture/Pony/hairBack.png', 2),
-            new DrawingObject3d_1.DrawingObject3d('hairFront', './model/normed/Pony/hairFront.obj', './model/texture/Pony/hairFront.png', 3),
-            new DrawingObject3d_1.DrawingObject3d('horn', './model/normed/Pony/horn.obj', './model/texture/Pony/horn.png', 4),
-            new DrawingObject3d_1.DrawingObject3d('leftEye', './model/normed/Pony/leftEye.obj', './model/texture/Pony/leftEye.png', 5),
-            new DrawingObject3d_1.DrawingObject3d('rightEye', './model/normed/Pony/rightEye.obj', './model/texture/Pony/rightEye.png', 6),
-            new DrawingObject3d_1.DrawingObject3d('teeth', './model/normed/Pony/teeth.obj', './model/texture/Pony/teeth.png', 7),
-            new DrawingObject3d_1.DrawingObject3d('eyelashes', './model/normed/Pony/eyelashes.obj', './model/texture/Pony/eyelashes.png', 8),
-        ])))();
-        var urls = [];
-        Pony.innerList.forEach(function (obj) {
-            urls.push(obj.texturePath);
-        });
-        WebGLUtils.loadImageAsync(urls)
-            .then(function (data) {
-            ponyLoadedCallback(data);
-        });
-    };
-    // 材质初次加载完成后渲染一次
-    var ponyLoadedCallback = function (loadedElements) {
-        helper.sendTextureImageToGPU(loadedElements, 0, 9);
-        reRender(ctm);
-    };
     // 重绘MAIN
     var reRenderMain = function (ctm) {
         helper.switchProgram(PROGRAMS.MAIN);
@@ -212,11 +220,14 @@ define(["require", "exports", "../../framework/3d/WebGLHelper3d", "../../framewo
             uniforms: [
                 { varName: 'uWorldMatrix', data: flatten(ctm), method: 'Matrix4fv' },
                 { varName: 'uModelMatrix', data: flatten(Pony.modelMat), method: 'Matrix4fv' },
-                { varName: 'uLightPosition', data: __spreadArrays(PonyMaterial.lightPosition, [1.0]), method: '4fv' },
+                { varName: 'uLightPosition', data: __spreadArrays(lightBulbPosition, [1.0]), method: '4fv' },
                 { varName: 'uShiness', data: PonyMaterial.materialShiness, method: '1f' },
                 { varName: 'uAmbientProduct', data: PonyMaterial.ambientProduct, method: '4fv' },
                 { varName: 'uDiffuseProduct', data: PonyMaterial.diffuseProduct, method: '4fv' },
                 { varName: 'uSpecularProduct', data: PonyMaterial.specularProduct, method: '4fv' },
+                {
+                    varName: 'uWorldMatrixTransInv', data: flatten(transpose(inverse(mat3(Pony.modelMat[0][0], Pony.modelMat[0][1], Pony.modelMat[0][2], Pony.modelMat[1][0], Pony.modelMat[1][1], Pony.modelMat[1][2], Pony.modelMat[2][0], Pony.modelMat[2][1], Pony.modelMat[2][2])))), method: 'Matrix3fv'
+                },
             ]
         });
         Pony.innerList.forEach(function (obj) {
@@ -234,46 +245,32 @@ define(["require", "exports", "../../framework/3d/WebGLHelper3d", "../../framewo
             helper.drawArrays(gl.TRIANGLES, 0, obj.objProcessor.getEffectiveVertexCount());
         });
     };
-    // 绘制光球
-    var initLightBall = function () {
-        WebGLUtils.loadImageAsync(['./model/lightBall.png'])
-            .then(function (data) {
-            lightBallLoadedCallback(data);
+    var reRenderLightBall = function (posChanged) {
+        if (posChanged === void 0) { posChanged = false; }
+        helper.switchProgram(PROGRAMS.BALL);
+        if (posChanged) {
+            Ball.setModelMat(mult(Ball.modelMat, translate(lightBulbPosition[0] - lastLightBulbPosition[0], lightBulbPosition[1] - lastLightBulbPosition[1], lightBulbPosition[2] - lastLightBulbPosition[2])));
+        }
+        Ball.innerList.forEach(function (obj) {
+            var vs = helper.analyzeFtoV(obj, 'fs');
+            helper.prepare({
+                attributes: [
+                    { buffer: ballVBuffer, data: flatten(vs), varName: 'aPosition', attrPer: 3, type: gl.FLOAT }
+                ],
+                uniforms: [
+                    { varName: 'uColor', data: WebGLUtils.normalize8bitColor([255, 181, 41]), method: '4fv' },
+                    { varName: 'uMatrix', data: flatten(Ball.modelMat), method: 'Matrix4fv' },
+                ]
+            });
+            helper.drawArrays(gl.TRIANGLES, 0, obj.objProcessor.getEffectiveVertexCount());
         });
-    };
-    var lightBallLoadedCallback = function (loadedImages) {
-        // 分配10号材质位置
-        helper.sendTextureImageToGPU(loadedImages, 10, 11);
-        initPony();
-    };
-    var reRenderLightBall = function () {
-        helper.switchProgram(PROGRAMS.BACKGROUND);
-        var VRect = [
-            [0.7, 0.7, -0.01],
-            [0.7, 0.95, -0.01],
-            [0.95, 0.95, -0.01],
-            [0.95, 0.7, -0.01]
-        ], vTRect = [
-            [0.0, 0.0], [1.0, 0.0],
-            [1.0, 1.0], [0.0, 1.0]
-        ];
-        // 发送背景顶点信息
-        helper.prepare({
-            attributes: [
-                { buffer: lbVBuffer, data: flatten(VRect), varName: 'aPosition', attrPer: 3, type: gl.FLOAT },
-                { buffer: lbTBuffer, data: flatten(vTRect), varName: 'aTexCoord', attrPer: 2, type: gl.FLOAT }
-            ],
-            uniforms: [
-                { varName: 'uTexture', data: 10, method: '1i' }
-            ]
-        });
-        helper.drawArrays(gl.TRIANGLE_FAN, 0, 4);
     };
     // reRender
-    var reRender = function (ctm, reCalulateMaterialProducts) {
+    var reRender = function (ctm, reCalulateMaterialProducts, lightPosChanged) {
         if (reCalulateMaterialProducts === void 0) { reCalulateMaterialProducts = false; }
+        if (lightPosChanged === void 0) { lightPosChanged = false; }
         reCalulateMaterialProducts && PonyMaterial.reCalculateProducts();
-        //reRenderLightBall()
+        reRenderLightBall(lightPosChanged);
         reRenderBackground();
         reRenderMain(ctm);
     };
@@ -284,15 +281,15 @@ define(["require", "exports", "../../framework/3d/WebGLHelper3d", "../../framewo
     var initPositionInput = function () {
         document.querySelector('#lightPosX').value = lightBulbPosition[0].toString();
         document.querySelector('#lightPosY').value = lightBulbPosition[1].toString();
-        document.querySelector('#lightPosZ').value = lightBulbPosition[2].toString();
+        document.querySelector('#lightPosZ').value = (-lightBulbPosition[2]).toString();
+        // TODO: Why here is a fucking negative sign?
     };
     // 调节位置
     var listenPositionInput = function () {
         document.querySelector('#applyLightPos').onclick = function () {
             var xx = document.querySelector('#lightPosX').value, yy = document.querySelector('#lightPosY').value, zz = document.querySelector('#lightPosZ').value;
-            lightBulbPosition = ([xx, yy, zz].map(function (_) { return parseFloat(_); }));
-            PonyMaterial.setLightPosition(lightBulbPosition);
-            reRender(ctm, true);
+            modifyLightBulbPosition(([xx, yy, zz].map(function (_) { return parseFloat(_); })));
+            reRender(ctm, true, true);
         };
     };
     // 初始化材质颜色参量输入框
@@ -331,6 +328,34 @@ define(["require", "exports", "../../framework/3d/WebGLHelper3d", "../../framewo
     };
     // 光源互动模式
     var listenMouseLightInteract = function () {
+        // 拖动处理
+        canvasDOM.onmousedown = function (evt) {
+            var mousePoint = [evt.offsetX, evt.offsetY];
+            canvasDOM.onmousemove = function (evt2) {
+                var newMousePoint = [evt2.offsetX, evt2.offsetY];
+                var translateVector = newMousePoint.map(function (v, i) { return v - mousePoint[i]; });
+                translateVector[0] /= canvasDOM.width;
+                translateVector[1] /= canvasDOM.height;
+                translateVector[1] *= -1;
+                translateVector.map(function (x) { return x * LIGHT_TRANSLATE_FACTOR; });
+                modifyLightBulbPosition([lightBulbPosition[0] + translateVector[0], lightBulbPosition[1] + translateVector[1], lightBulbPosition[2]]);
+                Ball.setModelMat(mult(Ball.modelMat, translate(translateVector[0], translateVector[1], 0.0)));
+                reRender(ctm, true, true);
+            };
+        };
+        canvasDOM.onmouseup = function () {
+            canvasDOM.onmousemove = function () { };
+        };
+        // @ts-ignore
+        canvasDOM.onmousewheel = function (evt) {
+            var dir = evt.wheelDelta > 0 ? -1 : 1; // 1 Down -1 Up
+            modifyLightBulbPosition([lightBulbPosition[0], lightBulbPosition[1], lightBulbPosition[2] + dir * LIGHT_Z_PLUS]);
+            // TODO: Not so simple.
+            // Ball.setModelMat(mult(Ball.modelMat, WebGLUtils.scaleMat(
+            //   1.0 - dir * LIGHT_SCALE_RATE, 1.0 - dir * LIGHT_SCALE_RATE, 1.0 - dir * LIGHT_SCALE_RATE)) as Mat)
+            Ball.setModelMat(mult(Ball.modelMat, translate(0.0, 0.0, dir * LIGHT_Z_PLUS)));
+            reRender(ctm, true, true);
+        };
     };
     // ===============================
     // 跟踪球实现
@@ -346,7 +371,7 @@ define(["require", "exports", "../../framework/3d/WebGLHelper3d", "../../framewo
         ctm = mult(rotateX(-disY), ctm);
         ctm = mult(rotateY(-disX), ctm);
         mouseLastPos = mousePos;
-        reRender(ctm);
+        reRender(ctm, true, false);
     };
     var abs = function (n) {
         return n < 0 ? -n : n;
@@ -369,7 +394,7 @@ define(["require", "exports", "../../framework/3d/WebGLHelper3d", "../../framewo
         ctm = mult(rotateY(-vX * INTERVAL), ctm);
         vX = abs(vX) <= FRICTION * INTERVAL ? 0 : vX - FRICTION * INTERVAL * sign(vX);
         vY = abs(vY) <= FRICTION * INTERVAL ? 0 : vY - FRICTION * INTERVAL * sign(vY);
-        reRender(ctm);
+        reRender(ctm, true, false);
     };
     // 鼠标侦听
     var listenMouseTrackBall = function () {
@@ -395,15 +420,29 @@ define(["require", "exports", "../../framework/3d/WebGLHelper3d", "../../framewo
     // ===============================
     var listenModeToggler = function () {
         document.querySelector('#modeToggler').onclick = function () {
+            // 前端响应
             eval("document.querySelector('#mode_" + currentMode + "').style.display = 'none'");
             currentMode = (currentMode + 1) % 3;
             eval("document.querySelector('#mode_" + currentMode + "').style.display = 'inline-block'");
+            // 内部模式切换
+            clearMouseHooks();
+            switch (currentMode) {
+                case MODES.TRACKBALL:
+                    listenMouseTrackBall();
+                    break;
+                case MODES.LIGHT:
+                    listenMouseLightInteract();
+                    break;
+                case MODES.FPV: /* TODO: Add something here. */ break;
+            }
         };
     };
     var clearMouseHooks = function () {
         canvasDOM.onmousedown = function () { };
         canvasDOM.onmouseup = function () { };
         canvasDOM.onmousemove = function () { };
+        // @ts-ignore
+        canvasDOM.onmousewheel = function () { };
     };
     // do it
     window.onload = function () {
