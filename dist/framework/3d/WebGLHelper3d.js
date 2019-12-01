@@ -131,7 +131,7 @@ define(["require", "exports"], function (require, exports) {
         WebGLHelper3d.prototype.sendTextureImageToGPU = function (images, posFrom, posTo) {
             // 检查空位
             if (posTo - posFrom != images.length) {
-                console.log(images);
+                console.warn(images);
                 throw '[WebGLHelper3d.sendTextureImageToGPU] Too many / no enough positions. Above is the images.';
             }
             var tex;
@@ -148,43 +148,42 @@ define(["require", "exports"], function (require, exports) {
          * Analyze f?s to v?s.
          */
         WebGLHelper3d.prototype.analyzeFtoV = function (obj, which) {
-            // TODO: Can anybody make this pile of shit prettier?
             var meshVertices = [];
+            var f, v;
             switch (which) {
                 case 'fs':
-                    if (obj.objProcessor.fs.length <= 0) {
+                    f = obj.objProcessor.fs;
+                    if (f.length <= 0) {
                         throw '[WebGLHelper3d.analyzeFtoV] fs.length <= 0.';
                     }
-                    obj.objProcessor.fs.forEach(function (face) {
-                        face.forEach(function (vOfFace) {
-                            var subscript = vOfFace - 1;
-                            meshVertices.push(obj.objProcessor.vs[subscript]); // xyzxyzxyz
-                        });
-                    });
-                    return meshVertices;
+                    v = obj.objProcessor.vs;
+                    break;
                 case 'fts':
-                    if (obj.objProcessor.fts.length <= 0) {
+                    f = obj.objProcessor.fts;
+                    if (f.length <= 0) {
                         throw '[WebGLHelper3d.analyzeFtoV] fts.length <= 0.';
                     }
-                    obj.objProcessor.fts.forEach(function (face) {
-                        face.forEach(function (vOfFace) {
-                            var subscript = vOfFace - 1;
-                            meshVertices.push(obj.objProcessor.vts[subscript]); // xyzxyzxyz
-                        });
-                    });
-                    return meshVertices;
+                    v = obj.objProcessor.vts;
+                    break;
                 case 'fns':
-                    if (obj.objProcessor.fns.length <= 0) {
+                    f = obj.objProcessor.fns;
+                    if (f.length <= 0) {
                         throw '[WebGLHelper3d.analyzeFtoV] fns.length <= 0.';
                     }
-                    obj.objProcessor.fns.forEach(function (face) {
-                        face.forEach(function (vOfFace) {
-                            var subscript = vOfFace - 1;
-                            meshVertices.push(obj.objProcessor.vns[subscript]); // xyzxyzxyz
-                        });
-                    });
-                    return meshVertices;
+                    v = obj.objProcessor.vns;
+                    break;
             }
+            // @ts-ignore
+            f = f;
+            v = v;
+            f.forEach(function (face) {
+                // @ts-ignore
+                face.forEach(function (vOfFace) {
+                    var subscript = vOfFace - 1;
+                    meshVertices.push(v[subscript]); // xyzxyzxyz
+                });
+            });
+            return which == 'fts' ? meshVertices : meshVertices;
         };
         return WebGLHelper3d;
     }());

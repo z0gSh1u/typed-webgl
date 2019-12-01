@@ -80,16 +80,15 @@ define(["require", "exports", "../../framework/3d/WebGLHelper3d", "../../framewo
         specularMaterial: [200, 200, 200],
         materialShiness: 30.0
     });
-    // TODO: 头发换一种材质
     var HairMaterial = new PhongLightModel_1.PhongLightModel({
         lightPosition: lightBulbPosition,
-        ambientColor: [255, 255, 255],
-        ambientMaterial: [200, 200, 200],
-        diffuseColor: [255, 255, 255],
-        diffuseMaterial: [66, 66, 66],
-        specularColor: [255, 255, 255],
-        specularMaterial: [200, 200, 200],
-        materialShiness: 50.0
+        ambientColor: [64, 200, 200],
+        ambientMaterial: [100, 100, 100],
+        diffuseColor: [64, 200, 200],
+        diffuseMaterial: [255, 255, 255],
+        specularColor: [64, 200, 200],
+        specularMaterial: [10, 10, 10],
+        materialShiness: 80.0
     });
     // ==================================
     // 背景渲染使用
@@ -103,9 +102,8 @@ define(["require", "exports", "../../framework/3d/WebGLHelper3d", "../../framewo
     var Ball;
     var ballVBuffer;
     var lastLightBulbPosition = vec3(0.0, 0.0, 0.0);
-    var LIGHT_TRANSLATE_FACTOR = 0.0005;
+    var LIGHT_TRANSLATE_FACTOR = 0.00005;
     var LIGHT_Z_PLUS = 0.015;
-    var LIGHT_SCALE_RATE = 0.1;
     // ==================================
     // 跟踪球使用
     // ==================================
@@ -231,6 +229,32 @@ define(["require", "exports", "../../framework/3d/WebGLHelper3d", "../../framewo
             ]
         });
         Pony.innerList.forEach(function (obj) {
+            if (obj.name != 'hairBack' && obj.name != 'hairFront') {
+                var vs = helper.analyzeFtoV(obj, 'fs'), vts = helper.analyzeFtoV(obj, 'fts'), vns = helper.analyzeFtoV(obj, 'fns');
+                helper.prepare({
+                    attributes: [
+                        { buffer: vBuffer, data: flatten(vs), varName: 'aPosition', attrPer: 3, type: gl.FLOAT },
+                        { buffer: tBuffer, data: flatten(vts), varName: 'aTexCoord', attrPer: 2, type: gl.FLOAT },
+                        { buffer: nBuffer, data: flatten(vns), varName: 'aNormal', attrPer: 3, type: gl.FLOAT },
+                    ],
+                    uniforms: [
+                        { varName: 'uTexture', data: obj.textureIndex, method: '1i' },
+                    ]
+                });
+                helper.drawArrays(gl.TRIANGLES, 0, obj.objProcessor.getEffectiveVertexCount());
+            }
+        });
+        // 单独处理头发材质
+        helper.prepare({
+            attributes: [],
+            uniforms: [
+                { varName: 'uShiness', data: HairMaterial.materialShiness, method: '1f' },
+                { varName: 'uAmbientProduct', data: HairMaterial.ambientProduct, method: '4fv' },
+                { varName: 'uDiffuseProduct', data: HairMaterial.diffuseProduct, method: '4fv' },
+                { varName: 'uSpecularProduct', data: HairMaterial.specularProduct, method: '4fv' },
+            ]
+        });
+        [Pony.getObjectByName('hairFront'), Pony.getObjectByName('hairBack')].forEach(function (obj) {
             var vs = helper.analyzeFtoV(obj, 'fs'), vts = helper.analyzeFtoV(obj, 'fts'), vns = helper.analyzeFtoV(obj, 'fns');
             helper.prepare({
                 attributes: [
@@ -259,7 +283,8 @@ define(["require", "exports", "../../framework/3d/WebGLHelper3d", "../../framewo
                 ],
                 uniforms: [
                     { varName: 'uColor', data: WebGLUtils.normalize8bitColor([255, 181, 41]), method: '4fv' },
-                    { varName: 'uMatrix', data: flatten(Ball.modelMat), method: 'Matrix4fv' },
+                    { varName: 'uWorldMat', data: flatten(ctm), method: 'Matrix4fv' },
+                    { varName: 'uModelMat', data: flatten(Ball.modelMat), method: 'Matrix4fv' },
                 ]
             });
             helper.drawArrays(gl.TRIANGLES, 0, obj.objProcessor.getEffectiveVertexCount());
@@ -269,28 +294,33 @@ define(["require", "exports", "../../framework/3d/WebGLHelper3d", "../../framewo
     var reRender = function (ctm, reCalulateMaterialProducts, lightPosChanged) {
         if (reCalulateMaterialProducts === void 0) { reCalulateMaterialProducts = false; }
         if (lightPosChanged === void 0) { lightPosChanged = false; }
-        reCalulateMaterialProducts && PonyMaterial.reCalculateProducts();
+        reCalulateMaterialProducts && PonyMaterial.reCalculateProducts() && HairMaterial.reCalculateProducts();
         reRenderLightBall(lightPosChanged);
         reRenderBackground();
         reRenderMain(ctm);
     };
-    // ===============================
+    // ==================================
     // 光源交互相关
-    // ===============================
+    // ==================================
     // 初始化位置输入框
     var initPositionInput = function () {
         document.querySelector('#lightPosX').value = lightBulbPosition[0].toString();
         document.querySelector('#lightPosY').value = lightBulbPosition[1].toString();
         document.querySelector('#lightPosZ').value = (-lightBulbPosition[2]).toString();
-        // TODO: Why here is a fucking negative sign?
+        // 没有人知道为什么这里要加负号才是对的
     };
     // 调节位置
     var listenPositionInput = function () {
-        document.querySelector('#applyLightPos').onclick = function () {
+        var positionChangedResponse = function () {
             var xx = document.querySelector('#lightPosX').value, yy = document.querySelector('#lightPosY').value, zz = document.querySelector('#lightPosZ').value;
-            modifyLightBulbPosition(([xx, yy, zz].map(function (_) { return parseFloat(_); })));
+            var res = [xx, yy, zz].map(function (_) { return parseFloat(_); });
+            modifyLightBulbPosition([res[0], res[1], -res[2]]);
             reRender(ctm, true, true);
         };
+        document.querySelector('#applyLightPos').onclick = positionChangedResponse;
+        document.querySelector('#lightPosX').onclick = positionChangedResponse;
+        document.querySelector('#lightPosY').onclick = positionChangedResponse;
+        document.querySelector('#lightPosZ').onclick = positionChangedResponse;
     };
     // 初始化材质颜色参量输入框
     var initPonyMaterialInput = function () {
@@ -350,16 +380,13 @@ define(["require", "exports", "../../framework/3d/WebGLHelper3d", "../../framewo
         canvasDOM.onmousewheel = function (evt) {
             var dir = evt.wheelDelta > 0 ? -1 : 1; // 1 Down -1 Up
             modifyLightBulbPosition([lightBulbPosition[0], lightBulbPosition[1], lightBulbPosition[2] + dir * LIGHT_Z_PLUS]);
-            // TODO: Not so simple.
-            // Ball.setModelMat(mult(Ball.modelMat, WebGLUtils.scaleMat(
-            //   1.0 - dir * LIGHT_SCALE_RATE, 1.0 - dir * LIGHT_SCALE_RATE, 1.0 - dir * LIGHT_SCALE_RATE)) as Mat)
             Ball.setModelMat(mult(Ball.modelMat, translate(0.0, 0.0, dir * LIGHT_Z_PLUS)));
             reRender(ctm, true, true);
         };
     };
-    // ===============================
+    // ==================================
     // 跟踪球实现
-    // ===============================
+    // ==================================
     // 鼠标按下时随鼠标旋转
     var rotateWithMouse = function (e) {
         var mousePos = [e.offsetX, e.offsetY];
@@ -415,9 +442,9 @@ define(["require", "exports", "../../framework/3d/WebGLHelper3d", "../../framewo
             }
         };
     };
-    // ===============================
+    // ==================================
     // 模式切换
-    // ===============================
+    // ==================================
     var listenModeToggler = function () {
         document.querySelector('#modeToggler').onclick = function () {
             // 前端响应
@@ -455,6 +482,3 @@ define(["require", "exports", "../../framework/3d/WebGLHelper3d", "../../framewo
         listenMouseTrackBall();
     };
 });
-// ===============================
-// Fin. 2019-11-27.
-// ===============================
