@@ -13,6 +13,7 @@
     html {
       margin: 0;
       padding: 0;
+      overflow: hidden;
     }
 
     #cvs {
@@ -45,8 +46,10 @@
     }
 
     .coordinput {
-      width: 50px;
+      width: 70px;
       margin-right: 5px;
+      height: 25px;
+      font-size: 15px;
     }
 
     .colorinput {
@@ -116,9 +119,9 @@
       <p style="margin-bottom: 0;"><b>在任何模式下：</b></p>
       <p style="margin-top: 0;">手动调节光源位置：</p>
       <div class="lightpos">
-        X=<input type="text" class="coordinput" id="lightPosX">
-        Y=<input type="text" class="coordinput" id="lightPosY">
-        Z=<input type="text" class="coordinput" id="lightPosZ">
+        X=<input type="number" step="0.01" class="coordinput" id="lightPosX">
+        Y=<input type="number" step="0.01" class="coordinput" id="lightPosY">
+        Z=<input type="number" step="0.01" class="coordinput" id="lightPosZ">
         <button id="applyLightPos">应用</button>
       </div>
       <p>调节小马材质参数：</p>
@@ -149,7 +152,7 @@
     </div>
     <div class="requirement">
       <h4>C、场景中至少包含两种以上的材质</h4>
-      <p>小马身体（类塑料）与头发（类丝绸）是两种不同的材质。</p>
+      <p>小马身体（类塑料）与头发（哑光）是两种不同的材质。</p>
     </div>
   </div>
 

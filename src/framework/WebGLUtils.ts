@@ -47,10 +47,22 @@ export function radToDeg(angle: number): number {
 }
 
 /**
+ * Generate scaling matrix.
+ */
+export function scaleMat(x: number, y: number, z: number): Mat {
+  return mat4(
+    x, 0.0, 0.0, 0.0,
+    0.0, y, 0.0, 0.0,
+    0.0, 0.0, z, 0.0,
+    0.0, 0.0, 0.0, 1.0
+  )
+}
+
+/**
  * Load image async.
  */
 export function loadImageAsync(urls: Array<string>) {
-  return new Promise((resolve, reject) => {
+  return new Promise<HTMLImageElement[]>((resolve, reject) => {
     let newImages: Array<HTMLImageElement> = [], loadedImagesCount = 0,
       arr = (typeof urls != "object") ? [urls] : urls
     function cb() {
