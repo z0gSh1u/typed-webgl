@@ -56,7 +56,7 @@ define(["require", "exports", "../../framework/3d/WebGLHelper3d", "../../framewo
     // 主要变量
     // ==================================
     var canvasDOM = document.querySelector('#cvs');
-    var gl = canvasDOM.getContext('webgl');
+    var gl = canvasDOM.getContext('webgl', { alpha: true, premultipliedAlpha: false });
     var helper;
     var PROGRAMS = { MAIN: 0, BACKGROUND: 1, BALL: 2 };
     var MODES = { TRACKBALL: 0, FPV: 1, LIGHT: 2 };
