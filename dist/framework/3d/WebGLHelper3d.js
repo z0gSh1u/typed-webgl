@@ -65,7 +65,11 @@ define(["require", "exports"], function (require, exports) {
          * Get `uniform` location in shader.
          */
         WebGLHelper3d.prototype.getUniformLocation = function (variableName) {
-            return this.gl.getUniformLocation(this.program, variableName);
+            var pos = this.gl.getUniformLocation(this.program, variableName);
+            if (pos == null) {
+                alert('null uniform.');
+            }
+            return pos;
         };
         /**
          * Draw from array.

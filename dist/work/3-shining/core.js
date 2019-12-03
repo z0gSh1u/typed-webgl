@@ -69,6 +69,7 @@ define(["require", "exports", "../../framework/3d/WebGLHelper3d", "../../framewo
     var nBuffer; // 法向量缓冲区
     var tBuffer; // 材质顶点缓冲区
     var ctm; // 当前世界矩阵
+    var cpm; // 当前透视矩阵
     var Pony; // 小马全身
     var PonyMaterial = new PhongLightModel_1.PhongLightModel({
         lightPosition: lightBulbPosition,
@@ -111,6 +112,13 @@ define(["require", "exports", "../../framework/3d/WebGLHelper3d", "../../framewo
     var INTERVAL = 40; // 速度降低的毫秒间隔
     var ROTATE_PER_X = 0.2; // X轴鼠标拖动旋转的比例
     var ROTATE_PER_Y = 0.2; // Y轴鼠标拖动旋转的比例
+    var fovy = 90.0;
+    var aspect = 1.0;
+    var near = 0.5;
+    var far = 5.0;
+    var cameraPos = vec3(0.0, 0.5, 0.0);
+    var camearaFront = vec3(0.0, 0.0, 0.0);
+    var camearaUp = vec3(0, 0.1, 0);
     var slowDownId; // 减速计时器编号
     var isMouseDown = false;
     var mouseLastPos; // 上一次鼠标位置
@@ -139,6 +147,7 @@ define(["require", "exports", "../../framework/3d/WebGLHelper3d", "../../framewo
         bgTBuffer = helper.createBuffer();
         ballVBuffer = helper.createBuffer();
         ctm = mat4();
+        cpm = perspective(fovy, aspect, near, far);
         startSceneInit();
     };
     // 必须使用该函数修改前端光照位置
@@ -218,6 +227,7 @@ define(["require", "exports", "../../framework/3d/WebGLHelper3d", "../../framewo
             uniforms: [
                 { varName: 'uWorldMatrix', data: flatten(ctm), method: 'Matrix4fv' },
                 { varName: 'uModelMatrix', data: flatten(Pony.modelMat), method: 'Matrix4fv' },
+                { varName: 'uProjectionMatrix', data: flatten(cpm), method: 'Matrix4fv' },
                 { varName: 'uLightPosition', data: __spreadArrays(lightBulbPosition, [1.0]), method: '4fv' },
                 { varName: 'uShiness', data: PonyMaterial.materialShiness, method: '1f' },
                 { varName: 'uAmbientProduct', data: PonyMaterial.ambientProduct, method: '4fv' },
@@ -295,7 +305,10 @@ define(["require", "exports", "../../framework/3d/WebGLHelper3d", "../../framewo
         if (reCalulateMaterialProducts === void 0) { reCalulateMaterialProducts = false; }
         if (lightPosChanged === void 0) { lightPosChanged = false; }
         reCalulateMaterialProducts && PonyMaterial.reCalculateProducts() && HairMaterial.reCalculateProducts();
-        reRenderLightBall(lightPosChanged);
+        // ctm = lookAt(cameraPos, add(cameraPos, camearaFront) as Vec3, camearaUp)
+        ctm = lookAt(cameraPos, camearaFront, camearaUp);
+        cpm = perspective(fovy, aspect, near, far);
+        //reRenderLightBall(lightPosChanged)
         reRenderBackground();
         reRenderMain(ctm);
     };
@@ -442,6 +455,39 @@ define(["require", "exports", "../../framework/3d/WebGLHelper3d", "../../framewo
             }
         };
     };
+    //键盘侦听
+    var listenKeyboard = function () {
+        var handlers = {
+            '87' /*W*/: processWKey,
+            '65' /*A*/: processAKey,
+            '83' /*S*/: processSKey,
+            '68' /*D*/: processDKey
+        };
+        window.onkeydown = function (e) {
+            if (e && e.keyCode) {
+                try {
+                    handlers[e.keyCode.toString()].call(null);
+                }
+                catch (ex) { }
+            }
+        };
+    };
+    var processWKey = function () {
+        cameraPos = add(cameraPos, vec3(0, 0, 0.1));
+        reRender(ctm);
+    };
+    var processSKey = function () {
+        cameraPos = add(cameraPos, vec3(0, 0, -0.1));
+        reRender(ctm);
+    };
+    var processAKey = function () {
+        cameraPos = add(cameraPos, vec3(-0.1, 0, 0));
+        reRender(ctm);
+    };
+    var processDKey = function () {
+        cameraPos = add(cameraPos, vec3(0.1, 0, 0));
+        reRender(ctm);
+    };
     // ==================================
     // 模式切换
     // ==================================
@@ -480,5 +526,6 @@ define(["require", "exports", "../../framework/3d/WebGLHelper3d", "../../framewo
         listenPositionInput();
         listenModeToggler();
         listenMouseTrackBall();
+        listenKeyboard();
     };
 });

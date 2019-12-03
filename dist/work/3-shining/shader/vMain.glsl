@@ -11,6 +11,10 @@ varying vec2 vTexCoord;
 uniform mat4 uWorldMatrix;
 // transformation matrix under self coordinate system
 uniform mat4 uModelMatrix;
+// transformation matrix under view coordinate system
+uniform mat4 uViewMatrix;
+// transformation matrix for toushi
+uniform mat4 uProjectionMatrix;
 // light position
 uniform vec4 uLightPosition;
 // specular shiness
@@ -44,7 +48,7 @@ void main() {
 		specular = vec4(0.0, 0.0, 0.0, 1.0);
 	}
 
-	gl_Position = uWorldMatrix * uModelMatrix * aPosition;
+	gl_Position = uProjectionMatrix * uWorldMatrix * uModelMatrix * aPosition;
 
 	vTexCoord = aTexCoord;
 	vLight = vec4((ambient + diffuse + specular).rgb, 1.0);

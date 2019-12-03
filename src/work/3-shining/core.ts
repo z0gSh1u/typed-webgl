@@ -24,6 +24,7 @@ let vBuffer: WebGLBuffer // 顶点缓冲区
 let nBuffer: WebGLBuffer // 法向量缓冲区
 let tBuffer: WebGLBuffer // 材质顶点缓冲区
 let ctm: Mat // 当前世界矩阵
+let cpm: Mat // 当前透视矩阵
 let Pony: DrawingPackage3d // 小马全身
 let PonyMaterial = new PhongLightModel({ // 小马光照参数
   lightPosition: lightBulbPosition,
@@ -66,6 +67,17 @@ const FRICTION = 0.0006 // 模拟摩擦力，每毫秒降低的速度
 const INTERVAL = 40 // 速度降低的毫秒间隔
 const ROTATE_PER_X = 0.2 // X轴鼠标拖动旋转的比例
 const ROTATE_PER_Y = 0.2 // Y轴鼠标拖动旋转的比例
+
+
+let fovy = 90.0
+let aspect = 1.0
+let near = 0.5
+let far = 5.0
+
+let cameraPos = vec3(0.0,0.5,0.0)
+let camearaFront = vec3(0.0,0.0,0.0)
+let camearaUp = vec3(0, 0.1, 0)
+
 let slowDownId: number // 减速计时器编号
 let isMouseDown = false
 let mouseLastPos: Vec2 // 上一次鼠标位置
@@ -94,6 +106,7 @@ let main = () => {
   bgTBuffer = helper.createBuffer()
   ballVBuffer = helper.createBuffer()
   ctm = mat4()
+  cpm = perspective(fovy, aspect, near, far)
   startSceneInit()
 }
 // 必须使用该函数修改前端光照位置
@@ -161,6 +174,7 @@ let reRenderMain = (ctm: Mat) => {
     uniforms: [
       { varName: 'uWorldMatrix', data: flatten(ctm), method: 'Matrix4fv' },
       { varName: 'uModelMatrix', data: flatten(Pony.modelMat), method: 'Matrix4fv' },
+      { varName: 'uProjectionMatrix', data: flatten(cpm), method: 'Matrix4fv' },
       { varName: 'uLightPosition', data: [...lightBulbPosition, 1.0], method: '4fv' },
       { varName: 'uShiness', data: PonyMaterial.materialShiness, method: '1f' },
       { varName: 'uAmbientProduct', data: PonyMaterial.ambientProduct, method: '4fv' },
@@ -247,7 +261,11 @@ let reRenderLightBall = (posChanged: boolean = false) => {
 // reRender
 let reRender = (ctm: Mat, reCalulateMaterialProducts: boolean = false, lightPosChanged: boolean = false) => {
   reCalulateMaterialProducts && PonyMaterial.reCalculateProducts() && HairMaterial.reCalculateProducts()
-  reRenderLightBall(lightPosChanged)
+  // ctm = lookAt(cameraPos, add(cameraPos, camearaFront) as Vec3, camearaUp)
+  ctm = lookAt(cameraPos, camearaFront, camearaUp)
+  
+  cpm = perspective(fovy, aspect, near, far)
+  //reRenderLightBall(lightPosChanged)
   reRenderBackground()
   reRenderMain(ctm)
 }
@@ -392,6 +410,39 @@ let listenMouseTrackBall = () => {
     }
   }
 }
+//键盘侦听
+let listenKeyboard = () => {
+  let handlers: { [key: string]: () => void } = {
+    '87'/*W*/: processWKey,
+    '65'/*A*/: processAKey,
+    '83'/*S*/: processSKey,
+    '68'/*D*/: processDKey
+  }
+  window.onkeydown = (e: KeyboardEvent) => {
+    if (e && e.keyCode) {
+      try {
+        handlers[e.keyCode.toString()].call(null)
+      } catch (ex) { }
+    }
+  }
+}
+
+let processWKey = () => {
+  cameraPos = add(cameraPos, vec3(0, 0, 0.1)) as Vec3
+  reRender(ctm)
+}
+let processSKey = () => {
+  cameraPos = add(cameraPos, vec3(0, 0, -0.1)) as Vec3
+  reRender(ctm)
+}
+let processAKey = () => {
+  cameraPos = add(cameraPos, vec3(-0.1, 0, 0)) as Vec3
+  reRender(ctm)
+}
+let processDKey = () => {
+  cameraPos = add(cameraPos, vec3(0.1, 0, 0)) as Vec3
+  reRender(ctm)
+}
 // ==================================
 // 模式切换
 // ==================================
@@ -426,4 +477,5 @@ window.onload = () => {
   listenPositionInput()
   listenModeToggler()
   listenMouseTrackBall()
+  listenKeyboard()
 }
