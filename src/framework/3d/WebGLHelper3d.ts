@@ -67,7 +67,9 @@ export class WebGLHelper3d {
    * Get `uniform` location in shader.
    */
   public getUniformLocation(variableName: string): WebGLUniformLocation | null {
-    return this.gl.getUniformLocation(this.program, variableName)
+    let pos = this.gl.getUniformLocation(this.program, variableName)
+    if (pos == null) { alert('null uniform.') }
+    return pos
   }
 
   /**

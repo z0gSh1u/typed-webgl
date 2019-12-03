@@ -589,7 +589,7 @@ function cross( u, v )
 
 //----------------------------------------------------------------------------
 
-function length( u )
+function mvLength( u )
 {
     return Math.sqrt( dot(u, u) );
 }
@@ -602,7 +602,7 @@ function normalize( u, excludeLastComponent )
         var last = u.pop();
     }
 
-    var len = length( u );
+    var len = mvLength( u );
 
     if ( !isFinite(len) ) {
         throw "normalize: vector " + u + " has zero length";

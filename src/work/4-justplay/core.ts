@@ -1,4 +1,4 @@
-// Core code of 3-Shining.
+// Core code of 4-JustPlay
 // by z0gSh1u & LongChen.
 import '../../3rd-party/MV'
 import '../../3rd-party/initShaders'

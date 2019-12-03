@@ -150,9 +150,8 @@ declare function cross(u: Vec3 | Vec4, v: Vec3 | Vec4): Vec3
 /**
  * Get length of a vector.
  */
-declare namespace MV {
-  function length(u: Vec): number
-}
+declare function mvLength(u: Vec): number
+
 /**
  * Normalize a vector.
  */
