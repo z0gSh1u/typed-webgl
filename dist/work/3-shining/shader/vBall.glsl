@@ -2,11 +2,14 @@
 
 attribute vec3 aPosition;
 
-uniform mat4 uMatrix;
+uniform mat4 uWorldMat;
+
+uniform mat4 uModelMat;
+
 
 void main() {
 
   vec4 pos = vec4(aPosition, 1.0);
-  gl_Position = uMatrix * pos;
+  gl_Position = uWorldMat * uModelMat * pos;
 
 }

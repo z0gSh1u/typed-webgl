@@ -155,7 +155,7 @@ export class WebGLHelper3d {
   public sendTextureImageToGPU(images: HTMLImageElement[], posFrom: number, posTo: number) {
     // 检查空位
     if (posTo - posFrom != images.length) {
-      console.log(images)
+      console.warn(images)
       throw '[WebGLHelper3d.sendTextureImageToGPU] Too many / no enough positions. Above is the images.'
     }
     let tex; let gl = this.gl
@@ -172,37 +172,35 @@ export class WebGLHelper3d {
    * Analyze f?s to v?s.
    */
   public analyzeFtoV(obj: DrawingObject3d, which: 'fs' | 'fts' | 'fns'): Vec2[] | Vec3[] {
-    // TODO: Can anybody make this pile of shit prettier?
     let meshVertices: any[] = []
+    let f: any[], v: any[]
     switch (which) {
       case 'fs':
-        if (obj.objProcessor.fs.length <= 0) { throw '[WebGLHelper3d.analyzeFtoV] fs.length <= 0.' }
-        obj.objProcessor.fs.forEach(face => {
-          face.forEach(vOfFace => {
-            let subscript = vOfFace - 1
-            meshVertices.push(obj.objProcessor.vs[subscript]) // xyzxyzxyz
-          })
-        })
-        return meshVertices as Vec3[]
+        f = obj.objProcessor.fs
+        if (f.length <= 0) { throw '[WebGLHelper3d.analyzeFtoV] fs.length <= 0.' }
+        v = obj.objProcessor.vs
+        break
       case 'fts':
-        if (obj.objProcessor.fts.length <= 0) { throw '[WebGLHelper3d.analyzeFtoV] fts.length <= 0.' }
-        obj.objProcessor.fts.forEach(face => {
-          face.forEach(vOfFace => {
-            let subscript = vOfFace - 1
-            meshVertices.push(obj.objProcessor.vts[subscript]) // xyzxyzxyz
-          })
-        })
-        return meshVertices as Vec2[]
+        f = obj.objProcessor.fts
+        if (f.length <= 0) { throw '[WebGLHelper3d.analyzeFtoV] fts.length <= 0.' }
+        v = obj.objProcessor.vts
+        break
       case 'fns':
-        if (obj.objProcessor.fns.length <= 0) { throw '[WebGLHelper3d.analyzeFtoV] fns.length <= 0.' }
-        obj.objProcessor.fns.forEach(face => {
-          face.forEach(vOfFace => {
-            let subscript = vOfFace - 1
-            meshVertices.push(obj.objProcessor.vns[subscript]) // xyzxyzxyz
-          })
-        })
-        return meshVertices as Vec3[]
+        f = obj.objProcessor.fns
+        if (f.length <= 0) { throw '[WebGLHelper3d.analyzeFtoV] fns.length <= 0.' }
+        v = obj.objProcessor.vns
+        break
     }
+    // @ts-ignore
+    f = f as any[]; v = v as any[]
+    f.forEach(face => {
+      // @ts-ignore
+      face.forEach(vOfFace => {
+        let subscript = vOfFace - 1
+        meshVertices.push(v[subscript]) // xyzxyzxyz
+      })
+    })
+    return which == 'fts' ? meshVertices as Vec2[] : meshVertices as Vec3[]
   }
 
 }

@@ -35,16 +35,15 @@ let PonyMaterial = new PhongLightModel({ // 小马光照参数
   specularMaterial: [200, 200, 200],
   materialShiness: 30.0
 })
-// TODO: 头发换一种材质
-let HairMaterial = new PhongLightModel({
+let HairMaterial = new PhongLightModel({ // 头发光照参数
   lightPosition: lightBulbPosition,
-  ambientColor: [255, 255, 255],
-  ambientMaterial: [200, 200, 200],
-  diffuseColor: [255, 255, 255],
-  diffuseMaterial: [66, 66, 66],
-  specularColor: [255, 255, 255],
-  specularMaterial: [200, 200, 200],
-  materialShiness: 50.0
+  ambientColor: [64, 200, 200],
+  ambientMaterial: [100, 100, 100],
+  diffuseColor: [64, 200, 200],
+  diffuseMaterial: [255, 255, 255],
+  specularColor: [64, 200, 200],
+  specularMaterial: [10, 10, 10],
+  materialShiness: 80.0
 })
 // ==================================
 // 背景渲染使用
@@ -58,9 +57,8 @@ let bgTBuffer: WebGLBuffer
 let Ball: DrawingPackage3d
 let ballVBuffer: WebGLBuffer
 let lastLightBulbPosition = vec3(0.0, 0.0, 0.0)
-const LIGHT_TRANSLATE_FACTOR = 0.0005
+const LIGHT_TRANSLATE_FACTOR = 0.00005
 const LIGHT_Z_PLUS = 0.015
-const LIGHT_SCALE_RATE = 0.1
 // ==================================
 // 跟踪球使用
 // ==================================
@@ -178,6 +176,34 @@ let reRenderMain = (ctm: Mat) => {
     ]
   })
   Pony.innerList.forEach(obj => {
+    if (obj.name != 'hairBack' && obj.name != 'hairFront') {
+      let vs = helper.analyzeFtoV(obj, 'fs'),
+        vts = helper.analyzeFtoV(obj, 'fts'),
+        vns = helper.analyzeFtoV(obj, 'fns')
+      helper.prepare({
+        attributes: [
+          { buffer: vBuffer, data: flatten(vs), varName: 'aPosition', attrPer: 3, type: gl.FLOAT },
+          { buffer: tBuffer, data: flatten(vts), varName: 'aTexCoord', attrPer: 2, type: gl.FLOAT },
+          { buffer: nBuffer, data: flatten(vns), varName: 'aNormal', attrPer: 3, type: gl.FLOAT },
+        ],
+        uniforms: [
+          { varName: 'uTexture', data: obj.textureIndex, method: '1i' },
+        ]
+      })
+      helper.drawArrays(gl.TRIANGLES, 0, obj.objProcessor.getEffectiveVertexCount())
+    }
+  })
+  // 单独处理头发材质
+  helper.prepare({
+    attributes: [],
+    uniforms: [
+      { varName: 'uShiness', data: HairMaterial.materialShiness, method: '1f' },
+      { varName: 'uAmbientProduct', data: HairMaterial.ambientProduct, method: '4fv' },
+      { varName: 'uDiffuseProduct', data: HairMaterial.diffuseProduct, method: '4fv' },
+      { varName: 'uSpecularProduct', data: HairMaterial.specularProduct, method: '4fv' },
+    ]
+  });
+  [Pony.getObjectByName('hairFront') as DrawingObject3d, Pony.getObjectByName('hairBack') as DrawingObject3d].forEach(obj => {
     let vs = helper.analyzeFtoV(obj, 'fs'),
       vts = helper.analyzeFtoV(obj, 'fts'),
       vns = helper.analyzeFtoV(obj, 'fns')
@@ -211,7 +237,8 @@ let reRenderLightBall = (posChanged: boolean = false) => {
       ],
       uniforms: [
         { varName: 'uColor', data: WebGLUtils.normalize8bitColor([255, 181, 41]), method: '4fv' },
-        { varName: 'uMatrix', data: flatten(Ball.modelMat), method: 'Matrix4fv' },
+        { varName: 'uWorldMat', data: flatten(ctm), method: 'Matrix4fv' },
+        { varName: 'uModelMat', data: flatten(Ball.modelMat), method: 'Matrix4fv' },
       ]
     })
     helper.drawArrays(gl.TRIANGLES, 0, obj.objProcessor.getEffectiveVertexCount())
@@ -219,30 +246,35 @@ let reRenderLightBall = (posChanged: boolean = false) => {
 }
 // reRender
 let reRender = (ctm: Mat, reCalulateMaterialProducts: boolean = false, lightPosChanged: boolean = false) => {
-  reCalulateMaterialProducts && PonyMaterial.reCalculateProducts()
+  reCalulateMaterialProducts && PonyMaterial.reCalculateProducts() && HairMaterial.reCalculateProducts()
   reRenderLightBall(lightPosChanged)
   reRenderBackground()
   reRenderMain(ctm)
 }
-// ===============================
+// ==================================
 // 光源交互相关
-// ===============================
+// ==================================
 // 初始化位置输入框
 let initPositionInput = () => {
   (document.querySelector('#lightPosX') as HTMLInputElement).value = lightBulbPosition[0].toString();
   (document.querySelector('#lightPosY') as HTMLInputElement).value = lightBulbPosition[1].toString();
   (document.querySelector('#lightPosZ') as HTMLInputElement).value = (-lightBulbPosition[2]).toString()
-  // TODO: Why here is a fucking negative sign?
+  // 没有人知道为什么这里要加负号才是对的
 }
 // 调节位置
 let listenPositionInput = () => {
-  (document.querySelector('#applyLightPos') as HTMLButtonElement).onclick = () => {
+  let positionChangedResponse = () => {
     let xx = (document.querySelector('#lightPosX') as HTMLInputElement).value,
       yy = (document.querySelector('#lightPosY') as HTMLInputElement).value,
       zz = (document.querySelector('#lightPosZ') as HTMLInputElement).value
-    modifyLightBulbPosition(([xx, yy, zz].map(_ => parseFloat(_))) as Vec3)
+    let res = [xx, yy, zz].map(_ => parseFloat(_))
+    modifyLightBulbPosition([res[0], res[1], -res[2]])
     reRender(ctm, true, true)
   }
+  (document.querySelector('#applyLightPos') as HTMLButtonElement).onclick = positionChangedResponse;
+  (document.querySelector('#lightPosX') as HTMLInputElement).onclick = positionChangedResponse;
+  (document.querySelector('#lightPosY') as HTMLInputElement).onclick = positionChangedResponse;
+  (document.querySelector('#lightPosZ') as HTMLInputElement).onclick = positionChangedResponse
 }
 // 初始化材质颜色参量输入框
 let initPonyMaterialInput = () => {
@@ -300,16 +332,13 @@ let listenMouseLightInteract = () => {
     modifyLightBulbPosition(
       [lightBulbPosition[0], lightBulbPosition[1], lightBulbPosition[2] + dir * LIGHT_Z_PLUS]
     )
-    // TODO: Not so simple.
-    // Ball.setModelMat(mult(Ball.modelMat, WebGLUtils.scaleMat(
-    //   1.0 - dir * LIGHT_SCALE_RATE, 1.0 - dir * LIGHT_SCALE_RATE, 1.0 - dir * LIGHT_SCALE_RATE)) as Mat)
     Ball.setModelMat(mult(Ball.modelMat, translate(0.0, 0.0, dir * LIGHT_Z_PLUS)) as Mat)
     reRender(ctm, true, true)
   }
 }
-// ===============================
+// ==================================
 // 跟踪球实现
-// ===============================
+// ==================================
 // 鼠标按下时随鼠标旋转
 let rotateWithMouse = (e: MouseEvent) => {
   let mousePos = [e.offsetX, e.offsetY] as Vec2
@@ -363,9 +392,9 @@ let listenMouseTrackBall = () => {
     }
   }
 }
-// ===============================
+// ==================================
 // 模式切换
-// ===============================
+// ==================================
 let listenModeToggler = () => {
   (document.querySelector('#modeToggler') as HTMLButtonElement).onclick = () => {
     // 前端响应
@@ -398,6 +427,3 @@ window.onload = () => {
   listenModeToggler()
   listenMouseTrackBall()
 }
-// ===============================
-// Fin. 2019-11-27.
-// ===============================
