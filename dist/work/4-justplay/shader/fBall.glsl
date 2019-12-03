@@ -1,0 +1,11 @@
+// Fragment shader for background rendering.
+
+precision mediump float;
+
+uniform vec4 uColor;
+
+void main() {
+
+  gl_FragColor = uColor;
+  
+}
