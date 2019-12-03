@@ -108,25 +108,30 @@ define(["require", "exports", "../../framework/3d/WebGLHelper3d", "../../framewo
     // 透视使用
     // ==================================
     var cpm;
-    var fovy = 90.0;
-    var aspect = 1.0;
-    var near = 0.5;
+    var fovy = 45.0;
+    var aspect = -1.0;
+    var near = 0.1;
     var far = 5.0;
     var preCalculatedCPM = perspective(fovy, aspect, near, far);
     // ==================================
     // 观察相机使用
     // !! 请注意，pos->at与pos->up不能共线 !!
     // ==================================
-    var cameraPos = vec3(0.0, 0.5, 0.0);
-    var cameraAt = vec3(0.1, 0.1, 0.0);
-    var cameraUp = vec3(0, 0.1, 0);
+    var ROTATE_PER_Y_FPV = 0.05;
+    var ROTATE_PER_X_FPV = 0.05;
+    var cameraPos = vec3(0.0, 0.4, -3.0);
+    var camearaFront = vec3(0.0, 0.0, 1.0);
+    var cameraUp = vec3(0.0, 1.0, 0.0);
+    var cameraPosSpeed = vec3(0.0, 0.0, 0.0);
+    var cameraMoveSpeed = 0.02;
+    var cameraMoveId = 0; // 相机移动计时器编号
     // ==================================
     // 跟踪球使用
     // ==================================
     var FRICTION = 0.0006; // 模拟摩擦力，每毫秒降低的速度
     var INTERVAL = 40; // 速度降低的毫秒间隔
-    var ROTATE_PER_X = 0.2; // X轴鼠标拖动旋转的比例
-    var ROTATE_PER_Y = 0.2; // Y轴鼠标拖动旋转的比例
+    var ROTATE_PER_X = 0.5; // X轴鼠标拖动旋转的比例
+    var ROTATE_PER_Y = 0.5; // Y轴鼠标拖动旋转的比例
     var slowDownId; // 减速计时器编号
     var isMouseDown = false;
     var mouseLastPos; // 上一次鼠标位置
@@ -322,7 +327,7 @@ define(["require", "exports", "../../framework/3d/WebGLHelper3d", "../../framewo
         // ctm = lookAt(cameraPos, add(cameraPos, camearaFront) as Vec3, camearaUp)
         if (currentMode == MODES.FPV) {
             cpm = preCalculatedCPM;
-            ctm = lookAt(cameraPos, cameraAt, cameraUp);
+            ctm = lookAt(cameraPos, add(cameraPos, camearaFront), cameraUp);
         }
         else {
             cpm = mat4();
@@ -396,6 +401,7 @@ define(["require", "exports", "../../framework/3d/WebGLHelper3d", "../../framewo
             canvasDOM.onmousemove = function (evt2) {
                 var newMousePoint = [evt2.offsetX, evt2.offsetY];
                 var translateVector = newMousePoint.map(function (v, i) { return v - mousePoint[i]; });
+                mousePoint = newMousePoint;
                 translateVector[0] /= canvasDOM.width;
                 translateVector[1] /= canvasDOM.height;
                 translateVector[1] *= -1;
@@ -475,6 +481,42 @@ define(["require", "exports", "../../framework/3d/WebGLHelper3d", "../../framewo
         };
     };
     // ==================================
+    // 第一人称视角实现
+    // ==================================
+    // ==================================
+    // 鼠标侦听
+    // ==================================
+    var listenMouseToTurnCamera = function () {
+        canvasDOM.onmousedown = function (evt) {
+            var mousePoint = [evt.offsetX, evt.offsetY];
+            var lastTrickTick = new Date().getTime();
+            var curTrickTick = lastTick;
+            var MIN_INTERVAL = 40;
+            canvasDOM.onmousemove = function (evt2) {
+                curTrickTick = new Date().getTime();
+                if (curTrickTick - lastTrickTick < MIN_INTERVAL) {
+                    return;
+                }
+                lastTrickTick = curTrickTick;
+                var newMousePoint = [evt2.offsetX, evt2.offsetY];
+                var translateVector = newMousePoint.map(function (v, i) { return v - mousePoint[i]; });
+                mousePoint = newMousePoint;
+                var cfm4 = vec4(camearaFront[0], camearaFront[1], camearaFront[2], 1);
+                var cum4 = vec4(cameraUp[0], cameraUp[1], cameraUp[2], 1);
+                cfm4 = normalize(mult(rotateX(ROTATE_PER_X_FPV * translateVector[1]), cfm4), false);
+                cfm4 = normalize(mult(rotateY(ROTATE_PER_Y_FPV * translateVector[0]), cfm4), false);
+                cum4 = normalize(mult(rotateX(ROTATE_PER_X_FPV * translateVector[1]), cum4), false);
+                cum4 = normalize(mult(rotateY(ROTATE_PER_Y_FPV * translateVector[0]), cum4), false);
+                camearaFront = vec3(cfm4[0], cfm4[1], cfm4[2]);
+                cameraUp = vec3(cum4[0], cum4[1], cum4[2]);
+                reRender(ctm, true, true);
+            };
+        };
+        canvasDOM.onmouseup = function () {
+            canvasDOM.onmousemove = function () { };
+        };
+    };
+    // ==================================
     // 键盘侦听
     // ==================================
     var listenKeyboardFPV = function () {
@@ -484,40 +526,68 @@ define(["require", "exports", "../../framework/3d/WebGLHelper3d", "../../framewo
             '83' /*S*/: processSKey,
             '68' /*D*/: processDKey,
             '32' /*Space*/: processSpace,
-            '17' /*Ctrl*/: processCtrl
+            '16' /*Shift*/: processShift
         };
+        var isKeyDown = {
+            '87' /*W*/: false,
+            '65' /*A*/: false,
+            '83' /*S*/: false,
+            '68' /*D*/: false,
+            '32' /*Space*/: false,
+            '16' /*Shift*/: false
+        };
+        cameraPosSpeed = vec3(0, 0, 0);
         window.onkeydown = function (e) {
-            if (e && e.keyCode) {
+            if (e && e.keyCode && !isKeyDown[e.keyCode]) {
                 try {
-                    handlers[e.keyCode.toString()].call(null);
+                    handlers[e.keyCode.toString()].call(null, true);
+                    isKeyDown[e.keyCode] = true;
+                    if (cameraMoveId == 0) {
+                        cameraMoveId = setInterval(moveCamera, INTERVAL);
+                    }
+                }
+                catch (ex) { }
+            }
+        };
+        window.onkeyup = function (e) {
+            if (e && e.keyCode && isKeyDown[e.keyCode]) {
+                try {
+                    handlers[e.keyCode.toString()].call(null, false);
+                    isKeyDown[e.keyCode] = false;
+                    if (cameraMoveId == 0) {
+                        cameraMoveId = setInterval(moveCamera, INTERVAL);
+                    }
                 }
                 catch (ex) { }
             }
         };
     };
-    var processWKey = function () {
-        cameraPos = add(cameraPos, vec3(0, 0, 0.1));
+    var moveCamera = function () {
+        if (cameraPosSpeed == vec3(0, 0, 0)) {
+            clearInterval(cameraMoveId);
+            cameraMoveId = 0;
+            return;
+        }
+        cameraPos = add(cameraPos, cameraPosSpeed);
         reRender(ctm);
     };
-    var processSKey = function () {
-        cameraPos = add(cameraPos, vec3(0, 0, -0.1));
-        reRender(ctm);
+    var processWKey = function (down) {
+        cameraPosSpeed = add(cameraPosSpeed, vec3(0, 0, (down ? 1 : -1) * cameraMoveSpeed));
     };
-    var processAKey = function () {
-        cameraPos = add(cameraPos, vec3(-0.1, 0, 0));
-        reRender(ctm);
+    var processSKey = function (down) {
+        cameraPosSpeed = add(cameraPosSpeed, vec3(0, 0, (down ? -1 : 1) * cameraMoveSpeed));
     };
-    var processDKey = function () {
-        cameraPos = add(cameraPos, vec3(0.1, 0, 0));
-        reRender(ctm);
+    var processAKey = function (down) {
+        cameraPosSpeed = add(cameraPosSpeed, vec3((down ? -1 : 1) * cameraMoveSpeed, 0, 0));
     };
-    var processSpace = function () {
-        cameraAt = add(cameraAt, vec3(0, 0.1, 0));
-        reRender(ctm);
+    var processDKey = function (down) {
+        cameraPosSpeed = add(cameraPosSpeed, vec3((down ? 1 : -1) * cameraMoveSpeed, 0, 0));
     };
-    var processCtrl = function () {
-        cameraAt = add(cameraAt, vec3(0, 0.1, 0));
-        reRender(ctm);
+    var processSpace = function (down) {
+        cameraPosSpeed = add(cameraPosSpeed, vec3(0, (down ? 1 : -1) * cameraMoveSpeed, 0));
+    };
+    var processShift = function (down) {
+        cameraPosSpeed = add(cameraPosSpeed, vec3(0, (down ? -1 : 1) * cameraMoveSpeed, 0));
     };
     // ==================================
     // 模式切换
@@ -529,7 +599,8 @@ define(["require", "exports", "../../framework/3d/WebGLHelper3d", "../../framewo
             currentMode = (currentMode + 1) % 3;
             eval("document.querySelector('#mode_" + currentMode + "').style.display = 'inline-block'");
             // 内部模式切换
-            clearMouseHooks();
+            clearListeners();
+            reRender(ctm);
             switch (currentMode) {
                 case MODES.TRACKBALL:
                     listenMouseTrackBall();
@@ -539,18 +610,21 @@ define(["require", "exports", "../../framework/3d/WebGLHelper3d", "../../framewo
                     break;
                 case MODES.FPV:
                     listenKeyboardFPV();
+                    listenMouseToTurnCamera();
                     break;
             }
             // 消除焦点
             document.querySelector('#modeToggler').blur();
         };
     };
-    var clearMouseHooks = function () {
+    var clearListeners = function () {
         canvasDOM.onmousedown = function () { };
         canvasDOM.onmouseup = function () { };
         canvasDOM.onmousemove = function () { };
         // @ts-ignore
         canvasDOM.onmousewheel = function () { };
+        window.onkeydown = function () { };
+        window.onkeyup = function () { };
     };
     // do it
     main();

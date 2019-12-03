@@ -63,25 +63,30 @@ const LIGHT_Z_PLUS = 0.015
 // 透视使用
 // ==================================
 let cpm: Mat
-let fovy = 90.0
-let aspect = 1.0
-let near = 0.5
+let fovy = 45.0
+let aspect = -1.0
+let near = 0.1
 let far = 5.0
 let preCalculatedCPM = perspective(fovy, aspect, near, far)
 // ==================================
 // 观察相机使用
 // !! 请注意，pos->at与pos->up不能共线 !!
 // ==================================
-let cameraPos = vec3(0.0, 0.5, 0.0)
-let cameraAt = vec3(0.1, 0.1, 0.0)
-let cameraUp = vec3(0, 0.1, 0)
+const ROTATE_PER_Y_FPV = 0.05
+const ROTATE_PER_X_FPV = 0.05
+let cameraPos = vec3(0.0, 0.4, -3.0)
+let camearaFront = vec3(0.0, 0.0, 1.0)
+let cameraUp = vec3(0.0, 1.0, 0.0)
+let cameraPosSpeed = vec3(0.0, 0.0, 0.0)
+let cameraMoveSpeed = 0.02
+let cameraMoveId: number = 0// 相机移动计时器编号
 // ==================================
 // 跟踪球使用
 // ==================================
 const FRICTION = 0.0006 // 模拟摩擦力，每毫秒降低的速度
 const INTERVAL = 40 // 速度降低的毫秒间隔
-const ROTATE_PER_X = 0.2 // X轴鼠标拖动旋转的比例
-const ROTATE_PER_Y = 0.2 // Y轴鼠标拖动旋转的比例
+const ROTATE_PER_X = 0.5 // X轴鼠标拖动旋转的比例
+const ROTATE_PER_Y = 0.5 // Y轴鼠标拖动旋转的比例
 let slowDownId: number // 减速计时器编号
 let isMouseDown = false
 let mouseLastPos: Vec2 // 上一次鼠标位置
@@ -266,7 +271,7 @@ let reRender = (ctm: Mat, reCalulateMaterialProducts: boolean = false, lightPosC
   // ctm = lookAt(cameraPos, add(cameraPos, camearaFront) as Vec3, camearaUp)
   if (currentMode == MODES.FPV) {
     cpm = preCalculatedCPM
-    ctm = lookAt(cameraPos, cameraAt, cameraUp)
+    ctm = lookAt(cameraPos, add(cameraPos, camearaFront) as Vec3, cameraUp)
   } else {
     cpm = mat4()
   }
@@ -339,6 +344,7 @@ let listenMouseLightInteract = () => {
     canvasDOM.onmousemove = (evt2: MouseEvent) => {
       let newMousePoint = [evt2.offsetX, evt2.offsetY] as Vec2
       let translateVector = newMousePoint.map((v, i) => v - mousePoint[i]) as Vec2
+      mousePoint = newMousePoint
       translateVector[0] /= canvasDOM.width; translateVector[1] /= canvasDOM.height; translateVector[1] *= -1
       translateVector.map(x => x * LIGHT_TRANSLATE_FACTOR)
       modifyLightBulbPosition([lightBulbPosition[0] + translateVector[0], lightBulbPosition[1] + translateVector[1], lightBulbPosition[2]])
@@ -416,48 +422,111 @@ let listenMouseTrackBall = () => {
   }
 }
 // ==================================
+// 第一人称视角实现
+// ==================================
+// ==================================
+// 鼠标侦听
+// ==================================
+let listenMouseToTurnCamera = () => {
+  canvasDOM.onmousedown = (evt: MouseEvent) => {
+    let mousePoint = [evt.offsetX, evt.offsetY] as Vec2
+    let lastTrickTick = new Date().getTime()
+    let curTrickTick = lastTick
+    const MIN_INTERVAL = 40
+    canvasDOM.onmousemove = (evt2: MouseEvent) => {
+      curTrickTick = new Date().getTime()
+      if(curTrickTick - lastTrickTick < MIN_INTERVAL){
+        return
+      }
+      lastTrickTick = curTrickTick
+      let newMousePoint = [evt2.offsetX, evt2.offsetY] as Vec2
+      let translateVector = newMousePoint.map((v, i) => v - mousePoint[i]) as Vec2
+      mousePoint = newMousePoint
+      let cfm4 = vec4(camearaFront[0], camearaFront[1], camearaFront[2], 1)
+      let cum4 = vec4(cameraUp[0], cameraUp[1], cameraUp[2], 1)
+      cfm4 = normalize(mult(rotateX(ROTATE_PER_X_FPV * translateVector[1]), cfm4) as Vec4, false) as Vec4
+      cfm4 = normalize(mult(rotateY(ROTATE_PER_Y_FPV * translateVector[0]), cfm4) as Vec4, false) as Vec4
+      cum4 = normalize(mult(rotateX(ROTATE_PER_X_FPV * translateVector[1]), cum4) as Vec4, false) as Vec4
+      cum4 = normalize(mult(rotateY(ROTATE_PER_Y_FPV * translateVector[0]), cum4) as Vec4, false) as Vec4
+      camearaFront = vec3(cfm4[0], cfm4[1], cfm4[2])
+      cameraUp = vec3(cum4[0], cum4[1], cum4[2])
+      reRender(ctm, true, true)
+    }
+  }
+  canvasDOM.onmouseup = () => {
+    canvasDOM.onmousemove = () => { }
+  }
+}
+// ==================================
 // 键盘侦听
 // ==================================
 let listenKeyboardFPV = () => {
-  let handlers: { [key: string]: () => void } = {
+  let handlers: { [key: string]: (down: boolean) => void } = {
     '87'/*W*/: processWKey,
     '65'/*A*/: processAKey,
     '83'/*S*/: processSKey,
     '68'/*D*/: processDKey,
     '32'/*Space*/: processSpace,
-    '17'/*Ctrl*/: processCtrl
+    '16'/*Shift*/: processShift
   }
+  let isKeyDown: { [key: string]: boolean} = {
+    '87'/*W*/: false,
+    '65'/*A*/: false,
+    '83'/*S*/: false,
+    '68'/*D*/: false,
+    '32'/*Space*/: false,
+    '16'/*Shift*/: false
+  }
+  cameraPosSpeed = vec3(0, 0, 0)
   window.onkeydown = (e: KeyboardEvent) => {
-    if (e && e.keyCode) {
+    if (e && e.keyCode && !isKeyDown[e.keyCode]) {
       try {
-        handlers[e.keyCode.toString()].call(null)
+        handlers[e.keyCode.toString()].call(null, true)
+        isKeyDown[e.keyCode] = true
+        if(cameraMoveId == 0){
+          cameraMoveId = setInterval(moveCamera, INTERVAL)
+        }
+      } catch (ex) { }
+    }
+  }
+  window.onkeyup = (e: KeyboardEvent) => {
+    if (e && e.keyCode && isKeyDown[e.keyCode]) {
+      try {
+        handlers[e.keyCode.toString()].call(null, false)
+        isKeyDown[e.keyCode] = false
+        if(cameraMoveId == 0){
+          cameraMoveId = setInterval(moveCamera, INTERVAL)
+        }
       } catch (ex) { }
     }
   }
 }
-let processWKey = () => {
-  cameraPos = add(cameraPos, vec3(0, 0, 0.1)) as Vec3
+let moveCamera = () => {
+  if(cameraPosSpeed == vec3(0, 0, 0)){
+    clearInterval(cameraMoveId)
+    cameraMoveId = 0
+    return
+  }
+  cameraPos = add(cameraPos, cameraPosSpeed) as Vec3
   reRender(ctm)
 }
-let processSKey = () => {
-  cameraPos = add(cameraPos, vec3(0, 0, -0.1)) as Vec3
-  reRender(ctm)
+let processWKey = (down: boolean) => {
+  cameraPosSpeed = add(cameraPosSpeed, vec3(0, 0, (down ? 1 : -1) * cameraMoveSpeed)) as Vec3
 }
-let processAKey = () => {
-  cameraPos = add(cameraPos, vec3(-0.1, 0, 0)) as Vec3
-  reRender(ctm)
+let processSKey = (down: boolean) => {
+  cameraPosSpeed = add(cameraPosSpeed, vec3(0, 0, (down ? -1 : 1) * cameraMoveSpeed)) as Vec3
 }
-let processDKey = () => {
-  cameraPos = add(cameraPos, vec3(0.1, 0, 0)) as Vec3
-  reRender(ctm)
+let processAKey = (down: boolean) => {
+  cameraPosSpeed = add(cameraPosSpeed, vec3((down ? -1 : 1) * cameraMoveSpeed, 0, 0)) as Vec3
 }
-let processSpace = () => {
-  cameraAt = add(cameraAt, vec3(0, 0.1, 0)) as Vec3
-  reRender(ctm)
+let processDKey = (down: boolean) => {
+  cameraPosSpeed = add(cameraPosSpeed, vec3((down ? 1 : -1) * cameraMoveSpeed, 0, 0)) as Vec3
 }
-let processCtrl = () => {
-  cameraAt = add(cameraAt, vec3(0, 0.1, 0)) as Vec3
-  reRender(ctm)
+let processSpace = (down: boolean) => {
+  cameraPosSpeed = add(cameraPosSpeed, vec3(0, (down ? 1 : -1) * cameraMoveSpeed, 0)) as Vec3
+}
+let processShift = (down: boolean) => {
+  cameraPosSpeed = add(cameraPosSpeed, vec3(0, (down ? -1 : 1) * cameraMoveSpeed, 0)) as Vec3
 }
 // ==================================
 // 模式切换
@@ -469,24 +538,28 @@ let listenModeToggler = () => {
     currentMode = (currentMode + 1) % 3
     eval(`document.querySelector('#mode_${currentMode}').style.display = 'inline-block'`)
     // 内部模式切换
-    clearMouseHooks()
+    clearListeners()
+    reRender(ctm)
     switch (currentMode) {
       case MODES.TRACKBALL: listenMouseTrackBall(); break
       case MODES.LIGHT: listenMouseLightInteract(); break
       case MODES.FPV:
         listenKeyboardFPV()
+        listenMouseToTurnCamera()
         break
     }
     // 消除焦点
     (document.querySelector('#modeToggler') as HTMLButtonElement).blur()
   }
 }
-let clearMouseHooks = () => {
+let clearListeners = () => {
   canvasDOM.onmousedown = () => { }
   canvasDOM.onmouseup = () => { }
   canvasDOM.onmousemove = () => { }
   // @ts-ignore
   canvasDOM.onmousewheel = () => { }
+  window.onkeydown = () => { }
+  window.onkeyup = () => { }
 }
 // do it
 main()
