@@ -64,7 +64,7 @@ const LIGHT_Z_PLUS = 0.015
 // ==================================
 let cpm: Mat
 let fovy = 45.0
-let aspect = -1.0
+let aspect = -1
 let near = 0.1
 let far = 5.0
 let preCalculatedCPM = perspective(fovy, aspect, near, far)
@@ -72,14 +72,14 @@ let preCalculatedCPM = perspective(fovy, aspect, near, far)
 // 观察相机使用
 // !! 请注意，pos->at与pos->up不能共线 !!
 // ==================================
-const ROTATE_PER_Y_FPV = 0.05
-const ROTATE_PER_X_FPV = 0.05
-let cameraPos = vec3(0.0, 0.4, -3.0)
-let camearaFront = vec3(0.0, 0.0, 1.0)
+const ROTATE_PER_Y_FPV = 0.09
+const ROTATE_PER_X_FPV = 0.09
+let cameraPos = vec3(0.0, 0.0, -3.0)
+let cameraFront = vec3(0.0, 0.0, 1.0)
 let cameraUp = vec3(0.0, 1.0, 0.0)
 let cameraPosSpeed = vec3(0.0, 0.0, 0.0)
-let cameraMoveSpeed = 0.02
-let cameraMoveId: number = 0// 相机移动计时器编号
+let cameraMoveSpeed = 0.04
+let cameraMoveId: number = 0 // 相机移动计时器编号
 // ==================================
 // 跟踪球使用
 // ==================================
@@ -94,6 +94,9 @@ let vX = 0 // X轴旋转速度
 let vY = 0 // Y轴旋转速度
 let curTick: number
 let lastTick: number
+// ==================================
+// 材质互动、尾部摆动
+// ==================================
 let PonyMaterialInputDOMs: Array<string> = []
 let PonyMaterialCorrespondings: Array<string> = []
 // 初始化
@@ -115,6 +118,12 @@ let main = async () => {
   ctm = mat4()
   cpm = mat4()
   await startSceneInit()
+  initPositionInput()
+  initPonyMaterialInput()
+  listenPonyMaterialInput()
+  listenPositionInput()
+  listenModeToggler()
+  listenMouseTrackBall()
 }
 // 必须使用该函数修改前端光照位置
 let modifyLightBulbPosition = (newPos: Vec3) => {
@@ -267,11 +276,13 @@ let reRenderLightBall = (posChanged: boolean = false) => {
 }
 // reRender
 let reRender = (ctm: Mat, reCalulateMaterialProducts: boolean = false, lightPosChanged: boolean = false) => {
-  reCalulateMaterialProducts && PonyMaterial.reCalculateProducts() && HairMaterial.reCalculateProducts()
-  // ctm = lookAt(cameraPos, add(cameraPos, camearaFront) as Vec3, camearaUp)
+  if (reCalulateMaterialProducts) {
+    HairMaterial.reCalculateProducts()
+    PonyMaterial.reCalculateProducts()
+  }
   if (currentMode == MODES.FPV) {
     cpm = preCalculatedCPM
-    ctm = lookAt(cameraPos, add(cameraPos, camearaFront) as Vec3, cameraUp)
+    ctm = lookAt(cameraPos, add(cameraPos, cameraFront) as Vec3, cameraUp)
   } else {
     cpm = mat4()
   }
@@ -424,9 +435,7 @@ let listenMouseTrackBall = () => {
 // ==================================
 // 第一人称视角实现
 // ==================================
-// ==================================
 // 鼠标侦听
-// ==================================
 let listenMouseToTurnCamera = () => {
   canvasDOM.onmousedown = (evt: MouseEvent) => {
     let mousePoint = [evt.offsetX, evt.offsetY] as Vec2
@@ -435,20 +444,20 @@ let listenMouseToTurnCamera = () => {
     const MIN_INTERVAL = 40
     canvasDOM.onmousemove = (evt2: MouseEvent) => {
       curTrickTick = new Date().getTime()
-      if(curTrickTick - lastTrickTick < MIN_INTERVAL){
+      if (curTrickTick - lastTrickTick < MIN_INTERVAL) {
         return
       }
       lastTrickTick = curTrickTick
       let newMousePoint = [evt2.offsetX, evt2.offsetY] as Vec2
       let translateVector = newMousePoint.map((v, i) => v - mousePoint[i]) as Vec2
       mousePoint = newMousePoint
-      let cfm4 = vec4(camearaFront[0], camearaFront[1], camearaFront[2], 1)
+      let cfm4 = vec4(cameraFront[0], cameraFront[1], cameraFront[2], 1)
       let cum4 = vec4(cameraUp[0], cameraUp[1], cameraUp[2], 1)
       cfm4 = normalize(mult(rotateX(ROTATE_PER_X_FPV * translateVector[1]), cfm4) as Vec4, false) as Vec4
       cfm4 = normalize(mult(rotateY(ROTATE_PER_Y_FPV * translateVector[0]), cfm4) as Vec4, false) as Vec4
       cum4 = normalize(mult(rotateX(ROTATE_PER_X_FPV * translateVector[1]), cum4) as Vec4, false) as Vec4
       cum4 = normalize(mult(rotateY(ROTATE_PER_Y_FPV * translateVector[0]), cum4) as Vec4, false) as Vec4
-      camearaFront = vec3(cfm4[0], cfm4[1], cfm4[2])
+      cameraFront = vec3(cfm4[0], cfm4[1], cfm4[2])
       cameraUp = vec3(cum4[0], cum4[1], cum4[2])
       reRender(ctm, true, true)
     }
@@ -457,9 +466,7 @@ let listenMouseToTurnCamera = () => {
     canvasDOM.onmousemove = () => { }
   }
 }
-// ==================================
 // 键盘侦听
-// ==================================
 let listenKeyboardFPV = () => {
   let handlers: { [key: string]: (down: boolean) => void } = {
     '87'/*W*/: processWKey,
@@ -469,7 +476,7 @@ let listenKeyboardFPV = () => {
     '32'/*Space*/: processSpace,
     '16'/*Shift*/: processShift
   }
-  let isKeyDown: { [key: string]: boolean} = {
+  let isKeyDown: { [key: string]: boolean } = {
     '87'/*W*/: false,
     '65'/*A*/: false,
     '83'/*S*/: false,
@@ -483,8 +490,8 @@ let listenKeyboardFPV = () => {
       try {
         handlers[e.keyCode.toString()].call(null, true)
         isKeyDown[e.keyCode] = true
-        if(cameraMoveId == 0){
-          cameraMoveId = setInterval(moveCamera, INTERVAL)
+        if (cameraMoveId == 0) {
+          cameraMoveId = window.setInterval(moveCamera, INTERVAL)
         }
       } catch (ex) { }
     }
@@ -494,15 +501,15 @@ let listenKeyboardFPV = () => {
       try {
         handlers[e.keyCode.toString()].call(null, false)
         isKeyDown[e.keyCode] = false
-        if(cameraMoveId == 0){
-          cameraMoveId = setInterval(moveCamera, INTERVAL)
+        if (cameraMoveId == 0) {
+          cameraMoveId = window.setInterval(moveCamera, INTERVAL)
         }
       } catch (ex) { }
     }
   }
 }
 let moveCamera = () => {
-  if(cameraPosSpeed == vec3(0, 0, 0)){
+  if (cameraPosSpeed == vec3(0, 0, 0)) {
     clearInterval(cameraMoveId)
     cameraMoveId = 0
     return
@@ -561,11 +568,6 @@ let clearListeners = () => {
   window.onkeydown = () => { }
   window.onkeyup = () => { }
 }
+
 // do it
 main()
-initPositionInput()
-initPonyMaterialInput()
-listenPonyMaterialInput()
-listenPositionInput()
-listenModeToggler()
-listenMouseTrackBall()
