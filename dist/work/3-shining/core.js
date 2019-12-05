@@ -343,7 +343,7 @@ define(["require", "exports", "../../framework/3d/WebGLHelper3d", "../../framewo
         else {
             cpm = mat4();
         }
-        reRenderLightBall(lightPosChanged);
+        (currentMode != MODES.FPV) && reRenderLightBall(lightPosChanged);
         reRenderBackground();
         reRenderMain(ctm);
     };
@@ -510,14 +510,19 @@ define(["require", "exports", "../../framework/3d/WebGLHelper3d", "../../framewo
                 var newMousePoint = [evt2.offsetX, evt2.offsetY];
                 var translateVector = newMousePoint.map(function (v, i) { return v - mousePoint[i]; });
                 mousePoint = newMousePoint;
-                var cfm4 = vec4(cameraFront[0], cameraFront[1], cameraFront[2], 1);
-                var cum4 = vec4(cameraUp[0], cameraUp[1], cameraUp[2], 1);
-                cfm4 = normalize(mult(rotateX(ROTATE_PER_X_FPV * translateVector[1]), cfm4), false);
-                cfm4 = normalize(mult(rotateY(ROTATE_PER_Y_FPV * translateVector[0]), cfm4), false);
-                cum4 = normalize(mult(rotateX(ROTATE_PER_X_FPV * translateVector[1]), cum4), false);
-                cum4 = normalize(mult(rotateY(ROTATE_PER_Y_FPV * translateVector[0]), cum4), false);
-                cameraFront = vec3(cfm4[0], cfm4[1], cfm4[2]);
-                cameraUp = vec3(cum4[0], cum4[1], cum4[2]);
+                // let cfm4 = vec4(...cameraFront, 1)
+                // let cum4 = vec4(...cameraUp, 1)
+                // cfm4 = normalize(mult(rotateX(ROTATE_PER_X_FPV * translateVector[1]), cfm4) as Vec4, false) as Vec4
+                // cfm4 = normalize(mult(rotateY(ROTATE_PER_Y_FPV * translateVector[0]), cfm4) as Vec4, false) as Vec4
+                // cum4 = normalize(mult(rotateX(ROTATE_PER_X_FPV * translateVector[1]), cum4) as Vec4, false) as Vec4
+                // cum4 = normalize(mult(rotateY(ROTATE_PER_Y_FPV * translateVector[0]), cum4) as Vec4, false) as Vec4
+                // cameraFront = vec3(...cfm4.slice(0, 3))
+                // cameraUp = vec3(...cum4.slice(0, 3))
+                var oldF = cameraFront, oldU = cameraUp;
+                cameraFront =
+                    mult(WebGLUtils.rotateByAxis(cameraPos, subtract(cross(oldU, oldF), cameraPos), -1), vec4.apply(void 0, __spreadArrays(oldF, [1.0]))).slice(0, 3);
+                cameraUp =
+                    mult(WebGLUtils.rotateByAxis(cameraPos, subtract(cross(oldU, oldF), cameraPos), -1), vec4.apply(void 0, __spreadArrays(oldU, [1.0]))).slice(0, 3);
                 reRender(ctm, true, true);
             };
         };
@@ -579,22 +584,25 @@ define(["require", "exports", "../../framework/3d/WebGLHelper3d", "../../framewo
         reRender(ctm);
     };
     var processWKey = function (down) {
-        cameraPosSpeed = add(cameraPosSpeed, vec3(0, 0, (down ? 1 : -1) * cameraMoveSpeed));
+        cameraPosSpeed = add(cameraPosSpeed, mult(mat3((down ? 1 : -1) * cameraMoveSpeed), cameraFront));
+        // cameraPos = add(cameraPos, cameraFront) as Vec3
     };
     var processSKey = function (down) {
-        cameraPosSpeed = add(cameraPosSpeed, vec3(0, 0, (down ? -1 : 1) * cameraMoveSpeed));
+        cameraPosSpeed = add(cameraPosSpeed, mult(mat3((down ? -1 : 1) * cameraMoveSpeed), cameraFront));
     };
     var processAKey = function (down) {
-        cameraPosSpeed = add(cameraPosSpeed, vec3((down ? -1 : 1) * cameraMoveSpeed, 0, 0));
+        cameraPosSpeed =
+            add(cameraPosSpeed, mult(mat3((down ? 1 : -1) * cameraMoveSpeed), normalize(cross(cameraUp, cameraFront), false)));
     };
     var processDKey = function (down) {
-        cameraPosSpeed = add(cameraPosSpeed, vec3((down ? 1 : -1) * cameraMoveSpeed, 0, 0));
+        cameraPosSpeed =
+            add(cameraPosSpeed, mult(mat3((down ? 1 : -1) * cameraMoveSpeed), normalize(cross(cameraFront, cameraUp), false)));
     };
     var processSpace = function (down) {
-        cameraPosSpeed = add(cameraPosSpeed, vec3(0, (down ? 1 : -1) * cameraMoveSpeed, 0));
+        cameraPosSpeed = add(cameraPosSpeed, mult(mat3((down ? 1 : -1) * cameraMoveSpeed), cameraUp));
     };
     var processShift = function (down) {
-        cameraPosSpeed = add(cameraPosSpeed, vec3(0, (down ? -1 : 1) * cameraMoveSpeed, 0));
+        cameraPosSpeed = add(cameraPosSpeed, mult(mat3((down ? -1 : 1) * cameraMoveSpeed), cameraUp));
     };
     // ==================================
     // 模式切换

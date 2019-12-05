@@ -286,7 +286,7 @@ let reRender = (ctm: Mat, reCalulateMaterialProducts: boolean = false, lightPosC
   } else {
     cpm = mat4()
   }
-  reRenderLightBall(lightPosChanged)
+  (currentMode != MODES.FPV) && reRenderLightBall(lightPosChanged)
   reRenderBackground()
   reRenderMain(ctm)
 }
@@ -451,14 +451,23 @@ let listenMouseToTurnCamera = () => {
       let newMousePoint = [evt2.offsetX, evt2.offsetY] as Vec2
       let translateVector = newMousePoint.map((v, i) => v - mousePoint[i]) as Vec2
       mousePoint = newMousePoint
-      let cfm4 = vec4(cameraFront[0], cameraFront[1], cameraFront[2], 1)
-      let cum4 = vec4(cameraUp[0], cameraUp[1], cameraUp[2], 1)
-      cfm4 = normalize(mult(rotateX(ROTATE_PER_X_FPV * translateVector[1]), cfm4) as Vec4, false) as Vec4
-      cfm4 = normalize(mult(rotateY(ROTATE_PER_Y_FPV * translateVector[0]), cfm4) as Vec4, false) as Vec4
-      cum4 = normalize(mult(rotateX(ROTATE_PER_X_FPV * translateVector[1]), cum4) as Vec4, false) as Vec4
-      cum4 = normalize(mult(rotateY(ROTATE_PER_Y_FPV * translateVector[0]), cum4) as Vec4, false) as Vec4
-      cameraFront = vec3(cfm4[0], cfm4[1], cfm4[2])
-      cameraUp = vec3(cum4[0], cum4[1], cum4[2])
+      // let cfm4 = vec4(...cameraFront, 1)
+      // let cum4 = vec4(...cameraUp, 1)
+      // cfm4 = normalize(mult(rotateX(ROTATE_PER_X_FPV * translateVector[1]), cfm4) as Vec4, false) as Vec4
+      // cfm4 = normalize(mult(rotateY(ROTATE_PER_Y_FPV * translateVector[0]), cfm4) as Vec4, false) as Vec4
+      // cum4 = normalize(mult(rotateX(ROTATE_PER_X_FPV * translateVector[1]), cum4) as Vec4, false) as Vec4
+      // cum4 = normalize(mult(rotateY(ROTATE_PER_Y_FPV * translateVector[0]), cum4) as Vec4, false) as Vec4
+      // cameraFront = vec3(...cfm4.slice(0, 3))
+      // cameraUp = vec3(...cum4.slice(0, 3))
+      let oldF = cameraFront, oldU = cameraUp
+      cameraFront =
+        (mult(
+          WebGLUtils.rotateByAxis(cameraPos, subtract(cross(oldU, oldF), cameraPos) as Vec3, -1),
+          vec4(...oldF, 1.0)) as Vec4).slice(0, 3) as Vec3
+      cameraUp =
+        (mult(
+          WebGLUtils.rotateByAxis(cameraPos, subtract(cross(oldU, oldF), cameraPos) as Vec3, -1),
+          vec4(...oldU, 1.0)) as Vec4).slice(0, 3) as Vec3
       reRender(ctm, true, true)
     }
   }
@@ -518,22 +527,29 @@ let moveCamera = () => {
   reRender(ctm)
 }
 let processWKey = (down: boolean) => {
-  cameraPosSpeed = add(cameraPosSpeed, vec3(0, 0, (down ? 1 : -1) * cameraMoveSpeed)) as Vec3
+  cameraPosSpeed = add(cameraPosSpeed, mult(mat3((down ? 1 : -1) * cameraMoveSpeed), cameraFront)) as Vec3
+  // cameraPos = add(cameraPos, cameraFront) as Vec3
 }
 let processSKey = (down: boolean) => {
-  cameraPosSpeed = add(cameraPosSpeed, vec3(0, 0, (down ? -1 : 1) * cameraMoveSpeed)) as Vec3
+  cameraPosSpeed = add(cameraPosSpeed, mult(mat3((down ? -1 : 1) * cameraMoveSpeed), cameraFront)) as Vec3
 }
 let processAKey = (down: boolean) => {
-  cameraPosSpeed = add(cameraPosSpeed, vec3((down ? -1 : 1) * cameraMoveSpeed, 0, 0)) as Vec3
+  cameraPosSpeed =
+    add(cameraPosSpeed,
+      mult(mat3((down ? 1 : -1) * cameraMoveSpeed),
+        normalize(cross(cameraUp, cameraFront) as Vec3, false))) as Vec3
 }
 let processDKey = (down: boolean) => {
-  cameraPosSpeed = add(cameraPosSpeed, vec3((down ? 1 : -1) * cameraMoveSpeed, 0, 0)) as Vec3
+  cameraPosSpeed =
+    add(cameraPosSpeed,
+      mult(mat3((down ? 1 : -1) * cameraMoveSpeed),
+        normalize(cross(cameraFront, cameraUp) as Vec3, false))) as Vec3
 }
 let processSpace = (down: boolean) => {
-  cameraPosSpeed = add(cameraPosSpeed, vec3(0, (down ? 1 : -1) * cameraMoveSpeed, 0)) as Vec3
+  cameraPosSpeed = add(cameraPosSpeed, mult(mat3((down ? 1 : -1) * cameraMoveSpeed), cameraUp)) as Vec3
 }
 let processShift = (down: boolean) => {
-  cameraPosSpeed = add(cameraPosSpeed, vec3(0, (down ? -1 : 1) * cameraMoveSpeed, 0)) as Vec3
+  cameraPosSpeed = add(cameraPosSpeed, mult(mat3((down ? -1 : 1) * cameraMoveSpeed), cameraUp)) as Vec3
 }
 // ==================================
 // 模式切换

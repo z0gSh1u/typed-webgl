@@ -81,4 +81,19 @@ define(["require", "exports", "../3rd-party/MV", "../3rd-party/initShaders"], fu
         });
     }
     exports.loadImageAsync = loadImageAsync;
+    /**
+     * Rotate by any axis. `angle` in DEG.
+     */
+    function rotateByAxis(v1, v2, angle) {
+        var uvw = normalize(subtract(v2, v1), false);
+        var u = uvw[0], v = uvw[1], w = uvw[2];
+        var c = Math.cos(radians(angle)), s = Math.sin(radians(angle));
+        var A = v1[0], B = v1[1], C = v1[2];
+        var pow2 = function (x) { return x * x; };
+        var a11 = pow2(u) + c * (pow2(v) + pow2(w)), a12 = u * v * (1 - c) - w * s, a13 = u * w * (1 - c) + v * s, a14 = (A * (pow2(v) + pow2(w)) - u * (B * v + C * w)) * (1 - c) + (B * w - C * v) * s;
+        var a21 = u * v * (1 - c) + w * s, a22 = pow2(v) + c * (pow2(u) + pow2(w)), a23 = w * v * (1 - c) - u * s, a24 = (B * (pow2(u) + pow2(w)) - v * (A * u + C * w)) * (1 - c) + (C * u - A * w) * s;
+        var a31 = a13 = u * w * (1 - c) - v * s, a32 = w * v * (1 - c) + u * s, a33 = pow2(w) + c * (pow2(u) + pow2(v)), a34 = (C * (pow2(u) + pow2(v)) - w * (A * u + B * v)) * (1 - c) + (A * v - B * u) * s;
+        return mat4(a11, a12, a13, a14, a21, a22, a23, a24, a31, a32, a33, a34, 0, 0, 0, 1.0);
+    }
+    exports.rotateByAxis = rotateByAxis;
 });
