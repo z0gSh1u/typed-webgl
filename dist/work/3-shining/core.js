@@ -119,11 +119,15 @@ define(["require", "exports", "../../framework/3d/WebGLHelper3d", "../../framewo
     // ==================================
     var ROTATE_PER_Y_FPV = 0.09;
     var ROTATE_PER_X_FPV = 0.09;
+    var VEC_Y = vec3(0.0, 1.0, 0.0);
+    var ANGLE_UP_MAX = 89;
+    var ANGLE_DOWN_MAX = -89;
+    var VEC_UP_MAX = vec4(0.0, Math.sin(ANGLE_UP_MAX), Math.cos(ANGLE_UP_MAX), 1);
+    var VEC_DOWN_MAX = vec4(0.0, Math.sin(ANGLE_DOWN_MAX), Math.cos(ANGLE_DOWN_MAX), 1);
     var cameraPos = vec3(0.0, 0.0, -3.0);
     var cameraFront = vec3(0.0, 0.0, 1.0);
-    var cameraUp = vec3(0.0, 1.0, 0.0);
-    var cameraPosSpeed = vec3(0.0, 0.0, 0.0);
-    var cameraMoveSpeed = 0.04;
+    //let cameraMoveSpeed = vec3(0.0, 0.0, 0.0)
+    var cameraSpeed = 0.04;
     var cameraMoveId = 0; // 相机移动计时器编号
     // ==================================
     // 跟踪球使用
@@ -338,7 +342,7 @@ define(["require", "exports", "../../framework/3d/WebGLHelper3d", "../../framewo
         }
         if (currentMode == MODES.FPV) {
             cpm = preCalculatedCPM;
-            ctm = lookAt(cameraPos, add(cameraPos, cameraFront), cameraUp);
+            ctm = lookAt(cameraPos, add(cameraPos, cameraFront), VEC_Y);
         }
         else {
             cpm = mat4();
@@ -518,11 +522,28 @@ define(["require", "exports", "../../framework/3d/WebGLHelper3d", "../../framewo
                 // cum4 = normalize(mult(rotateY(ROTATE_PER_Y_FPV * translateVector[0]), cum4) as Vec4, false) as Vec4
                 // cameraFront = vec3(...cfm4.slice(0, 3))
                 // cameraUp = vec3(...cum4.slice(0, 3))
-                var oldF = cameraFront, oldU = cameraUp;
-                cameraFront =
-                    mult(WebGLUtils.rotateByAxis(cameraPos, subtract(cross(oldU, oldF), cameraPos), -1), vec4.apply(void 0, __spreadArrays(oldF, [1.0]))).slice(0, 3);
-                cameraUp =
-                    mult(WebGLUtils.rotateByAxis(cameraPos, subtract(cross(oldU, oldF), cameraPos), -1), vec4.apply(void 0, __spreadArrays(oldU, [1.0]))).slice(0, 3);
+                // let oldF = cameraFront, oldU = cameraUp
+                // cameraFront =
+                //   (mult(
+                //     WebGLUtils.rotateByAxis(cameraPos, subtract(cross(oldU, oldF), cameraPos) as Vec3, -1),
+                //     vec4(...oldF, 1.0)) as Vec4).slice(0, 3) as Vec3
+                // cameraUp =
+                //   (mult(
+                //     WebGLUtils.rotateByAxis(cameraPos, subtract(cross(oldU, oldF), cameraPos) as Vec3, -1),
+                //     vec4(...oldU, 1.0)) as Vec4).slice(0, 3) as Vec3
+                cameraFront = normalize(vec3.apply(void 0, mult(rotateY(ROTATE_PER_X_FPV * translateVector[0]), vec4.apply(void 0, __spreadArrays(cameraFront, [1]))).slice(0, 3)), false);
+                //cameraMoveSpeed = vec3(...(normalize(mult(rotateY(ROTATE_PER_X_FPV * translateVector[0]), vec4(...cameraMoveSpeed, 1)) as Vec4, false) as Vec4).slice(0, 3))
+                var initZ = Math.sqrt(cameraFront[0] * cameraFront[0] + cameraFront[2] * cameraFront[2]);
+                var tempVec = vec4(0, cameraFront[1], initZ, 1);
+                tempVec = mult(rotateX(ROTATE_PER_Y_FPV * translateVector[1]), tempVec);
+                if (tempVec[1] > VEC_UP_MAX[1] && tempVec[2] >= 0 || tempVec[1] > 0 && tempVec[2] < 0) {
+                    tempVec = VEC_UP_MAX;
+                }
+                else if (tempVec[1] < VEC_DOWN_MAX[1] && tempVec[2] >= 0 || tempVec[1] < 0 && tempVec[2] < 0) {
+                    tempVec = VEC_DOWN_MAX;
+                }
+                var newZ = tempVec[2];
+                cameraFront = vec3(cameraFront[0] * newZ / initZ, tempVec[1], cameraFront[2] * newZ / initZ);
                 reRender(ctm, true, true);
             };
         };
@@ -531,79 +552,127 @@ define(["require", "exports", "../../framework/3d/WebGLHelper3d", "../../framewo
         };
     };
     // 键盘侦听
+    var isKeyDown = {
+        '87' /*W*/: false,
+        '65' /*A*/: false,
+        '83' /*S*/: false,
+        '68' /*D*/: false,
+        '32' /*Space*/: false,
+        '16' /*Shift*/: false
+    };
     var listenKeyboardFPV = function () {
-        var handlers = {
-            '87' /*W*/: processWKey,
-            '65' /*A*/: processAKey,
-            '83' /*S*/: processSKey,
-            '68' /*D*/: processDKey,
-            '32' /*Space*/: processSpace,
-            '16' /*Shift*/: processShift
-        };
-        var isKeyDown = {
-            '87' /*W*/: false,
-            '65' /*A*/: false,
-            '83' /*S*/: false,
-            '68' /*D*/: false,
-            '32' /*Space*/: false,
-            '16' /*Shift*/: false
-        };
-        cameraPosSpeed = vec3(0, 0, 0);
+        // let handlers: { [key: string]: (down: boolean) => void } = {
+        //   '87'/*W*/: processWKey,
+        //   '65'/*A*/: processAKey,
+        //   '83'/*S*/: processSKey,
+        //   '68'/*D*/: processDKey,
+        //   '32'/*Space*/: processSpace,
+        //   '16'/*Shift*/: processShift
+        // }
+        //cameraMoveSpeed = vec3(0, 0, 0)
+        isKeyDown['87'] = isKeyDown['65'] = isKeyDown['83'] = isKeyDown['68'] = isKeyDown['32'] = isKeyDown['16'] = false;
         window.onkeydown = function (e) {
-            if (e && e.keyCode && !isKeyDown[e.keyCode]) {
-                try {
-                    handlers[e.keyCode.toString()].call(null, true);
-                    isKeyDown[e.keyCode] = true;
-                    if (cameraMoveId == 0) {
-                        cameraMoveId = window.setInterval(moveCamera, INTERVAL);
-                    }
+            if (e && e.keyCode /* && !isKeyDown[e.keyCode]*/) {
+                isKeyDown[e.keyCode] = true;
+                if (cameraMoveId == 0) {
+                    cameraMoveId = window.setInterval(moveCamera, INTERVAL);
                 }
-                catch (ex) { }
+                // try {
+                //   // handlers[e.keyCode.toString()].call(null, true)
+                //   isKeyDown[e.keyCode] = true
+                //   // if (cameraMoveId == 0) {
+                //   //   cameraMoveId = window.setInterval(moveCamera, INTERVAL)
+                //   // }
+                // } catch (ex) { }
             }
         };
         window.onkeyup = function (e) {
-            if (e && e.keyCode && isKeyDown[e.keyCode]) {
-                try {
-                    handlers[e.keyCode.toString()].call(null, false);
-                    isKeyDown[e.keyCode] = false;
-                    if (cameraMoveId == 0) {
-                        cameraMoveId = window.setInterval(moveCamera, INTERVAL);
-                    }
-                }
-                catch (ex) { }
+            if (e && e.keyCode /* && isKeyDown[e.keyCode]*/) {
+                isKeyDown[e.keyCode] = false;
+                // try {
+                //   // handlers[e.keyCode.toString()].call(null, false)
+                //   isKeyDown[e.keyCode] = false
+                //   // if (cameraMoveId == 0) {
+                //   //   cameraMoveId = window.setInterval(moveCamera, INTERVAL)
+                //   // }
+                // } catch (ex) { }
             }
         };
     };
     var moveCamera = function () {
-        if (cameraPosSpeed == vec3(0, 0, 0)) {
+        // if (cameraMoveSpeed == vec3(0, 0, 0)) {
+        //   clearInterval(cameraMoveId)
+        //   cameraMoveId = 0
+        //   return
+        // }
+        // cameraPos = add(cameraPos, cameraMoveSpeed) as Vec3
+        var cameraMoveSpeed = vec3(0, 0, 0);
+        var frontVec = normalize(vec3(cameraFront[0], 0, cameraFront[2]), false);
+        var leftVec = normalize(cross(VEC_Y, cameraFront), false);
+        var moveFlag = false;
+        if (isKeyDown['87' /*W*/]) {
+            cameraMoveSpeed = add(cameraMoveSpeed, mult(mat3(cameraSpeed), frontVec));
+            moveFlag = true;
+        }
+        if (isKeyDown['83' /*S*/]) {
+            cameraMoveSpeed = add(cameraMoveSpeed, mult(mat3(-cameraSpeed), frontVec));
+            moveFlag = true;
+        }
+        if (isKeyDown['65' /*A*/]) {
+            cameraMoveSpeed = add(cameraMoveSpeed, mult(mat3(-cameraSpeed), leftVec));
+            moveFlag = true;
+        }
+        if (isKeyDown['68' /*D*/]) {
+            cameraMoveSpeed = add(cameraMoveSpeed, mult(mat3(cameraSpeed), leftVec));
+            moveFlag = true;
+        }
+        if (isKeyDown['32' /*Space*/]) {
+            cameraMoveSpeed = add(cameraMoveSpeed, mult(mat3(cameraSpeed), VEC_Y));
+            moveFlag = true;
+        }
+        if (isKeyDown['16' /*Shift*/]) {
+            cameraMoveSpeed = add(cameraMoveSpeed, mult(mat3(-cameraSpeed), VEC_Y));
+            moveFlag = true;
+        }
+        if (!moveFlag) {
             clearInterval(cameraMoveId);
             cameraMoveId = 0;
             return;
         }
-        cameraPos = add(cameraPos, cameraPosSpeed);
+        cameraPos = add(cameraPos, cameraMoveSpeed);
         reRender(ctm);
     };
-    var processWKey = function (down) {
-        cameraPosSpeed = add(cameraPosSpeed, mult(mat3((down ? 1 : -1) * cameraMoveSpeed), cameraFront));
-        // cameraPos = add(cameraPos, cameraFront) as Vec3
-    };
-    var processSKey = function (down) {
-        cameraPosSpeed = add(cameraPosSpeed, mult(mat3((down ? -1 : 1) * cameraMoveSpeed), cameraFront));
-    };
-    var processAKey = function (down) {
-        cameraPosSpeed =
-            add(cameraPosSpeed, mult(mat3((down ? 1 : -1) * cameraMoveSpeed), normalize(cross(cameraUp, cameraFront), false)));
-    };
-    var processDKey = function (down) {
-        cameraPosSpeed =
-            add(cameraPosSpeed, mult(mat3((down ? 1 : -1) * cameraMoveSpeed), normalize(cross(cameraFront, cameraUp), false)));
-    };
-    var processSpace = function (down) {
-        cameraPosSpeed = add(cameraPosSpeed, mult(mat3((down ? 1 : -1) * cameraMoveSpeed), cameraUp));
-    };
-    var processShift = function (down) {
-        cameraPosSpeed = add(cameraPosSpeed, mult(mat3((down ? -1 : 1) * cameraMoveSpeed), cameraUp));
-    };
+    // let processWKey = (down: boolean) => {
+    //   //cameraPosSpeed = add(cameraPosSpeed, mult(mat3((down ? 1 : -1) * cameraMoveSpeed), cameraFront)) as Vec3
+    //   // cameraPos = add(cameraPos, cameraFront) as Vec3
+    //   cameraMoveSpeed = add(cameraMoveSpeed, mult(mat3((down ? 1 : -1) * cameraSpeed), normalize(vec3(cameraFront[0], 0, cameraFront[2]), false))) as Vec3
+    // }
+    // let processSKey = (down: boolean) => {
+    //   //cameraPosSpeed = add(cameraPosSpeed, mult(mat3((down ? -1 : 1) * cameraMoveSpeed), cameraFront)) as Vec3
+    //   cameraMoveSpeed = add(cameraMoveSpeed, mult(mat3((down ? -1 : 1) * cameraSpeed), normalize(vec3(cameraFront[0], 0, cameraFront[2]), false))) as Vec3
+    // }
+    // let processAKey = (down: boolean) => {
+    //   // cameraPosSpeed =
+    //   //   add(cameraPosSpeed,
+    //   //     mult(mat3((down ? 1 : -1) * cameraMoveSpeed),
+    //   //       normalize(cross(cameraUp, cameraFront) as Vec3, false))) as Vec3
+    //   cameraMoveSpeed = add(cameraMoveSpeed, mult(mat3((down ? -1 : 1) * cameraSpeed), normalize(cross(VEC_Y, cameraFront), false))) as Vec3
+    // }
+    // let processDKey = (down: boolean) => {
+    //   // cameraPosSpeed =
+    //   //   add(cameraPosSpeed,
+    //   //     mult(mat3((down ? 1 : -1) * cameraMoveSpeed),
+    //   //       normalize(cross(cameraFront, cameraUp) as Vec3, false))) as Vec3
+    //   cameraMoveSpeed = add(cameraMoveSpeed, mult(mat3((down ? 1 : -1) * cameraSpeed), normalize(cross(VEC_Y, cameraFront), false))) as Vec3
+    // }
+    // let processSpace = (down: boolean) => {
+    //   // cameraPosSpeed = add(cameraPosSpeed, mult(mat3((down ? 1 : -1) * cameraMoveSpeed), cameraUp)) as Vec3
+    //   cameraMoveSpeed = add(cameraMoveSpeed, mult(mat3((down ? 1 : -1) * cameraSpeed), VEC_Y)) as Vec3
+    // }
+    // let processShift = (down: boolean) => {
+    //   // cameraPosSpeed = add(cameraPosSpeed, mult(mat3((down ? -1 : 1) * cameraMoveSpeed), cameraUp)) as Vec3
+    //   cameraMoveSpeed = add(cameraMoveSpeed, mult(mat3((down ? -1 : 1) * cameraSpeed), VEC_Y)) as Vec3
+    // }
     // ==================================
     // 模式切换
     // ==================================
@@ -640,6 +709,8 @@ define(["require", "exports", "../../framework/3d/WebGLHelper3d", "../../framewo
         canvasDOM.onmousewheel = function () { };
         window.onkeydown = function () { };
         window.onkeyup = function () { };
+        clearInterval(cameraMoveId);
+        cameraMoveId = 0;
     };
     // do it
     main();
