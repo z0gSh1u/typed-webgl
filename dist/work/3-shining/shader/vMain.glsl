@@ -21,13 +21,17 @@ uniform float uShiness;
 uniform vec4 uAmbientProduct, uDiffuseProduct, uSpecularProduct;
 // convery light result to fShader
 varying vec4 vLight;
-
+// to avoid normal changes when scaling
 uniform mat3 uWorldMatrixTransInv;
+// [a temporary work-around] frontend use lookAt to override global ctm, but light calculation need the original ctm
+uniform mat4 uLightCtm;
 
 void main() {
 
 	// vertex position
-	vec3 posToWorld = (uWorldMatrix * aPosition).xyz;
+	vec3 posToWorld = (uLightCtm * aPosition).xyz;
+	// vec3 posToWorld = (aPosition).xyz;
+	
 	// light calculation
 	vec3 lightPos = uLightPosition.xyz;
 	vec3 L = normalize(lightPos - posToWorld);

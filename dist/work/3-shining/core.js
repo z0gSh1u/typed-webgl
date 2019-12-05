@@ -69,6 +69,7 @@ define(["require", "exports", "../../framework/3d/WebGLHelper3d", "../../framewo
     var nBuffer; // 法向量缓冲区
     var tBuffer; // 材质顶点缓冲区
     var ctm; // 当前世界矩阵
+    var lightCtm; // [暂时的权宜] 由于观察需要覆写全局ctm，故保留一份备份用于光照计算
     var Pony; // 小马全身
     var PonyMaterial = new PhongLightModel_1.PhongLightModel({
         lightPosition: lightBulbPosition,
@@ -103,7 +104,7 @@ define(["require", "exports", "../../framework/3d/WebGLHelper3d", "../../framewo
     var ballVBuffer;
     var lastLightBulbPosition = vec3(0.0, 0.0, 0.0);
     var LIGHT_TRANSLATE_FACTOR = 0.00005;
-    var LIGHT_Z_PLUS = 0.015;
+    var LIGHT_Z_PLUS = 0.03;
     // ==================================
     // 透视使用
     // ==================================
@@ -126,7 +127,6 @@ define(["require", "exports", "../../framework/3d/WebGLHelper3d", "../../framewo
     var VEC_DOWN_MAX = vec4(0.0, Math.sin(ANGLE_DOWN_MAX), Math.cos(ANGLE_DOWN_MAX), 1);
     var cameraPos = vec3(0.0, 0.0, -3.0);
     var cameraFront = vec3(0.0, 0.0, 1.0);
-    //let cameraMoveSpeed = vec3(0.0, 0.0, 0.0)
     var cameraSpeed = 0.04;
     var cameraMoveId = 0; // 相机移动计时器编号
     // ==================================
@@ -169,6 +169,7 @@ define(["require", "exports", "../../framework/3d/WebGLHelper3d", "../../framewo
                     ballVBuffer = helper.createBuffer();
                     ctm = mat4();
                     cpm = mat4();
+                    lightCtm = mat4();
                     return [4 /*yield*/, startSceneInit()];
                 case 1:
                     _a.sent();
@@ -258,6 +259,7 @@ define(["require", "exports", "../../framework/3d/WebGLHelper3d", "../../framewo
             attributes: [],
             uniforms: [
                 { varName: 'uWorldMatrix', data: flatten(ctm), method: 'Matrix4fv' },
+                { varName: 'uLightCtm', data: flatten(lightCtm), method: 'Matrix4fv' },
                 { varName: 'uModelMatrix', data: flatten(Pony.modelMat), method: 'Matrix4fv' },
                 { varName: 'uProjectionMatrix', data: flatten(cpm), method: 'Matrix4fv' },
                 { varName: 'uLightPosition', data: __spreadArrays(lightBulbPosition, [1.0]), method: '4fv' },
@@ -451,6 +453,7 @@ define(["require", "exports", "../../framework/3d/WebGLHelper3d", "../../framewo
         ctm = mult(rotateX(-disY), ctm);
         ctm = mult(rotateY(-disX), ctm);
         mouseLastPos = mousePos;
+        lightCtm = ctm;
         reRender(ctm, true, false);
     };
     var abs = function (n) {
@@ -474,6 +477,7 @@ define(["require", "exports", "../../framework/3d/WebGLHelper3d", "../../framewo
         ctm = mult(rotateY(-vX * INTERVAL), ctm);
         vX = abs(vX) <= FRICTION * INTERVAL ? 0 : vX - FRICTION * INTERVAL * sign(vX);
         vY = abs(vY) <= FRICTION * INTERVAL ? 0 : vY - FRICTION * INTERVAL * sign(vY);
+        lightCtm = ctm;
         reRender(ctm, true, false);
     };
     // 鼠标侦听
@@ -514,25 +518,8 @@ define(["require", "exports", "../../framework/3d/WebGLHelper3d", "../../framewo
                 var newMousePoint = [evt2.offsetX, evt2.offsetY];
                 var translateVector = newMousePoint.map(function (v, i) { return v - mousePoint[i]; });
                 mousePoint = newMousePoint;
-                // let cfm4 = vec4(...cameraFront, 1)
-                // let cum4 = vec4(...cameraUp, 1)
-                // cfm4 = normalize(mult(rotateX(ROTATE_PER_X_FPV * translateVector[1]), cfm4) as Vec4, false) as Vec4
-                // cfm4 = normalize(mult(rotateY(ROTATE_PER_Y_FPV * translateVector[0]), cfm4) as Vec4, false) as Vec4
-                // cum4 = normalize(mult(rotateX(ROTATE_PER_X_FPV * translateVector[1]), cum4) as Vec4, false) as Vec4
-                // cum4 = normalize(mult(rotateY(ROTATE_PER_Y_FPV * translateVector[0]), cum4) as Vec4, false) as Vec4
-                // cameraFront = vec3(...cfm4.slice(0, 3))
-                // cameraUp = vec3(...cum4.slice(0, 3))
-                // let oldF = cameraFront, oldU = cameraUp
-                // cameraFront =
-                //   (mult(
-                //     WebGLUtils.rotateByAxis(cameraPos, subtract(cross(oldU, oldF), cameraPos) as Vec3, -1),
-                //     vec4(...oldF, 1.0)) as Vec4).slice(0, 3) as Vec3
-                // cameraUp =
-                //   (mult(
-                //     WebGLUtils.rotateByAxis(cameraPos, subtract(cross(oldU, oldF), cameraPos) as Vec3, -1),
-                //     vec4(...oldU, 1.0)) as Vec4).slice(0, 3) as Vec3
-                cameraFront = normalize(vec3.apply(void 0, mult(rotateY(ROTATE_PER_X_FPV * translateVector[0]), vec4.apply(void 0, __spreadArrays(cameraFront, [1]))).slice(0, 3)), false);
-                //cameraMoveSpeed = vec3(...(normalize(mult(rotateY(ROTATE_PER_X_FPV * translateVector[0]), vec4(...cameraMoveSpeed, 1)) as Vec4, false) as Vec4).slice(0, 3))
+                cameraFront = normalize(vec3.apply(void 0, mult(rotateY(ROTATE_PER_X_FPV * translateVector[0]), vec4.apply(void 0, __spreadArrays(cameraFront, [1])))
+                    .slice(0, 3)), false);
                 var initZ = Math.sqrt(cameraFront[0] * cameraFront[0] + cameraFront[2] * cameraFront[2]);
                 var tempVec = vec4(0, cameraFront[1], initZ, 1);
                 tempVec = mult(rotateX(ROTATE_PER_Y_FPV * translateVector[1]), tempVec);
@@ -547,6 +534,7 @@ define(["require", "exports", "../../framework/3d/WebGLHelper3d", "../../framewo
                 reRender(ctm, true, true);
             };
         };
+        // 如果想要不按住也可以鼠标观察，则注释下列钩子
         canvasDOM.onmouseup = function () {
             canvasDOM.onmousemove = function () { };
         };
@@ -561,51 +549,22 @@ define(["require", "exports", "../../framework/3d/WebGLHelper3d", "../../framewo
         '16' /*Shift*/: false
     };
     var listenKeyboardFPV = function () {
-        // let handlers: { [key: string]: (down: boolean) => void } = {
-        //   '87'/*W*/: processWKey,
-        //   '65'/*A*/: processAKey,
-        //   '83'/*S*/: processSKey,
-        //   '68'/*D*/: processDKey,
-        //   '32'/*Space*/: processSpace,
-        //   '16'/*Shift*/: processShift
-        // }
-        //cameraMoveSpeed = vec3(0, 0, 0)
         isKeyDown['87'] = isKeyDown['65'] = isKeyDown['83'] = isKeyDown['68'] = isKeyDown['32'] = isKeyDown['16'] = false;
         window.onkeydown = function (e) {
-            if (e && e.keyCode /* && !isKeyDown[e.keyCode]*/) {
+            if (e && e.keyCode) {
                 isKeyDown[e.keyCode] = true;
                 if (cameraMoveId == 0) {
                     cameraMoveId = window.setInterval(moveCamera, INTERVAL);
                 }
-                // try {
-                //   // handlers[e.keyCode.toString()].call(null, true)
-                //   isKeyDown[e.keyCode] = true
-                //   // if (cameraMoveId == 0) {
-                //   //   cameraMoveId = window.setInterval(moveCamera, INTERVAL)
-                //   // }
-                // } catch (ex) { }
             }
         };
         window.onkeyup = function (e) {
-            if (e && e.keyCode /* && isKeyDown[e.keyCode]*/) {
+            if (e && e.keyCode) {
                 isKeyDown[e.keyCode] = false;
-                // try {
-                //   // handlers[e.keyCode.toString()].call(null, false)
-                //   isKeyDown[e.keyCode] = false
-                //   // if (cameraMoveId == 0) {
-                //   //   cameraMoveId = window.setInterval(moveCamera, INTERVAL)
-                //   // }
-                // } catch (ex) { }
             }
         };
     };
     var moveCamera = function () {
-        // if (cameraMoveSpeed == vec3(0, 0, 0)) {
-        //   clearInterval(cameraMoveId)
-        //   cameraMoveId = 0
-        //   return
-        // }
-        // cameraPos = add(cameraPos, cameraMoveSpeed) as Vec3
         var cameraMoveSpeed = vec3(0, 0, 0);
         var frontVec = normalize(vec3(cameraFront[0], 0, cameraFront[2]), false);
         var leftVec = normalize(cross(VEC_Y, cameraFront), false);
@@ -642,37 +601,6 @@ define(["require", "exports", "../../framework/3d/WebGLHelper3d", "../../framewo
         cameraPos = add(cameraPos, cameraMoveSpeed);
         reRender(ctm);
     };
-    // let processWKey = (down: boolean) => {
-    //   //cameraPosSpeed = add(cameraPosSpeed, mult(mat3((down ? 1 : -1) * cameraMoveSpeed), cameraFront)) as Vec3
-    //   // cameraPos = add(cameraPos, cameraFront) as Vec3
-    //   cameraMoveSpeed = add(cameraMoveSpeed, mult(mat3((down ? 1 : -1) * cameraSpeed), normalize(vec3(cameraFront[0], 0, cameraFront[2]), false))) as Vec3
-    // }
-    // let processSKey = (down: boolean) => {
-    //   //cameraPosSpeed = add(cameraPosSpeed, mult(mat3((down ? -1 : 1) * cameraMoveSpeed), cameraFront)) as Vec3
-    //   cameraMoveSpeed = add(cameraMoveSpeed, mult(mat3((down ? -1 : 1) * cameraSpeed), normalize(vec3(cameraFront[0], 0, cameraFront[2]), false))) as Vec3
-    // }
-    // let processAKey = (down: boolean) => {
-    //   // cameraPosSpeed =
-    //   //   add(cameraPosSpeed,
-    //   //     mult(mat3((down ? 1 : -1) * cameraMoveSpeed),
-    //   //       normalize(cross(cameraUp, cameraFront) as Vec3, false))) as Vec3
-    //   cameraMoveSpeed = add(cameraMoveSpeed, mult(mat3((down ? -1 : 1) * cameraSpeed), normalize(cross(VEC_Y, cameraFront), false))) as Vec3
-    // }
-    // let processDKey = (down: boolean) => {
-    //   // cameraPosSpeed =
-    //   //   add(cameraPosSpeed,
-    //   //     mult(mat3((down ? 1 : -1) * cameraMoveSpeed),
-    //   //       normalize(cross(cameraFront, cameraUp) as Vec3, false))) as Vec3
-    //   cameraMoveSpeed = add(cameraMoveSpeed, mult(mat3((down ? 1 : -1) * cameraSpeed), normalize(cross(VEC_Y, cameraFront), false))) as Vec3
-    // }
-    // let processSpace = (down: boolean) => {
-    //   // cameraPosSpeed = add(cameraPosSpeed, mult(mat3((down ? 1 : -1) * cameraMoveSpeed), cameraUp)) as Vec3
-    //   cameraMoveSpeed = add(cameraMoveSpeed, mult(mat3((down ? 1 : -1) * cameraSpeed), VEC_Y)) as Vec3
-    // }
-    // let processShift = (down: boolean) => {
-    //   // cameraPosSpeed = add(cameraPosSpeed, mult(mat3((down ? -1 : 1) * cameraMoveSpeed), cameraUp)) as Vec3
-    //   cameraMoveSpeed = add(cameraMoveSpeed, mult(mat3((down ? -1 : 1) * cameraSpeed), VEC_Y)) as Vec3
-    // }
     // ==================================
     // 模式切换
     // ==================================
@@ -684,7 +612,6 @@ define(["require", "exports", "../../framework/3d/WebGLHelper3d", "../../framewo
             eval("document.querySelector('#mode_" + currentMode + "').style.display = 'inline-block'");
             // 内部模式切换
             clearListeners();
-            reRender(ctm);
             switch (currentMode) {
                 case MODES.TRACKBALL:
                     listenMouseTrackBall();
@@ -699,6 +626,8 @@ define(["require", "exports", "../../framework/3d/WebGLHelper3d", "../../framewo
             }
             // 消除焦点
             document.querySelector('#modeToggler').blur();
+            gl.clearColor(0, 0, 0, 0);
+            reRender(ctm, true, true);
         };
     };
     var clearListeners = function () {

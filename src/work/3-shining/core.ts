@@ -24,6 +24,7 @@ let vBuffer: WebGLBuffer // 顶点缓冲区
 let nBuffer: WebGLBuffer // 法向量缓冲区
 let tBuffer: WebGLBuffer // 材质顶点缓冲区
 let ctm: Mat // 当前世界矩阵
+let lightCtm: Mat // [暂时的权宜] 由于观察需要覆写全局ctm，故保留一份备份用于光照计算
 let Pony: DrawingPackage3d // 小马全身
 let PonyMaterial = new PhongLightModel({ // 小马光照参数
   lightPosition: lightBulbPosition,
@@ -58,7 +59,7 @@ let Ball: DrawingPackage3d
 let ballVBuffer: WebGLBuffer
 let lastLightBulbPosition = vec3(0.0, 0.0, 0.0)
 const LIGHT_TRANSLATE_FACTOR = 0.00005
-const LIGHT_Z_PLUS = 0.015
+const LIGHT_Z_PLUS = 0.03
 // ==================================
 // 透视使用
 // ==================================
@@ -81,7 +82,6 @@ const VEC_UP_MAX = vec4(0.0, Math.sin(ANGLE_UP_MAX), Math.cos(ANGLE_UP_MAX), 1)
 const VEC_DOWN_MAX = vec4(0.0, Math.sin(ANGLE_DOWN_MAX), Math.cos(ANGLE_DOWN_MAX), 1)
 let cameraPos = vec3(0.0, 0.0, -3.0)
 let cameraFront = vec3(0.0, 0.0, 1.0)
-//let cameraMoveSpeed = vec3(0.0, 0.0, 0.0)
 let cameraSpeed = 0.04
 let cameraMoveId: number = 0 // 相机移动计时器编号
 // ==================================
@@ -121,6 +121,7 @@ let main = async () => {
   ballVBuffer = helper.createBuffer()
   ctm = mat4()
   cpm = mat4()
+  lightCtm = mat4()
   await startSceneInit()
   initPositionInput()
   initPonyMaterialInput()
@@ -193,6 +194,7 @@ let reRenderMain = (ctm: Mat) => {
     attributes: [],
     uniforms: [
       { varName: 'uWorldMatrix', data: flatten(ctm), method: 'Matrix4fv' },
+      { varName: 'uLightCtm', data: flatten(lightCtm), method: 'Matrix4fv' },
       { varName: 'uModelMatrix', data: flatten(Pony.modelMat), method: 'Matrix4fv' },
       { varName: 'uProjectionMatrix', data: flatten(cpm), method: 'Matrix4fv' },
       { varName: 'uLightPosition', data: [...lightBulbPosition, 1.0], method: '4fv' },
@@ -393,6 +395,7 @@ let rotateWithMouse = (e: MouseEvent) => {
   ctm = mult(rotateX(-disY), ctm) as Mat
   ctm = mult(rotateY(-disX), ctm) as Mat
   mouseLastPos = mousePos
+  lightCtm = ctm
   reRender(ctm, true, false)
 }
 let abs = (n: number): number => {
@@ -415,6 +418,7 @@ let slowDown = () => {
   ctm = mult(rotateY(-vX * INTERVAL), ctm) as Mat
   vX = abs(vX) <= FRICTION * INTERVAL ? 0 : vX - FRICTION * INTERVAL * sign(vX)
   vY = abs(vY) <= FRICTION * INTERVAL ? 0 : vY - FRICTION * INTERVAL * sign(vY)
+  lightCtm = ctm
   reRender(ctm, true, false)
 }
 // 鼠标侦听
@@ -455,31 +459,16 @@ let listenMouseToTurnCamera = () => {
       let newMousePoint = [evt2.offsetX, evt2.offsetY] as Vec2
       let translateVector = newMousePoint.map((v, i) => v - mousePoint[i]) as Vec2
       mousePoint = newMousePoint
-      // let cfm4 = vec4(...cameraFront, 1)
-      // let cum4 = vec4(...cameraUp, 1)
-      // cfm4 = normalize(mult(rotateX(ROTATE_PER_X_FPV * translateVector[1]), cfm4) as Vec4, false) as Vec4
-      // cfm4 = normalize(mult(rotateY(ROTATE_PER_Y_FPV * translateVector[0]), cfm4) as Vec4, false) as Vec4
-      // cum4 = normalize(mult(rotateX(ROTATE_PER_X_FPV * translateVector[1]), cum4) as Vec4, false) as Vec4
-      // cum4 = normalize(mult(rotateY(ROTATE_PER_Y_FPV * translateVector[0]), cum4) as Vec4, false) as Vec4
-      // cameraFront = vec3(...cfm4.slice(0, 3))
-      // cameraUp = vec3(...cum4.slice(0, 3))
-      // let oldF = cameraFront, oldU = cameraUp
-      // cameraFront =
-      //   (mult(
-      //     WebGLUtils.rotateByAxis(cameraPos, subtract(cross(oldU, oldF), cameraPos) as Vec3, -1),
-      //     vec4(...oldF, 1.0)) as Vec4).slice(0, 3) as Vec3
-      // cameraUp =
-      //   (mult(
-      //     WebGLUtils.rotateByAxis(cameraPos, subtract(cross(oldU, oldF), cameraPos) as Vec3, -1),
-      //     vec4(...oldU, 1.0)) as Vec4).slice(0, 3) as Vec3
-      cameraFront = normalize(vec3(...(mult(rotateY(ROTATE_PER_X_FPV * translateVector[0]), vec4(...cameraFront, 1)) as Vec4).slice(0, 3)), false) as Vec3
-      //cameraMoveSpeed = vec3(...(normalize(mult(rotateY(ROTATE_PER_X_FPV * translateVector[0]), vec4(...cameraMoveSpeed, 1)) as Vec4, false) as Vec4).slice(0, 3))
+      cameraFront = normalize(
+        vec3(...(mult(rotateY(ROTATE_PER_X_FPV * translateVector[0]),
+          vec4(...cameraFront, 1)) as Vec4)
+          .slice(0, 3)), false) as Vec3
       let initZ = Math.sqrt(cameraFront[0] * cameraFront[0] + cameraFront[2] * cameraFront[2])
       let tempVec = vec4(0, cameraFront[1], initZ, 1)
       tempVec = mult(rotateX(ROTATE_PER_Y_FPV * translateVector[1]), tempVec) as Vec4
-      if(tempVec[1] > VEC_UP_MAX[1] && tempVec[2] >= 0 || tempVec[1] > 0 && tempVec[2] < 0){
+      if (tempVec[1] > VEC_UP_MAX[1] && tempVec[2] >= 0 || tempVec[1] > 0 && tempVec[2] < 0) {
         tempVec = VEC_UP_MAX
-      }else if(tempVec[1] < VEC_DOWN_MAX[1] && tempVec[2] >= 0 || tempVec[1] < 0 && tempVec[2] < 0){
+      } else if (tempVec[1] < VEC_DOWN_MAX[1] && tempVec[2] >= 0 || tempVec[1] < 0 && tempVec[2] < 0) {
         tempVec = VEC_DOWN_MAX
       }
       let newZ = tempVec[2]
@@ -487,6 +476,7 @@ let listenMouseToTurnCamera = () => {
       reRender(ctm, true, true)
     }
   }
+  // 如果想要不按住也可以鼠标观察，则注释下列钩子
   canvasDOM.onmouseup = () => {
     canvasDOM.onmousemove = () => { }
   }
@@ -501,81 +491,51 @@ let isKeyDown: { [key: string]: boolean } = {
   '16'/*Shift*/: false
 }
 let listenKeyboardFPV = () => {
-  // let handlers: { [key: string]: (down: boolean) => void } = {
-  //   '87'/*W*/: processWKey,
-  //   '65'/*A*/: processAKey,
-  //   '83'/*S*/: processSKey,
-  //   '68'/*D*/: processDKey,
-  //   '32'/*Space*/: processSpace,
-  //   '16'/*Shift*/: processShift
-  // }
-  
-  //cameraMoveSpeed = vec3(0, 0, 0)
   isKeyDown['87'] = isKeyDown['65'] = isKeyDown['83'] = isKeyDown['68'] = isKeyDown['32'] = isKeyDown['16'] = false
   window.onkeydown = (e: KeyboardEvent) => {
-    if (e && e.keyCode/* && !isKeyDown[e.keyCode]*/) {
+    if (e && e.keyCode) {
       isKeyDown[e.keyCode] = true
-      if(cameraMoveId == 0){
+      if (cameraMoveId == 0) {
         cameraMoveId = window.setInterval(moveCamera, INTERVAL)
       }
-      // try {
-      //   // handlers[e.keyCode.toString()].call(null, true)
-      //   isKeyDown[e.keyCode] = true
-      //   // if (cameraMoveId == 0) {
-      //   //   cameraMoveId = window.setInterval(moveCamera, INTERVAL)
-      //   // }
-      // } catch (ex) { }
     }
   }
   window.onkeyup = (e: KeyboardEvent) => {
-    if (e && e.keyCode/* && isKeyDown[e.keyCode]*/) {
+    if (e && e.keyCode) {
       isKeyDown[e.keyCode] = false
-      // try {
-      //   // handlers[e.keyCode.toString()].call(null, false)
-      //   isKeyDown[e.keyCode] = false
-      //   // if (cameraMoveId == 0) {
-      //   //   cameraMoveId = window.setInterval(moveCamera, INTERVAL)
-      //   // }
-      // } catch (ex) { }
     }
   }
 }
 let moveCamera = () => {
-  // if (cameraMoveSpeed == vec3(0, 0, 0)) {
-  //   clearInterval(cameraMoveId)
-  //   cameraMoveId = 0
-  //   return
-  // }
-  // cameraPos = add(cameraPos, cameraMoveSpeed) as Vec3
   let cameraMoveSpeed = vec3(0, 0, 0)
   let frontVec = normalize(vec3(cameraFront[0], 0, cameraFront[2]), false)
   let leftVec = normalize(cross(VEC_Y, cameraFront), false)
   let moveFlag = false
-  if(isKeyDown['87'/*W*/]){
+  if (isKeyDown['87'/*W*/]) {
     cameraMoveSpeed = add(cameraMoveSpeed, mult(mat3(cameraSpeed), frontVec)) as Vec3
     moveFlag = true
   }
-  if(isKeyDown['83'/*S*/]){
+  if (isKeyDown['83'/*S*/]) {
     cameraMoveSpeed = add(cameraMoveSpeed, mult(mat3(-cameraSpeed), frontVec)) as Vec3
     moveFlag = true
   }
-  if(isKeyDown['65'/*A*/]){
+  if (isKeyDown['65'/*A*/]) {
     cameraMoveSpeed = add(cameraMoveSpeed, mult(mat3(-cameraSpeed), leftVec)) as Vec3
     moveFlag = true
   }
-  if(isKeyDown['68'/*D*/]){
+  if (isKeyDown['68'/*D*/]) {
     cameraMoveSpeed = add(cameraMoveSpeed, mult(mat3(cameraSpeed), leftVec)) as Vec3
     moveFlag = true
   }
-  if(isKeyDown['32'/*Space*/]){
+  if (isKeyDown['32'/*Space*/]) {
     cameraMoveSpeed = add(cameraMoveSpeed, mult(mat3(cameraSpeed), VEC_Y)) as Vec3
     moveFlag = true
   }
-  if(isKeyDown['16'/*Shift*/]){
+  if (isKeyDown['16'/*Shift*/]) {
     cameraMoveSpeed = add(cameraMoveSpeed, mult(mat3(-cameraSpeed), VEC_Y)) as Vec3
     moveFlag = true
   }
-  if(!moveFlag){
+  if (!moveFlag) {
     clearInterval(cameraMoveId)
     cameraMoveId = 0
     return
@@ -583,37 +543,6 @@ let moveCamera = () => {
   cameraPos = add(cameraPos, cameraMoveSpeed) as Vec3
   reRender(ctm)
 }
-// let processWKey = (down: boolean) => {
-//   //cameraPosSpeed = add(cameraPosSpeed, mult(mat3((down ? 1 : -1) * cameraMoveSpeed), cameraFront)) as Vec3
-//   // cameraPos = add(cameraPos, cameraFront) as Vec3
-//   cameraMoveSpeed = add(cameraMoveSpeed, mult(mat3((down ? 1 : -1) * cameraSpeed), normalize(vec3(cameraFront[0], 0, cameraFront[2]), false))) as Vec3
-// }
-// let processSKey = (down: boolean) => {
-//   //cameraPosSpeed = add(cameraPosSpeed, mult(mat3((down ? -1 : 1) * cameraMoveSpeed), cameraFront)) as Vec3
-//   cameraMoveSpeed = add(cameraMoveSpeed, mult(mat3((down ? -1 : 1) * cameraSpeed), normalize(vec3(cameraFront[0], 0, cameraFront[2]), false))) as Vec3
-// }
-// let processAKey = (down: boolean) => {
-//   // cameraPosSpeed =
-//   //   add(cameraPosSpeed,
-//   //     mult(mat3((down ? 1 : -1) * cameraMoveSpeed),
-//   //       normalize(cross(cameraUp, cameraFront) as Vec3, false))) as Vec3
-//   cameraMoveSpeed = add(cameraMoveSpeed, mult(mat3((down ? -1 : 1) * cameraSpeed), normalize(cross(VEC_Y, cameraFront), false))) as Vec3
-// }
-// let processDKey = (down: boolean) => {
-//   // cameraPosSpeed =
-//   //   add(cameraPosSpeed,
-//   //     mult(mat3((down ? 1 : -1) * cameraMoveSpeed),
-//   //       normalize(cross(cameraFront, cameraUp) as Vec3, false))) as Vec3
-//   cameraMoveSpeed = add(cameraMoveSpeed, mult(mat3((down ? 1 : -1) * cameraSpeed), normalize(cross(VEC_Y, cameraFront), false))) as Vec3
-// }
-// let processSpace = (down: boolean) => {
-//   // cameraPosSpeed = add(cameraPosSpeed, mult(mat3((down ? 1 : -1) * cameraMoveSpeed), cameraUp)) as Vec3
-//   cameraMoveSpeed = add(cameraMoveSpeed, mult(mat3((down ? 1 : -1) * cameraSpeed), VEC_Y)) as Vec3
-// }
-// let processShift = (down: boolean) => {
-//   // cameraPosSpeed = add(cameraPosSpeed, mult(mat3((down ? -1 : 1) * cameraMoveSpeed), cameraUp)) as Vec3
-//   cameraMoveSpeed = add(cameraMoveSpeed, mult(mat3((down ? -1 : 1) * cameraSpeed), VEC_Y)) as Vec3
-// }
 // ==================================
 // 模式切换
 // ==================================
@@ -625,7 +554,6 @@ let listenModeToggler = () => {
     eval(`document.querySelector('#mode_${currentMode}').style.display = 'inline-block'`)
     // 内部模式切换
     clearListeners()
-    reRender(ctm)
     switch (currentMode) {
       case MODES.TRACKBALL: listenMouseTrackBall(); break
       case MODES.LIGHT: listenMouseLightInteract(); break
@@ -636,6 +564,8 @@ let listenModeToggler = () => {
     }
     // 消除焦点
     (document.querySelector('#modeToggler') as HTMLButtonElement).blur()
+    gl.clearColor(0, 0, 0, 0)
+    reRender(ctm, true, true)
   }
 }
 let clearListeners = () => {
