@@ -109,7 +109,7 @@ define(["require", "exports", "../../framework/3d/WebGLHelper3d", "../../framewo
     // ==================================
     var cpm;
     var fovy = 45.0;
-    var aspect = -1.0;
+    var aspect = -1;
     var near = 0.1;
     var far = 5.0;
     var preCalculatedCPM = perspective(fovy, aspect, near, far);
@@ -117,13 +117,13 @@ define(["require", "exports", "../../framework/3d/WebGLHelper3d", "../../framewo
     // 观察相机使用
     // !! 请注意，pos->at与pos->up不能共线 !!
     // ==================================
-    var ROTATE_PER_Y_FPV = 0.05;
-    var ROTATE_PER_X_FPV = 0.05;
-    var cameraPos = vec3(0.0, 0.4, -3.0);
-    var camearaFront = vec3(0.0, 0.0, 1.0);
+    var ROTATE_PER_Y_FPV = 0.09;
+    var ROTATE_PER_X_FPV = 0.09;
+    var cameraPos = vec3(0.0, 0.0, -3.0);
+    var cameraFront = vec3(0.0, 0.0, 1.0);
     var cameraUp = vec3(0.0, 1.0, 0.0);
     var cameraPosSpeed = vec3(0.0, 0.0, 0.0);
-    var cameraMoveSpeed = 0.02;
+    var cameraMoveSpeed = 0.04;
     var cameraMoveId = 0; // 相机移动计时器编号
     // ==================================
     // 跟踪球使用
@@ -139,6 +139,9 @@ define(["require", "exports", "../../framework/3d/WebGLHelper3d", "../../framewo
     var vY = 0; // Y轴旋转速度
     var curTick;
     var lastTick;
+    // ==================================
+    // 材质互动、尾部摆动
+    // ==================================
     var PonyMaterialInputDOMs = [];
     var PonyMaterialCorrespondings = [];
     // 初始化
@@ -165,6 +168,12 @@ define(["require", "exports", "../../framework/3d/WebGLHelper3d", "../../framewo
                     return [4 /*yield*/, startSceneInit()];
                 case 1:
                     _a.sent();
+                    initPositionInput();
+                    initPonyMaterialInput();
+                    listenPonyMaterialInput();
+                    listenPositionInput();
+                    listenModeToggler();
+                    listenMouseTrackBall();
                     return [2 /*return*/];
             }
         });
@@ -323,11 +332,13 @@ define(["require", "exports", "../../framework/3d/WebGLHelper3d", "../../framewo
     var reRender = function (ctm, reCalulateMaterialProducts, lightPosChanged) {
         if (reCalulateMaterialProducts === void 0) { reCalulateMaterialProducts = false; }
         if (lightPosChanged === void 0) { lightPosChanged = false; }
-        reCalulateMaterialProducts && PonyMaterial.reCalculateProducts() && HairMaterial.reCalculateProducts();
-        // ctm = lookAt(cameraPos, add(cameraPos, camearaFront) as Vec3, camearaUp)
+        if (reCalulateMaterialProducts) {
+            HairMaterial.reCalculateProducts();
+            PonyMaterial.reCalculateProducts();
+        }
         if (currentMode == MODES.FPV) {
             cpm = preCalculatedCPM;
-            ctm = lookAt(cameraPos, add(cameraPos, camearaFront), cameraUp);
+            ctm = lookAt(cameraPos, add(cameraPos, cameraFront), cameraUp);
         }
         else {
             cpm = mat4();
@@ -483,9 +494,7 @@ define(["require", "exports", "../../framework/3d/WebGLHelper3d", "../../framewo
     // ==================================
     // 第一人称视角实现
     // ==================================
-    // ==================================
     // 鼠标侦听
-    // ==================================
     var listenMouseToTurnCamera = function () {
         canvasDOM.onmousedown = function (evt) {
             var mousePoint = [evt.offsetX, evt.offsetY];
@@ -501,13 +510,13 @@ define(["require", "exports", "../../framework/3d/WebGLHelper3d", "../../framewo
                 var newMousePoint = [evt2.offsetX, evt2.offsetY];
                 var translateVector = newMousePoint.map(function (v, i) { return v - mousePoint[i]; });
                 mousePoint = newMousePoint;
-                var cfm4 = vec4(camearaFront[0], camearaFront[1], camearaFront[2], 1);
+                var cfm4 = vec4(cameraFront[0], cameraFront[1], cameraFront[2], 1);
                 var cum4 = vec4(cameraUp[0], cameraUp[1], cameraUp[2], 1);
                 cfm4 = normalize(mult(rotateX(ROTATE_PER_X_FPV * translateVector[1]), cfm4), false);
                 cfm4 = normalize(mult(rotateY(ROTATE_PER_Y_FPV * translateVector[0]), cfm4), false);
                 cum4 = normalize(mult(rotateX(ROTATE_PER_X_FPV * translateVector[1]), cum4), false);
                 cum4 = normalize(mult(rotateY(ROTATE_PER_Y_FPV * translateVector[0]), cum4), false);
-                camearaFront = vec3(cfm4[0], cfm4[1], cfm4[2]);
+                cameraFront = vec3(cfm4[0], cfm4[1], cfm4[2]);
                 cameraUp = vec3(cum4[0], cum4[1], cum4[2]);
                 reRender(ctm, true, true);
             };
@@ -516,9 +525,7 @@ define(["require", "exports", "../../framework/3d/WebGLHelper3d", "../../framewo
             canvasDOM.onmousemove = function () { };
         };
     };
-    // ==================================
     // 键盘侦听
-    // ==================================
     var listenKeyboardFPV = function () {
         var handlers = {
             '87' /*W*/: processWKey,
@@ -543,7 +550,7 @@ define(["require", "exports", "../../framework/3d/WebGLHelper3d", "../../framewo
                     handlers[e.keyCode.toString()].call(null, true);
                     isKeyDown[e.keyCode] = true;
                     if (cameraMoveId == 0) {
-                        cameraMoveId = setInterval(moveCamera, INTERVAL);
+                        cameraMoveId = window.setInterval(moveCamera, INTERVAL);
                     }
                 }
                 catch (ex) { }
@@ -555,7 +562,7 @@ define(["require", "exports", "../../framework/3d/WebGLHelper3d", "../../framewo
                     handlers[e.keyCode.toString()].call(null, false);
                     isKeyDown[e.keyCode] = false;
                     if (cameraMoveId == 0) {
-                        cameraMoveId = setInterval(moveCamera, INTERVAL);
+                        cameraMoveId = window.setInterval(moveCamera, INTERVAL);
                     }
                 }
                 catch (ex) { }
@@ -628,10 +635,4 @@ define(["require", "exports", "../../framework/3d/WebGLHelper3d", "../../framewo
     };
     // do it
     main();
-    initPositionInput();
-    initPonyMaterialInput();
-    listenPonyMaterialInput();
-    listenPositionInput();
-    listenModeToggler();
-    listenMouseTrackBall();
 });

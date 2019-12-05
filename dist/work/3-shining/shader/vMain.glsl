@@ -11,8 +11,6 @@ varying vec2 vTexCoord;
 uniform mat4 uWorldMatrix;
 // transformation matrix under self coordinate system
 uniform mat4 uModelMatrix;
-// transformation matrix under view coordinate system
-uniform mat4 uViewMatrix;
 // transformation matrix for toushi
 uniform mat4 uProjectionMatrix;
 // light position
