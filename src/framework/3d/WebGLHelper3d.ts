@@ -171,6 +171,20 @@ export class WebGLHelper3d {
   }
 
   /**
+   * Send cubemap texture image to GPU.
+   */
+  public sendCubeMapTextureToGPU(image: HTMLImageElement, position: '+x' | '+y' | '+z' | '-x' | '-y' | '-z') {
+    let pos = position.replace('x', 'X').replace('y', 'Y').replace('z', 'Z')
+      .replace('+', 'POSITIVE_').replace('-', 'NEGATIVE_')
+    let tex; let gl = this.gl
+    let target: number = eval(`gl.TEXTURE_CUBE_MAP_${pos}`)
+    tex = gl.createTexture() as WebGLTexture
+    gl.bindTexture(gl.TEXTURE_CUBE_MAP, tex)
+    gl.texImage2D(target, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, image)
+    gl.generateMipmap(gl.TEXTURE_CUBE_MAP)
+  }
+
+  /**
    * Analyze f?s to v?s.
    */
   public analyzeFtoV(obj: DrawingObject3d, which: 'fs' | 'fts' | 'fns'): Vec2[] | Vec3[] {

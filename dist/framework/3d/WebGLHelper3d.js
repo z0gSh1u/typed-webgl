@@ -149,6 +149,20 @@ define(["require", "exports"], function (require, exports) {
             }
         };
         /**
+         * Send cubemap texture image to GPU.
+         */
+        WebGLHelper3d.prototype.sendCubeMapTextureToGPU = function (image, position) {
+            var pos = position.replace('x', 'X').replace('y', 'Y').replace('z', 'Z')
+                .replace('+', 'POSITIVE_').replace('-', 'NEGATIVE_');
+            var tex;
+            var gl = this.gl;
+            var target = eval("gl.TEXTURE_CUBE_MAP_" + pos);
+            tex = gl.createTexture();
+            gl.bindTexture(gl.TEXTURE_CUBE_MAP, tex);
+            gl.texImage2D(target, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, image);
+            gl.generateMipmap(gl.TEXTURE_CUBE_MAP);
+        };
+        /**
          * Analyze f?s to v?s.
          */
         WebGLHelper3d.prototype.analyzeFtoV = function (obj, which) {

@@ -13,486 +13,282 @@ import { PhongLightModel } from '../../framework/3d/PhongLightModel'
 let canvasDOM: HTMLCanvasElement = document.querySelector('#cvs') as HTMLCanvasElement
 let gl: WebGLRenderingContext = canvasDOM.getContext('webgl', { alpha: true, premultipliedAlpha: false }) as WebGLRenderingContext
 let helper: WebGLHelper3d
-let PROGRAMS = { MAIN: 0, BACKGROUND: 1, BALL: 2 }
-let MODES = { TRACKBALL: 0, FPV: 1, LIGHT: 2 }
-let currentMode = MODES.TRACKBALL
-// ==================================
-// 主体渲染使用
-// ==================================
-let lightBulbPosition = vec3(0.0, 0.0, 0.0) // 光源位置
-let vBuffer: WebGLBuffer // 顶点缓冲区
-let nBuffer: WebGLBuffer // 法向量缓冲区
-let tBuffer: WebGLBuffer // 材质顶点缓冲区
-let ctm: Mat // 当前世界矩阵
-let Pony: DrawingPackage3d // 小马全身
-let PonyMaterial = new PhongLightModel({ // 小马光照参数
-  lightPosition: lightBulbPosition,
-  ambientColor: [255, 255, 255],
-  ambientMaterial: [200, 200, 200],
-  diffuseColor: [255, 255, 255],
-  diffuseMaterial: [66, 66, 66],
-  specularColor: [255, 255, 255],
-  specularMaterial: [200, 200, 200],
-  materialShiness: 30.0
-})
-let HairMaterial = new PhongLightModel({ // 头发光照参数
-  lightPosition: lightBulbPosition,
-  ambientColor: [64, 200, 200],
-  ambientMaterial: [100, 100, 100],
-  diffuseColor: [64, 200, 200],
-  diffuseMaterial: [255, 255, 255],
-  specularColor: [64, 200, 200],
-  specularMaterial: [10, 10, 10],
-  materialShiness: 80.0
-})
-// ==================================
-// 背景渲染使用
-// ==================================
-let BackgroundTexture: WebGLTexture
-let bgVBuffer: WebGLBuffer
-let bgTBuffer: WebGLBuffer
-// ==================================
-// 光球渲染使用
-// ==================================
-let Ball: DrawingPackage3d
-let ballVBuffer: WebGLBuffer
-let lastLightBulbPosition = vec3(0.0, 0.0, 0.0)
-const LIGHT_TRANSLATE_FACTOR = 0.00005
-const LIGHT_Z_PLUS = 0.015
+let PROGRAMS = {
+  BOX: 0, PONY: 1
+}
+let ctm: Mat
 // ==================================
 // 透视使用
 // ==================================
 let cpm: Mat
-let fovy = 90.0
-let aspect = 1.0
-let near = 0.5
+let fovy = 45.0
+let aspect = -16 / 9
+let near = 0.1
 let far = 5.0
 let preCalculatedCPM = perspective(fovy, aspect, near, far)
+// ==================================
+// 盒空间
+// ==================================
+let SkyBoxVBuffer: WebGLBuffer
 // ==================================
 // 观察相机使用
 // !! 请注意，pos->at与pos->up不能共线 !!
 // ==================================
-let cameraPos = vec3(0.0, 0.5, 0.0)
-let cameraAt = vec3(0.1, 0.1, 0.0)
-let cameraUp = vec3(0, 0.1, 0)
-// ==================================
-// 跟踪球使用
-// ==================================
-const FRICTION = 0.0006 // 模拟摩擦力，每毫秒降低的速度
+const ROTATE_PER_Y_FPV = 0.09
+const ROTATE_PER_X_FPV = 0.09
+const VEC_Y = vec3(0.0, 1.0, 0.0)
+const ANGLE_UP_MAX = 89
+const ANGLE_DOWN_MAX = -89
+const VEC_UP_MAX = vec4(0.0, Math.sin(ANGLE_UP_MAX), Math.cos(ANGLE_UP_MAX), 1)
+const VEC_DOWN_MAX = vec4(0.0, Math.sin(ANGLE_DOWN_MAX), Math.cos(ANGLE_DOWN_MAX), 1)
 const INTERVAL = 40 // 速度降低的毫秒间隔
-const ROTATE_PER_X = 0.2 // X轴鼠标拖动旋转的比例
-const ROTATE_PER_Y = 0.2 // Y轴鼠标拖动旋转的比例
-let slowDownId: number // 减速计时器编号
-let isMouseDown = false
-let mouseLastPos: Vec2 // 上一次鼠标位置
-let vX = 0 // X轴旋转速度
-let vY = 0 // Y轴旋转速度
 let curTick: number
 let lastTick: number
-let PonyMaterialInputDOMs: Array<string> = []
-let PonyMaterialCorrespondings: Array<string> = []
+let cameraPos = vec3(0.0, 0.0, -1.0)
+let cameraFront = vec3(0.0, 0.1, 1.0)
+let cameraSpeed = 0.04
+let cameraMoveId: number = 0 // 相机移动计时器编号
+
 // 初始化
 let main = async () => {
   WebGLUtils.initializeCanvas(gl, canvasDOM)
   helper = new WebGLHelper3d(canvasDOM, gl, [
-    WebGLUtils.initializeShaders(gl, './shader/vMain.glsl', './shader/fMain.glsl'),
-    WebGLUtils.initializeShaders(gl, './shader/vBackground.glsl', './shader/fBackground.glsl'),
-    WebGLUtils.initializeShaders(gl, './shader/vBall.glsl', './shader/fBall.glsl'),
+    WebGLUtils.initializeShaders(gl, './shader/vSkyBox.glsl', './shader/fSkyBox.glsl'),
   ])
+
   gl.enable(gl.DEPTH_TEST)
-  // 初始化各buffer
-  vBuffer = helper.createBuffer()
-  tBuffer = helper.createBuffer()
-  nBuffer = helper.createBuffer()
-  bgVBuffer = helper.createBuffer()
-  bgTBuffer = helper.createBuffer()
-  ballVBuffer = helper.createBuffer()
   ctm = mat4()
-  cpm = mat4()
-  await startSceneInit()
+  // 初始化各buffer
+  SkyBoxVBuffer = helper.createBuffer()
+  await initBox()
+  listenKeyboardFPV()
+  listenMouseToTurnCamera()
 }
-// 必须使用该函数修改前端光照位置
-let modifyLightBulbPosition = (newPos: Vec3) => {
-  lastLightBulbPosition = lightBulbPosition
-  lightBulbPosition = newPos
-  initPositionInput()
-}
-// 场景初始化
-let startSceneInit = async () => {
-  // 初始化背景图，分配9号纹理
-  helper.sendTextureImageToGPU(await WebGLUtils.loadImageAsync(['./model/bg.png']), 9, 10)
-  // 设定光球模型
-  Ball = new DrawingPackage3d(WebGLUtils.scaleMat(0.5, 0.5, 0.5), ...[
-    new DrawingObject3d('ball', './model/normed/ball.obj')
-  ])
-  // 设定小马模型
-  Pony = new DrawingPackage3d(mult(translate(0, -0.35, 0), mult(rotateZ(180), rotateX(270))) as Mat, ...[
-    new DrawingObject3d('body', './model/normed/Pony/pony.obj', './model/texture/Pony/pony.png', 0), // 身体
-    new DrawingObject3d('tail', './model/normed/Pony/tail.obj', './model/texture/Pony/tail.png', 1), // 尾巴
-    new DrawingObject3d('hairBack', './model/normed/Pony/hairBack.obj', './model/texture/Pony/hairBack.png', 2), // 头发后
-    new DrawingObject3d('hairFront', './model/normed/Pony/hairFront.obj', './model/texture/Pony/hairFront.png', 3), // 头发前
-    new DrawingObject3d('horn', './model/normed/Pony/horn.obj', './model/texture/Pony/horn.png', 4), // 角
-    new DrawingObject3d('leftEye', './model/normed/Pony/leftEye.obj', './model/texture/Pony/leftEye.png', 5), // 左眼
-    new DrawingObject3d('rightEye', './model/normed/Pony/rightEye.obj', './model/texture/Pony/rightEye.png', 6), // 右眼
-    new DrawingObject3d('teeth', './model/normed/Pony/teeth.obj', './model/texture/Pony/teeth.png', 7), // 牙
-    new DrawingObject3d('eyelashes', './model/normed/Pony/eyelashes.obj', './model/texture/Pony/eyelashes.png', 8), // 睫毛
-  ])
-  // 设置小马纹理，0-8号
-  let urls: Array<string> = []
-  Pony.innerList.forEach(obj => {
-    urls.push(obj.texturePath)
-  })
-  helper.sendTextureImageToGPU(await WebGLUtils.loadImageAsync(urls), 0, 9)
-  reRender(ctm)
-}
-// 重绘背景
-let reRenderBackground = () => {
-  helper.switchProgram(PROGRAMS.BACKGROUND)
-  let VBack = [
-    [-1.0, -1.0], [1.0, -1.0],
-    [1.0, 1.0], [-1.0, 1.0]
-  ],
-    vTBack = [
-      [0.0, 0.0], [1.0, 0.0],
-      [1.0, 1.0], [0.0, 1.0]
-    ]
-  // 发送背景顶点信息
+
+let initBox = async () => {
+  helper.switchProgram(PROGRAMS.BOX)
+
+  // gl.texImage2D(gl.TEXTURE_CUBE_MAP_NEGATIVE_X, 0, gl.RGBA, 1024, 1024, 0, gl.RGBA, gl.UNSIGNED_BYTE, null);
+  // gl.texImage2D(gl.TEXTURE_CUBE_MAP_NEGATIVE_Y, 0, gl.RGBA, 1024, 1024, 0, gl.RGBA, gl.UNSIGNED_BYTE, null);
+  // gl.texImage2D(gl.TEXTURE_CUBE_MAP_NEGATIVE_Z, 0, gl.RGBA, 1024, 1024, 0, gl.RGBA, gl.UNSIGNED_BYTE, null);
+  // gl.texImage2D(gl.TEXTURE_CUBE_MAP_POSITIVE_X, 0, gl.RGBA, 1024, 1024, 0, gl.RGBA, gl.UNSIGNED_BYTE, null);
+  // gl.texImage2D(gl.TEXTURE_CUBE_MAP_POSITIVE_Y, 0, gl.RGBA, 1024, 1024, 0, gl.RGBA, gl.UNSIGNED_BYTE, null);
+  // gl.texImage2D(gl.TEXTURE_CUBE_MAP_POSITIVE_Z, 0, gl.RGBA, 1024, 1024, 0, gl.RGBA, gl.UNSIGNED_BYTE, null);
+  // gl.generateMipmap(gl.TEXTURE_CUBE_MAP);
+  // gl.texParameteri(gl.TEXTURE_CUBE_MAP, gl.TEXTURE_MIN_FILTER, gl.LINEAR_MIPMAP_LINEAR);
+
+  // let images = await WebGLUtils.loadImageAsync([
+  //   './model/texture/SkyBox/front.png',
+  //   './model/texture/SkyBox/back.png',
+  //   './model/texture/SkyBox/up.png',
+  //   './model/texture/SkyBox/down.png',
+  //   './model/texture/SkyBox/left.png',
+  //   './model/texture/SkyBox/right.png',
+  // ])
+  // helper.sendCubeMapTextureToGPU(images[0], '+x')
+  // helper.sendCubeMapTextureToGPU(images[1], '+y')
+  // helper.sendCubeMapTextureToGPU(images[2], '+z')
+  // helper.sendCubeMapTextureToGPU(images[3], '-x')
+  // helper.sendCubeMapTextureToGPU(images[4], '-y')
+  // helper.sendCubeMapTextureToGPU(images[5], '-z')
+  
+
+  var texture = gl.createTexture();
+gl.bindTexture(gl.TEXTURE_CUBE_MAP, texture);
+ 
+const faceInfos = [
+  {
+    target: gl.TEXTURE_CUBE_MAP_POSITIVE_X, 
+    url: './model/texture/SkyBox/left.png',
+  },
+  {
+    target: gl.TEXTURE_CUBE_MAP_NEGATIVE_X, 
+    url: './model/texture/SkyBox/left.png',
+  },
+  {
+    target: gl.TEXTURE_CUBE_MAP_POSITIVE_Y, 
+    url: './model/texture/SkyBox/left.png',
+  },
+  {
+    target: gl.TEXTURE_CUBE_MAP_NEGATIVE_Y, 
+    url: './model/texture/SkyBox/left.png',
+  },
+  {
+    target: gl.TEXTURE_CUBE_MAP_POSITIVE_Z, 
+    url:'./model/texture/SkyBox/left.png',
+  },
+  {
+    target: gl.TEXTURE_CUBE_MAP_NEGATIVE_Z, 
+    url: './model/texture/SkyBox/left.png',
+  },
+];
+faceInfos.forEach((faceInfo) => {
+  const {target, url} = faceInfo;
+  // 上传画布到立方体贴图的每个面
+  const level = 0;
+  const format = gl.RGBA;
+  const width = 1024;
+  const height = 1024;
+  const type = gl.UNSIGNED_BYTE;
+  // 设置每个面，使其立即可渲染
+  gl.texImage2D(target, level, format, width, height, 0, format, type, null);
+ 
+  // 异步加载图片
+  const image = new Image();
+  image.src = url;
+  image.onload = function() {
+    // 图片加载完成将其拷贝到纹理
+    gl.bindTexture(gl.TEXTURE_CUBE_MAP, texture);
+    gl.texImage2D(target, level, format, format, type, image);
+    gl.generateMipmap(gl.TEXTURE_CUBE_MAP);
+  };
+});
+gl.generateMipmap(gl.TEXTURE_CUBE_MAP);
+gl.texParameteri(gl.TEXTURE_CUBE_MAP, gl.TEXTURE_MIN_FILTER, gl.LINEAR_MIPMAP_LINEAR);
+
+  let positions = [
+    [-1, -1],
+    [1, -1],
+    [-1, 1],
+    [-1, 1],
+    [1, -1],
+    [1, 1],
+  ]
+  let cameraMatrix = lookAt([-0.5,0,0],[0,0,0],[0,1,0])
+  let viewMatrix = inverse(cameraMatrix)
+  viewMatrix[3][0] = viewMatrix[3][1] = viewMatrix[3][2] = 0
+  let proj = preCalculatedCPM
+  let viewDirectionProjMatrix = mult(proj, viewMatrix)
+  let viewDirectionProjMatrixInv = inverse(viewDirectionProjMatrix as Mat)
   helper.prepare({
     attributes: [
-      { buffer: bgVBuffer, data: flatten(VBack), varName: 'aPosition', attrPer: 2, type: gl.FLOAT },
-      { buffer: bgTBuffer, data: flatten(vTBack), varName: 'aTexCoord', attrPer: 2, type: gl.FLOAT }
+      { buffer: SkyBoxVBuffer, data: flatten(positions), varName: 'aPosition', attrPer: 2, type: gl.FLOAT },
     ],
     uniforms: [
-      { varName: 'uTexture', data: 9, method: '1i' }
-    ]
-  })
-  helper.drawArrays(gl.TRIANGLE_FAN, 0, 4)
-}
-// 重绘MAIN
-let reRenderMain = (ctm: Mat) => {
-  helper.switchProgram(PROGRAMS.MAIN)
-  helper.prepare({
-    attributes: [],
-    uniforms: [
-      { varName: 'uWorldMatrix', data: flatten(ctm), method: 'Matrix4fv' },
-      { varName: 'uModelMatrix', data: flatten(Pony.modelMat), method: 'Matrix4fv' },
-      { varName: 'uProjectionMatrix', data: flatten(cpm), method: 'Matrix4fv' },
-      { varName: 'uLightPosition', data: [...lightBulbPosition, 1.0], method: '4fv' },
-      { varName: 'uShiness', data: PonyMaterial.materialShiness, method: '1f' },
-      { varName: 'uAmbientProduct', data: PonyMaterial.ambientProduct, method: '4fv' },
-      { varName: 'uDiffuseProduct', data: PonyMaterial.diffuseProduct, method: '4fv' },
-      { varName: 'uSpecularProduct', data: PonyMaterial.specularProduct, method: '4fv' },
+      { varName: 'uSkyBox', data: 0, method: '1i' },
       {
-        varName: 'uWorldMatrixTransInv', data: flatten(transpose(inverse(mat3(
-          Pony.modelMat[0][0], Pony.modelMat[0][1], Pony.modelMat[0][2],
-          Pony.modelMat[1][0], Pony.modelMat[1][1], Pony.modelMat[1][2],
-          Pony.modelMat[2][0], Pony.modelMat[2][1], Pony.modelMat[2][2],
-        )))), method: 'Matrix3fv'
+        varName: 'uProjectionWorldMatrixInv', data: flatten(
+          viewDirectionProjMatrixInv
+        ), method: 'Matrix4fv'
       },
     ]
   })
-  Pony.innerList.forEach(obj => {
-    if (obj.name != 'hairBack' && obj.name != 'hairFront') {
-      let vs = helper.analyzeFtoV(obj, 'fs'),
-        vts = helper.analyzeFtoV(obj, 'fts'),
-        vns = helper.analyzeFtoV(obj, 'fns')
-      helper.prepare({
-        attributes: [
-          { buffer: vBuffer, data: flatten(vs), varName: 'aPosition', attrPer: 3, type: gl.FLOAT },
-          { buffer: tBuffer, data: flatten(vts), varName: 'aTexCoord', attrPer: 2, type: gl.FLOAT },
-          { buffer: nBuffer, data: flatten(vns), varName: 'aNormal', attrPer: 3, type: gl.FLOAT },
-        ],
-        uniforms: [
-          { varName: 'uTexture', data: obj.textureIndex, method: '1i' },
-        ]
-      })
-      helper.drawArrays(gl.TRIANGLES, 0, obj.objProcessor.getEffectiveVertexCount())
-    }
-  })
-  // 单独处理头发材质
-  helper.prepare({
-    attributes: [],
-    uniforms: [
-      { varName: 'uShiness', data: HairMaterial.materialShiness, method: '1f' },
-      { varName: 'uAmbientProduct', data: HairMaterial.ambientProduct, method: '4fv' },
-      { varName: 'uDiffuseProduct', data: HairMaterial.diffuseProduct, method: '4fv' },
-      { varName: 'uSpecularProduct', data: HairMaterial.specularProduct, method: '4fv' },
-    ]
-  });
-  [Pony.getObjectByName('hairFront') as DrawingObject3d, Pony.getObjectByName('hairBack') as DrawingObject3d].forEach(obj => {
-    let vs = helper.analyzeFtoV(obj, 'fs'),
-      vts = helper.analyzeFtoV(obj, 'fts'),
-      vns = helper.analyzeFtoV(obj, 'fns')
-    helper.prepare({
-      attributes: [
-        { buffer: vBuffer, data: flatten(vs), varName: 'aPosition', attrPer: 3, type: gl.FLOAT },
-        { buffer: tBuffer, data: flatten(vts), varName: 'aTexCoord', attrPer: 2, type: gl.FLOAT },
-        { buffer: nBuffer, data: flatten(vns), varName: 'aNormal', attrPer: 3, type: gl.FLOAT },
-      ],
-      uniforms: [
-        { varName: 'uTexture', data: obj.textureIndex, method: '1i' },
-      ]
-    })
-    helper.drawArrays(gl.TRIANGLES, 0, obj.objProcessor.getEffectiveVertexCount())
-  })
+
+  helper.drawArrays(gl.TRIANGLES, 0, 6)
 }
-let reRenderLightBall = (posChanged: boolean = false) => {
-  helper.switchProgram(PROGRAMS.BALL)
-  if (posChanged) {
-    Ball.setModelMat(mult(Ball.modelMat, translate(
-      lightBulbPosition[0] - lastLightBulbPosition[0],
-      lightBulbPosition[1] - lastLightBulbPosition[1],
-      lightBulbPosition[2] - lastLightBulbPosition[2],
-    )) as Mat)
-  }
-  Ball.innerList.forEach(obj => {
-    let vs = helper.analyzeFtoV(obj, 'fs')
-    helper.prepare({
-      attributes: [
-        { buffer: ballVBuffer, data: flatten(vs), varName: 'aPosition', attrPer: 3, type: gl.FLOAT }
-      ],
-      uniforms: [
-        { varName: 'uColor', data: WebGLUtils.normalize8bitColor([255, 181, 41]), method: '4fv' },
-        { varName: 'uWorldMat', data: flatten(ctm), method: 'Matrix4fv' },
-        { varName: 'uModelMat', data: flatten(Ball.modelMat), method: 'Matrix4fv' },
-      ]
-    })
-    helper.drawArrays(gl.TRIANGLES, 0, obj.objProcessor.getEffectiveVertexCount())
-  })
+
+let reRenderBox = () => {
+
 }
-// reRender
-let reRender = (ctm: Mat, reCalulateMaterialProducts: boolean = false, lightPosChanged: boolean = false) => {
-  reCalulateMaterialProducts && PonyMaterial.reCalculateProducts() && HairMaterial.reCalculateProducts()
-  // ctm = lookAt(cameraPos, add(cameraPos, camearaFront) as Vec3, camearaUp)
-  if (currentMode == MODES.FPV) {
-    cpm = preCalculatedCPM
-    ctm = lookAt(cameraPos, cameraAt, cameraUp)
-  } else {
-    cpm = mat4()
-  }
-  reRenderLightBall(lightPosChanged)
-  reRenderBackground()
-  reRenderMain(ctm)
+
+let reRender = (aa: Mat) => {
+  ctm = lookAt(cameraPos, add(cameraPos, cameraFront) as Vec3, VEC_Y)
+
+  reRenderBox()
 }
+
 // ==================================
-// 光源交互相关
+// 第一人称视角实现
 // ==================================
-// 初始化位置输入框
-let initPositionInput = () => {
-  (document.querySelector('#lightPosX') as HTMLInputElement).value = lightBulbPosition[0].toString();
-  (document.querySelector('#lightPosY') as HTMLInputElement).value = lightBulbPosition[1].toString();
-  (document.querySelector('#lightPosZ') as HTMLInputElement).value = (-lightBulbPosition[2]).toString()
-  // 没有人知道为什么这里要加负号才是对的
-}
-// 调节位置
-let listenPositionInput = () => {
-  let positionChangedResponse = () => {
-    let xx = (document.querySelector('#lightPosX') as HTMLInputElement).value,
-      yy = (document.querySelector('#lightPosY') as HTMLInputElement).value,
-      zz = (document.querySelector('#lightPosZ') as HTMLInputElement).value
-    let res = [xx, yy, zz].map(_ => parseFloat(_))
-    modifyLightBulbPosition([res[0], res[1], -res[2]])
-    reRender(ctm, true, true)
-  }
-  (document.querySelector('#applyLightPos') as HTMLButtonElement).onclick = positionChangedResponse;
-  (document.querySelector('#lightPosX') as HTMLInputElement).onclick = positionChangedResponse;
-  (document.querySelector('#lightPosY') as HTMLInputElement).onclick = positionChangedResponse;
-  (document.querySelector('#lightPosZ') as HTMLInputElement).onclick = positionChangedResponse
-}
-// 初始化材质颜色参量输入框
-let initPonyMaterialInput = () => {
-  PonyMaterialInputDOMs = ['#colorinputAR', '#colorinputAG', '#colorinputAB', '#colorinputDR',
-    '#colorinputDG', '#colorinputDB', '#colorinputSR',
-    '#colorinputSG', '#colorinputSB', '#shinessinput']
-  PonyMaterialCorrespondings = [
-    'PonyMaterial.ambientMaterial[0]', 'PonyMaterial.ambientMaterial[1]', 'PonyMaterial.ambientMaterial[2]',
-    'PonyMaterial.diffuseMaterial[0]', 'PonyMaterial.diffuseMaterial[1]', 'PonyMaterial.diffuseMaterial[2]',
-    'PonyMaterial.specularMaterial[0]', 'PonyMaterial.specularMaterial[1]', 'PonyMaterial.specularMaterial[2]',
-    'PonyMaterial.materialShiness'
-  ]
-  PonyMaterialCorrespondings.forEach((v, idx) => {
-    if (idx == 9) {
-      eval(`document.querySelector('${PonyMaterialInputDOMs[idx]}').value=(Math.floor(${v})).toString()`)
-    } else {
-      eval(`document.querySelector('${PonyMaterialInputDOMs[idx]}').value=(Math.floor(${v}*255)).toString()`)
-    }
-  })
-}
-// 调节小马材质颜色参量
-let listenPonyMaterialInput = () => {
-  (document.querySelector('#applyLightparam') as HTMLButtonElement).onclick = () => {
-    PonyMaterialCorrespondings.forEach((v, idx) => {
-      if (idx == 9) {
-        eval(`${v}=parseInt(document.querySelector('${PonyMaterialInputDOMs[idx]}').value)`)
-      } else {
-        eval(`${v}=parseInt(document.querySelector('${PonyMaterialInputDOMs[idx]}').value)/255`)
-      }
-    })
-    reRender(ctm, true)
-  }
-}
-// 光源互动模式
-let listenMouseLightInteract = () => {
-  // 拖动处理
+// 鼠标侦听
+let listenMouseToTurnCamera = () => {
   canvasDOM.onmousedown = (evt: MouseEvent) => {
     let mousePoint = [evt.offsetX, evt.offsetY] as Vec2
+    let lastTrickTick = new Date().getTime()
+    let curTrickTick = lastTick
+    const MIN_INTERVAL = 40
     canvasDOM.onmousemove = (evt2: MouseEvent) => {
+      curTrickTick = new Date().getTime()
+      if (curTrickTick - lastTrickTick < MIN_INTERVAL) {
+        return
+      }
+      lastTrickTick = curTrickTick
       let newMousePoint = [evt2.offsetX, evt2.offsetY] as Vec2
       let translateVector = newMousePoint.map((v, i) => v - mousePoint[i]) as Vec2
-      translateVector[0] /= canvasDOM.width; translateVector[1] /= canvasDOM.height; translateVector[1] *= -1
-      translateVector.map(x => x * LIGHT_TRANSLATE_FACTOR)
-      modifyLightBulbPosition([lightBulbPosition[0] + translateVector[0], lightBulbPosition[1] + translateVector[1], lightBulbPosition[2]])
-      Ball.setModelMat(mult(Ball.modelMat, translate(translateVector[0], translateVector[1], 0.0)) as Mat)
-      reRender(ctm, true, true)
+      mousePoint = newMousePoint
+      cameraFront = normalize(
+        vec3(...(mult(rotateY(ROTATE_PER_X_FPV * translateVector[0]),
+          vec4(...cameraFront, 1)) as Vec4)
+          .slice(0, 3)), false) as Vec3
+      let initZ = Math.sqrt(cameraFront[0] * cameraFront[0] + cameraFront[2] * cameraFront[2])
+      let tempVec = vec4(0, cameraFront[1], initZ, 1)
+      tempVec = mult(rotateX(ROTATE_PER_Y_FPV * translateVector[1]), tempVec) as Vec4
+      if (tempVec[1] > VEC_UP_MAX[1] && tempVec[2] >= 0 || tempVec[1] > 0 && tempVec[2] < 0) {
+        tempVec = VEC_UP_MAX
+      } else if (tempVec[1] < VEC_DOWN_MAX[1] && tempVec[2] >= 0 || tempVec[1] < 0 && tempVec[2] < 0) {
+        tempVec = VEC_DOWN_MAX
+      }
+      let newZ = tempVec[2]
+      cameraFront = vec3(cameraFront[0] * newZ / initZ, tempVec[1], cameraFront[2] * newZ / initZ)
+      reRender(ctm)
     }
   }
+  // 如果想要不按住也可以鼠标观察，则注释下列钩子
   canvasDOM.onmouseup = () => {
     canvasDOM.onmousemove = () => { }
   }
-  // @ts-ignore
-  canvasDOM.onmousewheel = (evt: any) => {
-    let dir = evt.wheelDelta > 0 ? -1 : 1 // 1 Down -1 Up
-    modifyLightBulbPosition(
-      [lightBulbPosition[0], lightBulbPosition[1], lightBulbPosition[2] + dir * LIGHT_Z_PLUS]
-    )
-    Ball.setModelMat(mult(Ball.modelMat, translate(0.0, 0.0, dir * LIGHT_Z_PLUS)) as Mat)
-    reRender(ctm, true, true)
-  }
 }
-// ==================================
-// 跟踪球实现
-// ==================================
-// 鼠标按下时随鼠标旋转
-let rotateWithMouse = (e: MouseEvent) => {
-  let mousePos = [e.offsetX, e.offsetY] as Vec2
-  lastTick = curTick; curTick = new Date().getTime()
-  let disX = (mousePos[0] - mouseLastPos[0]) * ROTATE_PER_X
-    , disY = (mousePos[1] - mouseLastPos[1]) * ROTATE_PER_Y
-  vX = disX / (curTick - lastTick); vY = disY / (curTick - lastTick)
-  ctm = mult(rotateX(-disY), ctm) as Mat
-  ctm = mult(rotateY(-disX), ctm) as Mat
-  mouseLastPos = mousePos
-  reRender(ctm, true, false)
-}
-let abs = (n: number): number => {
-  return n < 0 ? -n : n
-}
-let sign = (n: number): number => {
-  if (n == 0) {
-    return 0
-  } else {
-    return abs(n) / n
-  }
-}
-// 松开鼠标后每INTERVAL毫秒进行一次减速
-let slowDown = () => {
-  if (vX == 0 && vY == 0) {
-    clearInterval(slowDownId)
-    return
-  }
-  ctm = mult(rotateX(-vY * INTERVAL), ctm) as Mat
-  ctm = mult(rotateY(-vX * INTERVAL), ctm) as Mat
-  vX = abs(vX) <= FRICTION * INTERVAL ? 0 : vX - FRICTION * INTERVAL * sign(vX)
-  vY = abs(vY) <= FRICTION * INTERVAL ? 0 : vY - FRICTION * INTERVAL * sign(vY)
-  reRender(ctm, true, false)
-}
-// 鼠标侦听
-let listenMouseTrackBall = () => {
-  canvasDOM.onmousedown = (e: MouseEvent) => {
-    isMouseDown = true
-    mouseLastPos = [e.offsetX, e.offsetY] as Vec2
-    clearInterval(slowDownId)
-    curTick = lastTick = new Date().getTime()
-  }
-  canvasDOM.onmouseup = (e: MouseEvent) => {
-    isMouseDown = false
-    clearInterval(slowDownId)
-    slowDownId = window.setInterval(slowDown, INTERVAL)
-  }
-  canvasDOM.onmousemove = (e: MouseEvent) => {
-    if (isMouseDown) {
-      rotateWithMouse(e)
-    }
-  }
-}
-// ==================================
 // 键盘侦听
-// ==================================
+let isKeyDown: { [key: string]: boolean } = {
+  '87'/*W*/: false,
+  '65'/*A*/: false,
+  '83'/*S*/: false,
+  '68'/*D*/: false,
+  '32'/*Space*/: false,
+  '16'/*Shift*/: false
+}
 let listenKeyboardFPV = () => {
-  let handlers: { [key: string]: () => void } = {
-    '87'/*W*/: processWKey,
-    '65'/*A*/: processAKey,
-    '83'/*S*/: processSKey,
-    '68'/*D*/: processDKey,
-    '32'/*Space*/: processSpace,
-    '17'/*Ctrl*/: processCtrl
-  }
+  isKeyDown['87'] = isKeyDown['65'] = isKeyDown['83'] = isKeyDown['68'] = isKeyDown['32'] = isKeyDown['16'] = false
   window.onkeydown = (e: KeyboardEvent) => {
     if (e && e.keyCode) {
-      try {
-        handlers[e.keyCode.toString()].call(null)
-      } catch (ex) { }
+      isKeyDown[e.keyCode] = true
+      if (cameraMoveId == 0) {
+        cameraMoveId = window.setInterval(moveCamera, INTERVAL)
+      }
+    }
+  }
+  window.onkeyup = (e: KeyboardEvent) => {
+    if (e && e.keyCode) {
+      isKeyDown[e.keyCode] = false
     }
   }
 }
-let processWKey = () => {
-  cameraPos = add(cameraPos, vec3(0, 0, 0.1)) as Vec3
-  reRender(ctm)
-}
-let processSKey = () => {
-  cameraPos = add(cameraPos, vec3(0, 0, -0.1)) as Vec3
-  reRender(ctm)
-}
-let processAKey = () => {
-  cameraPos = add(cameraPos, vec3(-0.1, 0, 0)) as Vec3
-  reRender(ctm)
-}
-let processDKey = () => {
-  cameraPos = add(cameraPos, vec3(0.1, 0, 0)) as Vec3
-  reRender(ctm)
-}
-let processSpace = () => {
-  cameraAt = add(cameraAt, vec3(0, 0.1, 0)) as Vec3
-  reRender(ctm)
-}
-let processCtrl = () => {
-  cameraAt = add(cameraAt, vec3(0, 0.1, 0)) as Vec3
-  reRender(ctm)
-}
-// ==================================
-// 模式切换
-// ==================================
-let listenModeToggler = () => {
-  (document.querySelector('#modeToggler') as HTMLButtonElement).onclick = () => {
-    // 前端响应
-    eval(`document.querySelector('#mode_${currentMode}').style.display = 'none'`)
-    currentMode = (currentMode + 1) % 3
-    eval(`document.querySelector('#mode_${currentMode}').style.display = 'inline-block'`)
-    // 内部模式切换
-    clearMouseHooks()
-    switch (currentMode) {
-      case MODES.TRACKBALL: listenMouseTrackBall(); break
-      case MODES.LIGHT: listenMouseLightInteract(); break
-      case MODES.FPV:
-        listenKeyboardFPV()
-        break
-    }
-    // 消除焦点
-    (document.querySelector('#modeToggler') as HTMLButtonElement).blur()
+let moveCamera = () => {
+  let cameraMoveSpeed = vec3(0, 0, 0)
+  let frontVec = normalize(vec3(cameraFront[0], 0, cameraFront[2]), false)
+  let leftVec = normalize(cross(VEC_Y, cameraFront), false)
+  let moveFlag = false
+  if (isKeyDown['87'/*W*/]) {
+    cameraMoveSpeed = add(cameraMoveSpeed, mult(mat3(cameraSpeed), frontVec)) as Vec3
+    moveFlag = true
   }
+  if (isKeyDown['83'/*S*/]) {
+    cameraMoveSpeed = add(cameraMoveSpeed, mult(mat3(-cameraSpeed), frontVec)) as Vec3
+    moveFlag = true
+  }
+  if (isKeyDown['65'/*A*/]) {
+    cameraMoveSpeed = add(cameraMoveSpeed, mult(mat3(-cameraSpeed), leftVec)) as Vec3
+    moveFlag = true
+  }
+  if (isKeyDown['68'/*D*/]) {
+    cameraMoveSpeed = add(cameraMoveSpeed, mult(mat3(cameraSpeed), leftVec)) as Vec3
+    moveFlag = true
+  }
+  if (isKeyDown['32'/*Space*/]) {
+    cameraMoveSpeed = add(cameraMoveSpeed, mult(mat3(cameraSpeed), VEC_Y)) as Vec3
+    moveFlag = true
+  }
+  if (isKeyDown['16'/*Shift*/]) {
+    cameraMoveSpeed = add(cameraMoveSpeed, mult(mat3(-cameraSpeed), VEC_Y)) as Vec3
+    moveFlag = true
+  }
+  if (!moveFlag) {
+    clearInterval(cameraMoveId)
+    cameraMoveId = 0
+    return
+  }
+  cameraPos = add(cameraPos, cameraMoveSpeed) as Vec3
+  reRender(ctm)
 }
-let clearMouseHooks = () => {
-  canvasDOM.onmousedown = () => { }
-  canvasDOM.onmouseup = () => { }
-  canvasDOM.onmousemove = () => { }
-  // @ts-ignore
-  canvasDOM.onmousewheel = () => { }
-}
-// do it
+
 main()
-initPositionInput()
-initPonyMaterialInput()
-listenPonyMaterialInput()
-listenPositionInput()
-listenModeToggler()
-listenMouseTrackBall()

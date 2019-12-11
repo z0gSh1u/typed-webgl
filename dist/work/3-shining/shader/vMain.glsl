@@ -30,7 +30,6 @@ void main() {
 
 	// vertex position
 	vec3 posToWorld = (uLightCtm * aPosition).xyz;
-	// vec3 posToWorld = (aPosition).xyz;
 	
 	// light calculation
 	vec3 lightPos = uLightPosition.xyz;
