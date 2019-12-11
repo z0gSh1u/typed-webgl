@@ -56,20 +56,20 @@ define(["require", "exports", "../../framework/3d/WebGLHelper3d", "../../framewo
     // 主要变量
     // ==================================
     var canvasDOM = document.querySelector('#cvs');
-    var gl = canvasDOM.getContext('webgl', { alpha: true, premultipliedAlpha: false });
+    var gl = canvasDOM.getContext('webgl');
     var helper;
     var PROGRAMS = {
-        BOX: 0, PONY: 1
+        SKYBOX: 0, PONY: 1
     };
     var ctm;
+    var cpm;
     // ==================================
     // 透视使用
     // ==================================
-    var cpm;
     var fovy = 45.0;
     var aspect = -16 / 9;
-    var near = 0.1;
-    var far = 5.0;
+    var near = 1.0;
+    var far = 500.0;
     var preCalculatedCPM = perspective(fovy, aspect, near, far);
     // ==================================
     // 盒空间
@@ -104,6 +104,7 @@ define(["require", "exports", "../../framework/3d/WebGLHelper3d", "../../framewo
                     ]);
                     gl.enable(gl.DEPTH_TEST);
                     ctm = mat4();
+                    cpm = mat4();
                     // 初始化各buffer
                     SkyBoxVBuffer = helper.createBuffer();
                     return [4 /*yield*/, initBox()];
@@ -116,15 +117,15 @@ define(["require", "exports", "../../framework/3d/WebGLHelper3d", "../../framewo
         });
     }); };
     var initBox = function () { return __awaiter(void 0, void 0, void 0, function () {
-        var texture, faceInfos, positions, cameraMatrix, viewMatrix, proj, viewDirectionProjMatrix, viewDirectionProjMatrixInv;
+        var texture, faceInfos;
         return __generator(this, function (_a) {
-            helper.switchProgram(PROGRAMS.BOX);
+            helper.switchProgram(PROGRAMS.SKYBOX);
             texture = gl.createTexture();
             gl.bindTexture(gl.TEXTURE_CUBE_MAP, texture);
             faceInfos = [
                 {
                     target: gl.TEXTURE_CUBE_MAP_POSITIVE_X,
-                    url: './model/texture/SkyBox/left.png',
+                    url: './model/texture/SkyBox/right.png'
                 },
                 {
                     target: gl.TEXTURE_CUBE_MAP_NEGATIVE_X,
@@ -132,36 +133,32 @@ define(["require", "exports", "../../framework/3d/WebGLHelper3d", "../../framewo
                 },
                 {
                     target: gl.TEXTURE_CUBE_MAP_POSITIVE_Y,
-                    url: './model/texture/SkyBox/left.png',
+                    url: './model/texture/SkyBox/up.png',
                 },
                 {
                     target: gl.TEXTURE_CUBE_MAP_NEGATIVE_Y,
-                    url: './model/texture/SkyBox/left.png',
+                    url: './model/texture/SkyBox/down.png',
                 },
                 {
                     target: gl.TEXTURE_CUBE_MAP_POSITIVE_Z,
-                    url: './model/texture/SkyBox/left.png',
+                    url: './model/texture/SkyBox/back.png',
                 },
                 {
                     target: gl.TEXTURE_CUBE_MAP_NEGATIVE_Z,
-                    url: './model/texture/SkyBox/left.png',
+                    url: './model/texture/SkyBox/front.png',
                 },
             ];
             faceInfos.forEach(function (faceInfo) {
                 var target = faceInfo.target, url = faceInfo.url;
-                // 上传画布到立方体贴图的每个面
                 var level = 0;
                 var format = gl.RGBA;
-                var width = 1024;
-                var height = 1024;
+                var width = 512;
+                var height = 512;
                 var type = gl.UNSIGNED_BYTE;
-                // 设置每个面，使其立即可渲染
                 gl.texImage2D(target, level, format, width, height, 0, format, type, null);
-                // 异步加载图片
                 var image = new Image();
                 image.src = url;
                 image.onload = function () {
-                    // 图片加载完成将其拷贝到纹理
                     gl.bindTexture(gl.TEXTURE_CUBE_MAP, texture);
                     gl.texImage2D(target, level, format, format, type, image);
                     gl.generateMipmap(gl.TEXTURE_CUBE_MAP);
@@ -169,40 +166,37 @@ define(["require", "exports", "../../framework/3d/WebGLHelper3d", "../../framewo
             });
             gl.generateMipmap(gl.TEXTURE_CUBE_MAP);
             gl.texParameteri(gl.TEXTURE_CUBE_MAP, gl.TEXTURE_MIN_FILTER, gl.LINEAR_MIPMAP_LINEAR);
-            positions = [
-                [-1, -1],
-                [1, -1],
-                [-1, 1],
-                [-1, 1],
-                [1, -1],
-                [1, 1],
-            ];
-            cameraMatrix = lookAt([-0.5, 0, 0], [0, 0, 0], [0, 1, 0]);
-            viewMatrix = inverse(cameraMatrix);
-            viewMatrix[3][0] = viewMatrix[3][1] = viewMatrix[3][2] = 0;
-            proj = preCalculatedCPM;
-            viewDirectionProjMatrix = mult(proj, viewMatrix);
-            viewDirectionProjMatrixInv = inverse(viewDirectionProjMatrix);
-            helper.prepare({
-                attributes: [
-                    { buffer: SkyBoxVBuffer, data: flatten(positions), varName: 'aPosition', attrPer: 2, type: gl.FLOAT },
-                ],
-                uniforms: [
-                    { varName: 'uSkyBox', data: 0, method: '1i' },
-                    {
-                        varName: 'uProjectionWorldMatrixInv', data: flatten(viewDirectionProjMatrixInv), method: 'Matrix4fv'
-                    },
-                ]
-            });
-            helper.drawArrays(gl.TRIANGLES, 0, 6);
+            reRender();
             return [2 /*return*/];
         });
     }); };
-    var reRenderBox = function () {
-    };
-    var reRender = function (aa) {
+    var reRenderSkyBox = function () {
+        var positions = [
+            [-1, -1],
+            [1, -1],
+            [-1, 1],
+            [-1, 1],
+            [1, -1],
+            [1, 1],
+        ];
         ctm = lookAt(cameraPos, add(cameraPos, cameraFront), VEC_Y);
-        reRenderBox();
+        var viewM = inverse(ctm);
+        viewM[3][0] = viewM[3][1] = viewM[3][2] = 0;
+        var res = mult(preCalculatedCPM, viewM);
+        helper.prepare({
+            attributes: [
+                { buffer: SkyBoxVBuffer, data: flatten(positions), varName: 'aPosition', attrPer: 2, type: gl.FLOAT },
+            ],
+            uniforms: [
+                { varName: 'uSkyBox', data: 0, method: '1i' },
+                { varName: 'uProjectionWorldMatrixInv', data: flatten(inverse(res)), method: 'Matrix4fv' },
+            ]
+        });
+        helper.drawArrays(gl.TRIANGLES, 0, 6);
+    };
+    var reRender = function () {
+        //ctm = lookAt(cameraPos, add(cameraPos, cameraFront) as Vec3, VEC_Y)
+        reRenderSkyBox();
     };
     // ==================================
     // 第一人称视角实现
@@ -236,7 +230,7 @@ define(["require", "exports", "../../framework/3d/WebGLHelper3d", "../../framewo
                 }
                 var newZ = tempVec[2];
                 cameraFront = vec3(cameraFront[0] * newZ / initZ, tempVec[1], cameraFront[2] * newZ / initZ);
-                reRender(ctm);
+                reRender();
             };
         };
         // 如果想要不按住也可以鼠标观察，则注释下列钩子
@@ -304,7 +298,7 @@ define(["require", "exports", "../../framework/3d/WebGLHelper3d", "../../framewo
             return;
         }
         cameraPos = add(cameraPos, cameraMoveSpeed);
-        reRender(ctm);
+        reRender();
     };
     main();
 });

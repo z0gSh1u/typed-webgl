@@ -11,20 +11,20 @@ import { PhongLightModel } from '../../framework/3d/PhongLightModel'
 // 主要变量
 // ==================================
 let canvasDOM: HTMLCanvasElement = document.querySelector('#cvs') as HTMLCanvasElement
-let gl: WebGLRenderingContext = canvasDOM.getContext('webgl', { alpha: true, premultipliedAlpha: false }) as WebGLRenderingContext
+let gl: WebGLRenderingContext = canvasDOM.getContext('webgl') as WebGLRenderingContext
 let helper: WebGLHelper3d
 let PROGRAMS = {
-  BOX: 0, PONY: 1
+  SKYBOX: 0, PONY: 1
 }
 let ctm: Mat
+let cpm: Mat
 // ==================================
 // 透视使用
 // ==================================
-let cpm: Mat
 let fovy = 45.0
-let aspect = -16 / 9
-let near = 0.1
-let far = 5.0
+let aspect = -16/9
+let near = 1.0
+let far = 500.0
 let preCalculatedCPM = perspective(fovy, aspect, near, far)
 // ==================================
 // 盒空间
@@ -55,97 +55,66 @@ let main = async () => {
   helper = new WebGLHelper3d(canvasDOM, gl, [
     WebGLUtils.initializeShaders(gl, './shader/vSkyBox.glsl', './shader/fSkyBox.glsl'),
   ])
-
   gl.enable(gl.DEPTH_TEST)
   ctm = mat4()
+  cpm = mat4()
   // 初始化各buffer
   SkyBoxVBuffer = helper.createBuffer()
   await initBox()
   listenKeyboardFPV()
   listenMouseToTurnCamera()
 }
-
 let initBox = async () => {
-  helper.switchProgram(PROGRAMS.BOX)
-
-  // gl.texImage2D(gl.TEXTURE_CUBE_MAP_NEGATIVE_X, 0, gl.RGBA, 1024, 1024, 0, gl.RGBA, gl.UNSIGNED_BYTE, null);
-  // gl.texImage2D(gl.TEXTURE_CUBE_MAP_NEGATIVE_Y, 0, gl.RGBA, 1024, 1024, 0, gl.RGBA, gl.UNSIGNED_BYTE, null);
-  // gl.texImage2D(gl.TEXTURE_CUBE_MAP_NEGATIVE_Z, 0, gl.RGBA, 1024, 1024, 0, gl.RGBA, gl.UNSIGNED_BYTE, null);
-  // gl.texImage2D(gl.TEXTURE_CUBE_MAP_POSITIVE_X, 0, gl.RGBA, 1024, 1024, 0, gl.RGBA, gl.UNSIGNED_BYTE, null);
-  // gl.texImage2D(gl.TEXTURE_CUBE_MAP_POSITIVE_Y, 0, gl.RGBA, 1024, 1024, 0, gl.RGBA, gl.UNSIGNED_BYTE, null);
-  // gl.texImage2D(gl.TEXTURE_CUBE_MAP_POSITIVE_Z, 0, gl.RGBA, 1024, 1024, 0, gl.RGBA, gl.UNSIGNED_BYTE, null);
-  // gl.generateMipmap(gl.TEXTURE_CUBE_MAP);
-  // gl.texParameteri(gl.TEXTURE_CUBE_MAP, gl.TEXTURE_MIN_FILTER, gl.LINEAR_MIPMAP_LINEAR);
-
-  // let images = await WebGLUtils.loadImageAsync([
-  //   './model/texture/SkyBox/front.png',
-  //   './model/texture/SkyBox/back.png',
-  //   './model/texture/SkyBox/up.png',
-  //   './model/texture/SkyBox/down.png',
-  //   './model/texture/SkyBox/left.png',
-  //   './model/texture/SkyBox/right.png',
-  // ])
-  // helper.sendCubeMapTextureToGPU(images[0], '+x')
-  // helper.sendCubeMapTextureToGPU(images[1], '+y')
-  // helper.sendCubeMapTextureToGPU(images[2], '+z')
-  // helper.sendCubeMapTextureToGPU(images[3], '-x')
-  // helper.sendCubeMapTextureToGPU(images[4], '-y')
-  // helper.sendCubeMapTextureToGPU(images[5], '-z')
-  
-
-  var texture = gl.createTexture();
-gl.bindTexture(gl.TEXTURE_CUBE_MAP, texture);
- 
-const faceInfos = [
-  {
-    target: gl.TEXTURE_CUBE_MAP_POSITIVE_X, 
-    url: './model/texture/SkyBox/left.png',
-  },
-  {
-    target: gl.TEXTURE_CUBE_MAP_NEGATIVE_X, 
-    url: './model/texture/SkyBox/left.png',
-  },
-  {
-    target: gl.TEXTURE_CUBE_MAP_POSITIVE_Y, 
-    url: './model/texture/SkyBox/left.png',
-  },
-  {
-    target: gl.TEXTURE_CUBE_MAP_NEGATIVE_Y, 
-    url: './model/texture/SkyBox/left.png',
-  },
-  {
-    target: gl.TEXTURE_CUBE_MAP_POSITIVE_Z, 
-    url:'./model/texture/SkyBox/left.png',
-  },
-  {
-    target: gl.TEXTURE_CUBE_MAP_NEGATIVE_Z, 
-    url: './model/texture/SkyBox/left.png',
-  },
-];
-faceInfos.forEach((faceInfo) => {
-  const {target, url} = faceInfo;
-  // 上传画布到立方体贴图的每个面
-  const level = 0;
-  const format = gl.RGBA;
-  const width = 1024;
-  const height = 1024;
-  const type = gl.UNSIGNED_BYTE;
-  // 设置每个面，使其立即可渲染
-  gl.texImage2D(target, level, format, width, height, 0, format, type, null);
- 
-  // 异步加载图片
-  const image = new Image();
-  image.src = url;
-  image.onload = function() {
-    // 图片加载完成将其拷贝到纹理
-    gl.bindTexture(gl.TEXTURE_CUBE_MAP, texture);
-    gl.texImage2D(target, level, format, format, type, image);
-    gl.generateMipmap(gl.TEXTURE_CUBE_MAP);
-  };
-});
-gl.generateMipmap(gl.TEXTURE_CUBE_MAP);
-gl.texParameteri(gl.TEXTURE_CUBE_MAP, gl.TEXTURE_MIN_FILTER, gl.LINEAR_MIPMAP_LINEAR);
-
+  helper.switchProgram(PROGRAMS.SKYBOX)
+  let texture = gl.createTexture()
+  gl.bindTexture(gl.TEXTURE_CUBE_MAP, texture)
+  const faceInfos = [
+    {
+      target: gl.TEXTURE_CUBE_MAP_POSITIVE_X,
+      url: './model/texture/SkyBox/right.png'
+    },
+    {
+      target: gl.TEXTURE_CUBE_MAP_NEGATIVE_X,
+      url: './model/texture/SkyBox/left.png',
+    },
+    {
+      target: gl.TEXTURE_CUBE_MAP_POSITIVE_Y,
+      url: './model/texture/SkyBox/up.png',
+    },
+    {
+      target: gl.TEXTURE_CUBE_MAP_NEGATIVE_Y,
+      url: './model/texture/SkyBox/down.png',
+    },
+    {
+      target: gl.TEXTURE_CUBE_MAP_POSITIVE_Z,
+      url: './model/texture/SkyBox/back.png',
+    },
+    {
+      target: gl.TEXTURE_CUBE_MAP_NEGATIVE_Z,
+      url: './model/texture/SkyBox/front.png',
+    },
+  ]
+  faceInfos.forEach((faceInfo) => {
+    const { target, url } = faceInfo;
+    const level = 0
+    const format = gl.RGBA
+    const width = 512
+    const height = 512
+    const type = gl.UNSIGNED_BYTE
+    gl.texImage2D(target, level, format, width, height, 0, format, type, null);
+    const image = new Image();
+    image.src = url;
+    image.onload = function () {
+      gl.bindTexture(gl.TEXTURE_CUBE_MAP, texture)
+      gl.texImage2D(target, level, format, format, type, image)
+      gl.generateMipmap(gl.TEXTURE_CUBE_MAP)
+    }
+  })
+  gl.generateMipmap(gl.TEXTURE_CUBE_MAP)
+  gl.texParameteri(gl.TEXTURE_CUBE_MAP, gl.TEXTURE_MIN_FILTER, gl.LINEAR_MIPMAP_LINEAR)
+  reRender()
+}
+let reRenderSkyBox = () => {
   let positions = [
     [-1, -1],
     [1, -1],
@@ -154,37 +123,24 @@ gl.texParameteri(gl.TEXTURE_CUBE_MAP, gl.TEXTURE_MIN_FILTER, gl.LINEAR_MIPMAP_LI
     [1, -1],
     [1, 1],
   ]
-  let cameraMatrix = lookAt([-0.5,0,0],[0,0,0],[0,1,0])
-  let viewMatrix = inverse(cameraMatrix)
-  viewMatrix[3][0] = viewMatrix[3][1] = viewMatrix[3][2] = 0
-  let proj = preCalculatedCPM
-  let viewDirectionProjMatrix = mult(proj, viewMatrix)
-  let viewDirectionProjMatrixInv = inverse(viewDirectionProjMatrix as Mat)
+  ctm = lookAt(cameraPos, add(cameraPos, cameraFront) as Vec3, VEC_Y)
+  let viewM = inverse(ctm)
+  viewM[3][0] = viewM[3][1] = viewM[3][2] = 0
+  let res = mult(preCalculatedCPM, viewM) as Mat
   helper.prepare({
     attributes: [
       { buffer: SkyBoxVBuffer, data: flatten(positions), varName: 'aPosition', attrPer: 2, type: gl.FLOAT },
     ],
     uniforms: [
       { varName: 'uSkyBox', data: 0, method: '1i' },
-      {
-        varName: 'uProjectionWorldMatrixInv', data: flatten(
-          viewDirectionProjMatrixInv
-        ), method: 'Matrix4fv'
-      },
+      { varName: 'uProjectionWorldMatrixInv', data: flatten(inverse(res)), method: 'Matrix4fv' },
     ]
   })
-
   helper.drawArrays(gl.TRIANGLES, 0, 6)
 }
-
-let reRenderBox = () => {
-
-}
-
-let reRender = (aa: Mat) => {
-  ctm = lookAt(cameraPos, add(cameraPos, cameraFront) as Vec3, VEC_Y)
-
-  reRenderBox()
+let reRender = () => {
+  //ctm = lookAt(cameraPos, add(cameraPos, cameraFront) as Vec3, VEC_Y)
+  reRenderSkyBox()
 }
 
 // ==================================
@@ -220,7 +176,7 @@ let listenMouseToTurnCamera = () => {
       }
       let newZ = tempVec[2]
       cameraFront = vec3(cameraFront[0] * newZ / initZ, tempVec[1], cameraFront[2] * newZ / initZ)
-      reRender(ctm)
+      reRender()
     }
   }
   // 如果想要不按住也可以鼠标观察，则注释下列钩子
@@ -288,7 +244,7 @@ let moveCamera = () => {
     return
   }
   cameraPos = add(cameraPos, cameraMoveSpeed) as Vec3
-  reRender(ctm)
+  reRender()
 }
 
 main()
