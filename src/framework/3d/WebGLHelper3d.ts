@@ -68,7 +68,7 @@ export class WebGLHelper3d {
    */
   public getUniformLocation(variableName: string): WebGLUniformLocation | null {
     let pos = this.gl.getUniformLocation(this.program, variableName)
-    if (pos == null) { alert('null uniform.') }
+    if (pos == null) { alert('[getUniformLocation] Null uniform. Name = ' + variableName) }
     return pos
   }
 

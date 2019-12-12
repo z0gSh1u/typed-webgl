@@ -67,7 +67,7 @@ define(["require", "exports"], function (require, exports) {
         WebGLHelper3d.prototype.getUniformLocation = function (variableName) {
             var pos = this.gl.getUniformLocation(this.program, variableName);
             if (pos == null) {
-                alert('null uniform.');
+                alert('[getUniformLocation] Null uniform. Name = ' + variableName);
             }
             return pos;
         };
