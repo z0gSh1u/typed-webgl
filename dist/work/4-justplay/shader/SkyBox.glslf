@@ -1,9 +1,8 @@
-// Fragment shader for background rendering.
+// Fragment shader for SkyBox rendering.
 
 precision mediump float;
 
 varying vec2 vTexCoord;
-
 uniform sampler2D uTexture;
 
 void main() {

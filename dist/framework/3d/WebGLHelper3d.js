@@ -26,6 +26,13 @@ define(["require", "exports"], function (require, exports) {
             enumerable: true,
             configurable: true
         });
+        Object.defineProperty(WebGLHelper3d.prototype, "glContext", {
+            get: function () {
+                return this.gl;
+            },
+            enumerable: true,
+            configurable: true
+        });
         /**
          * Switch to another program.
          */

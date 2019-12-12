@@ -16,6 +16,10 @@ export class WebGLHelper3d {
     return this.program
   }
 
+  get glContext() {
+    return this.gl
+  }
+
   constructor(_canvasDOM: HTMLCanvasElement, _gl: WebGLRenderingContext, _programs: Array<WebGLProgram>) {
     this.canvasDOM = _canvasDOM
     this.gl = _gl
