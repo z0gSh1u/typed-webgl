@@ -61,10 +61,10 @@ define(["require", "exports", "../../framework/3d/DrawingPackage3d", "../../fram
         specularMaterial: [200, 200, 200],
         materialShiness: 30.0
     });
-    var modifyLightBuldPosition = function (newPos) {
+    function PonyModifyLightBuldPosition(newPos) {
         lightBulbPosition = newPos;
-        PonyMaterial.setLightPosition(newPos);
-    };
+    }
+    exports.PonyModifyLightBuldPosition = PonyModifyLightBuldPosition;
     function initPony(helper, _lightBulbPosition, ponyProgram) {
         return __awaiter(this, void 0, void 0, function () {
             var initPonyModelMat, urls, _a, _b;
@@ -72,7 +72,7 @@ define(["require", "exports", "../../framework/3d/DrawingPackage3d", "../../fram
                 switch (_c.label) {
                     case 0:
                         helper.switchProgram(ponyProgram);
-                        modifyLightBuldPosition(_lightBulbPosition);
+                        PonyModifyLightBuldPosition(_lightBulbPosition);
                         vBuffer = helper.createBuffer();
                         tBuffer = helper.createBuffer();
                         nBuffer = helper.createBuffer();

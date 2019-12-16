@@ -88,6 +88,11 @@ let listenKeyboardFPV = () => {
   window.onkeydown = (e: KeyboardEvent) => {
     if (e && e.keyCode) {
       isKeyDown[e.keyCode] = true
+      // TODO: 空气墙
+      // 这种写法不对
+      // if (cameraPos.some(v => Math.abs(v) >= 0.88)) {
+      //   return
+      // }
       if (cameraMoveId == 0) {
         cameraMoveId = window.setInterval(moveCamera, INTERVAL)
       }

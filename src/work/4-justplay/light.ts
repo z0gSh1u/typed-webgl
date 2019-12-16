@@ -1,10 +1,12 @@
 let timerID: number
 let hasStart: boolean = false
-let lightBulbPosition: Vec3 = [0.0, 0.0, 0.0]
+let lightBulbPosition: Vec3 = [0.0, 1.0, 0.0]
+
+const PER_ROTATE_DEG = 7
 
 let lightAutoRotateAtom = () => {
   let v4 = vec4(...lightBulbPosition, 1.0)
-  v4 = mult(rotateZ(5), v4) as Vec4
+  v4 = mult(rotateZ(PER_ROTATE_DEG), v4) as Vec4
   lightBulbPosition = vec3(...v4)
 }
 

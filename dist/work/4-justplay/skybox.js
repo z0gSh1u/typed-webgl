@@ -53,7 +53,6 @@ define(["require", "exports", "../../framework/WebGLUtils"], function (require, 
                         helper.switchProgram(skyBoxProgram);
                         _b = (_a = helper).sendTextureImageToGPU;
                         return [4 /*yield*/, WebGLUtils_1.loadImageAsync([
-                                './model/texture/SkyBox/front.png',
                                 './model/texture/SkyBox/back.png',
                                 './model/texture/SkyBox/left.png',
                                 './model/texture/SkyBox/right.png',
@@ -61,7 +60,7 @@ define(["require", "exports", "../../framework/WebGLUtils"], function (require, 
                                 './model/texture/SkyBox/down.png',
                             ])];
                     case 1:
-                        _b.apply(_a, [_c.sent(), 0, 6]); // 0~5 texture
+                        _b.apply(_a, [_c.sent(), 0, 5]); // 0~4 texture
                         return [2 /*return*/];
                 }
             });
@@ -97,10 +96,7 @@ define(["require", "exports", "../../framework/WebGLUtils"], function (require, 
     ];
     var n = 1.0;
     var faceCoords = {
-        front: [
-            [-n, -n, 1.0], [n, -n, 1.0],
-            [n, n, 1.0], [-n, n, 1.0]
-        ],
+        // front做纹理场，请参考textureField.ts
         back: [
             [-n, -n, -1.0], [n, -n, -1.0],
             [n, n, -1.0], [-n, n, -1.0]

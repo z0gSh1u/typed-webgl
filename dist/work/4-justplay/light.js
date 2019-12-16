@@ -10,10 +10,11 @@ define(["require", "exports"], function (require, exports) {
     Object.defineProperty(exports, "__esModule", { value: true });
     var timerID;
     var hasStart = false;
-    var lightBulbPosition = [0.0, 0.0, 0.0];
+    var lightBulbPosition = [0.0, 1.0, 0.0];
+    var PER_ROTATE_DEG = 7;
     var lightAutoRotateAtom = function () {
         var v4 = vec4.apply(void 0, __spreadArrays(lightBulbPosition, [1.0]));
-        v4 = mult(rotateZ(5), v4);
+        v4 = mult(rotateZ(PER_ROTATE_DEG), v4);
         lightBulbPosition = vec3.apply(void 0, v4);
     };
     function getLightBulbPosition() {

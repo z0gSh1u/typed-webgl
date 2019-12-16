@@ -13,7 +13,7 @@ let Pony: DrawingPackage3d // 小马全身
 let vBuffer: WebGLBuffer, nBuffer: WebGLBuffer, tBuffer: WebGLBuffer
 let lightBulbPosition: Vec3 = [0.0, 0.0, 0.0]
 const PonyMaterial = new PhongLightModel({ // 小马光照参数
-  lightPosition: lightBulbPosition,
+  lightPosition: lightBulbPosition, // @deprecated
   ambientColor: [255, 255, 255],
   ambientMaterial: [200, 200, 200],
   diffuseColor: [255, 255, 255],
@@ -22,14 +22,15 @@ const PonyMaterial = new PhongLightModel({ // 小马光照参数
   specularMaterial: [200, 200, 200],
   materialShiness: 30.0
 })
-let modifyLightBuldPosition = (newPos: Vec3) => {
+
+
+export function PonyModifyLightBuldPosition(newPos: Vec3) {
   lightBulbPosition = newPos
-  PonyMaterial.setLightPosition(newPos)
 }
 
 export async function initPony(helper: WebGLHelper3d, _lightBulbPosition: Vec3, ponyProgram: number) {
   helper.switchProgram(ponyProgram)
-  modifyLightBuldPosition(_lightBulbPosition)
+  PonyModifyLightBuldPosition(_lightBulbPosition)
   vBuffer = helper.createBuffer()
   tBuffer = helper.createBuffer()
   nBuffer = helper.createBuffer()

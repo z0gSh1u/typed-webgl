@@ -4,14 +4,11 @@ import '../../3rd-party/MV'
 import '../../3rd-party/initShaders'
 import { WebGLHelper3d } from '../../framework/3d/WebGLHelper3d'
 import * as WebGLUtils from '../../framework/WebGLUtils'
-
-import { DrawingObject3d } from '../../framework/3d/DrawingObject3d'
-import { DrawingPackage3d } from '../../framework/3d/DrawingPackage3d'
-
 import { initSkyBox, renderSkyBox } from './skybox'
 import { enableRoaming, preCalculatedCPM, getLookAt } from './roam'
-import { PhongLightModel } from '../../framework/3d/PhongLightModel'
-import { initPony, renderPony } from './pony'
+import { initPony, renderPony, PonyModifyLightBuldPosition } from './pony'
+import { initTF, renderTF, stepTFStatus } from './textureField'
+import { startLightBulbAutoRotate, getLightBulbPosition } from './light'
 
 // ==================================
 // 主要变量
@@ -27,7 +24,7 @@ let lightBulbPosition = vec3(0.5, 0.5, 0.0) // 光源位置
 
 // 材质分配
 /**
- * 0~5：天空盒
+ * 0~5：天空盒，其中5为纹理场
  * 6~14：小马
  */
 
@@ -42,17 +39,29 @@ let main = async () => {
 
   await initSkyBox(helper, PROGRAMS.SKYBOX)
   await initPony(helper, lightBulbPosition, PROGRAMS.PONY)
+  await initTF(helper, PROGRAMS.SKYBOX)
   enableRoaming(canvasDOM)
+  startLightBulbAutoRotate(100)
+
+  // 纹理场行动
+  window.setInterval(() => {
+    stepTFStatus()
+  }, 150)
 
   // 全局统一重新渲染
-  window.setInterval(() => { reRender() }, 30) // 60 fps
+  window.setInterval(() => {
+    reRender()
+  }, 30) // 60 fps
+
 }
 
 
 // 全局统一重新渲染
 let reRender = () => {
+  PonyModifyLightBuldPosition(getLightBulbPosition())
   renderPony(helper, getLookAt(), preCalculatedCPM, PROGRAMS.PONY)
   renderSkyBox(helper, getLookAt(), preCalculatedCPM, PROGRAMS.SKYBOX)
+  renderTF(helper, getLookAt(), preCalculatedCPM, PROGRAMS.SKYBOX)
 }
 
 main()

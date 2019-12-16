@@ -41,7 +41,7 @@ var __importStar = (this && this.__importStar) || function (mod) {
     result["default"] = mod;
     return result;
 };
-define(["require", "exports", "../../framework/3d/WebGLHelper3d", "../../framework/WebGLUtils", "./skybox", "./roam", "./pony", "../../3rd-party/MV", "../../3rd-party/initShaders"], function (require, exports, WebGLHelper3d_1, WebGLUtils, skybox_1, roam_1, pony_1) {
+define(["require", "exports", "../../framework/3d/WebGLHelper3d", "../../framework/WebGLUtils", "./skybox", "./roam", "./pony", "./textureField", "./light", "../../3rd-party/MV", "../../3rd-party/initShaders"], function (require, exports, WebGLHelper3d_1, WebGLUtils, skybox_1, roam_1, pony_1, textureField_1, light_1) {
     "use strict";
     Object.defineProperty(exports, "__esModule", { value: true });
     WebGLUtils = __importStar(WebGLUtils);
@@ -57,7 +57,7 @@ define(["require", "exports", "../../framework/3d/WebGLHelper3d", "../../framewo
     var lightBulbPosition = vec3(0.5, 0.5, 0.0); // 光源位置
     // 材质分配
     /**
-     * 0~5：天空盒
+     * 0~5：天空盒，其中5为纹理场
      * 6~14：小马
      */
     var main = function () { return __awaiter(void 0, void 0, void 0, function () {
@@ -76,17 +76,29 @@ define(["require", "exports", "../../framework/3d/WebGLHelper3d", "../../framewo
                     return [4 /*yield*/, pony_1.initPony(helper, lightBulbPosition, PROGRAMS.PONY)];
                 case 2:
                     _a.sent();
+                    return [4 /*yield*/, textureField_1.initTF(helper, PROGRAMS.SKYBOX)];
+                case 3:
+                    _a.sent();
                     roam_1.enableRoaming(canvasDOM);
+                    light_1.startLightBulbAutoRotate(100);
+                    // 纹理场行动
+                    window.setInterval(function () {
+                        textureField_1.stepTFStatus();
+                    }, 150);
                     // 全局统一重新渲染
-                    window.setInterval(function () { reRender(); }, 30); // 60 fps
+                    window.setInterval(function () {
+                        reRender();
+                    }, 30); // 60 fps
                     return [2 /*return*/];
             }
         });
     }); };
     // 全局统一重新渲染
     var reRender = function () {
+        pony_1.PonyModifyLightBuldPosition(light_1.getLightBulbPosition());
         pony_1.renderPony(helper, roam_1.getLookAt(), roam_1.preCalculatedCPM, PROGRAMS.PONY);
         skybox_1.renderSkyBox(helper, roam_1.getLookAt(), roam_1.preCalculatedCPM, PROGRAMS.SKYBOX);
+        textureField_1.renderTF(helper, roam_1.getLookAt(), roam_1.preCalculatedCPM, PROGRAMS.SKYBOX);
     };
     main();
 });
