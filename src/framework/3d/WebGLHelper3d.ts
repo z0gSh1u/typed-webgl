@@ -20,6 +20,10 @@ export class WebGLHelper3d {
     return this.gl
   }
 
+  public getProgram(index:number ) {
+    return this.programList[index]
+  }
+
   constructor(_canvasDOM: HTMLCanvasElement, _gl: WebGLRenderingContext, _programs: Array<WebGLProgram>) {
     this.canvasDOM = _canvasDOM
     this.gl = _gl

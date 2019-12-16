@@ -23,6 +23,13 @@ define(["require", "exports", "../WebGLUtils", "./DrawingPackage2d"], function (
             this.cvsH = this.canvasDOM.height;
             this.renderingLock = false;
         }
+        Object.defineProperty(WebGLHelper2d.prototype, "__waitingQueue", {
+            get: function () {
+                return this.waitingQueue;
+            },
+            enumerable: true,
+            configurable: true
+        });
         /**
          * Set global settings. So that you don't need to pass these arguments every time you call `drawImmediately`.
          */

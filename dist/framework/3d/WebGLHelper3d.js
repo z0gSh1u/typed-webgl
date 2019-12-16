@@ -33,6 +33,9 @@ define(["require", "exports"], function (require, exports) {
             enumerable: true,
             configurable: true
         });
+        WebGLHelper3d.prototype.getProgram = function (index) {
+            return this.programList[index];
+        };
         /**
          * Switch to another program.
          */

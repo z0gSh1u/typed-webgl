@@ -77,7 +77,7 @@ define(["require", "exports", "../../framework/3d/DrawingPackage3d", "../../fram
                         tBuffer = helper.createBuffer();
                         nBuffer = helper.createBuffer();
                         initPonyModelMat = mult(rotateZ(180), rotateX(270));
-                        initPonyModelMat = mult(translate(0.0, -1.32, 0.0), initPonyModelMat);
+                        initPonyModelMat = mult(translate(0.7, -1.32, 0.5), initPonyModelMat);
                         initPonyModelMat = mult(WebGLUtils_1.scaleMat(0.75, 0.75, 0.75), initPonyModelMat);
                         Pony = new (DrawingPackage3d_1.DrawingPackage3d.bind.apply(DrawingPackage3d_1.DrawingPackage3d, __spreadArrays([void 0, initPonyModelMat], [
                             new DrawingObject3d_1.DrawingObject3d('body', './model/normed/Pony/pony.obj', './model/texture/Pony/pony.png', 6),

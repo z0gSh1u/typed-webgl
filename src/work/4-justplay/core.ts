@@ -20,9 +20,8 @@ let canvasDOM: HTMLCanvasElement = document.querySelector('#cvs') as HTMLCanvasE
 let gl: WebGLRenderingContext = canvasDOM.getContext('webgl') as WebGLRenderingContext
 let helper: WebGLHelper3d
 let PROGRAMS = {
-  SKYBOX: 0, PONY: 1
+  SKYBOX: 0, PONY: 1, LAPPLAND: 2
 }
-
 
 let lightBulbPosition = vec3(0.5, 0.5, 0.0) // 光源位置
 
@@ -46,7 +45,7 @@ let main = async () => {
   enableRoaming(canvasDOM)
 
   // 全局统一重新渲染
-  window.setInterval(() => { reRender() }, 30) // 33 fps
+  window.setInterval(() => { reRender() }, 30) // 60 fps
 }
 
 

@@ -52,7 +52,7 @@ define(["require", "exports", "../../framework/3d/WebGLHelper3d", "../../framewo
     var gl = canvasDOM.getContext('webgl');
     var helper;
     var PROGRAMS = {
-        SKYBOX: 0, PONY: 1
+        SKYBOX: 0, PONY: 1, LAPPLAND: 2
     };
     var lightBulbPosition = vec3(0.5, 0.5, 0.0); // 光源位置
     // 材质分配
@@ -78,7 +78,7 @@ define(["require", "exports", "../../framework/3d/WebGLHelper3d", "../../framewo
                     _a.sent();
                     roam_1.enableRoaming(canvasDOM);
                     // 全局统一重新渲染
-                    window.setInterval(function () { reRender(); }, 30); // 33 fps
+                    window.setInterval(function () { reRender(); }, 30); // 60 fps
                     return [2 /*return*/];
             }
         });

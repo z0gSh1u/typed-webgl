@@ -34,7 +34,7 @@ export async function initPony(helper: WebGLHelper3d, _lightBulbPosition: Vec3, 
   tBuffer = helper.createBuffer()
   nBuffer = helper.createBuffer()
   let initPonyModelMat = mult(rotateZ(180), rotateX(270))
-  initPonyModelMat = mult(translate(0.0, -1.32, 0.0), initPonyModelMat)
+  initPonyModelMat = mult(translate(0.7, -1.32, 0.5), initPonyModelMat)
   initPonyModelMat = mult(scaleMat(0.75, 0.75, 0.75), initPonyModelMat)
   Pony = new DrawingPackage3d(initPonyModelMat as Mat, ...[
     new DrawingObject3d('body', './model/normed/Pony/pony.obj', './model/texture/Pony/pony.png', 6), // 身体
