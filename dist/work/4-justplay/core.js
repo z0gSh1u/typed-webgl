@@ -41,7 +41,7 @@ var __importStar = (this && this.__importStar) || function (mod) {
     result["default"] = mod;
     return result;
 };
-define(["require", "exports", "../../framework/3d/WebGLHelper3d", "../../framework/WebGLUtils", "./skybox", "./roam", "./pony", "./textureField", "./light", "../../3rd-party/MV", "../../3rd-party/initShaders"], function (require, exports, WebGLHelper3d_1, WebGLUtils, skybox_1, roam_1, pony_1, textureField_1, light_1) {
+define(["require", "exports", "../../framework/3d/WebGLHelper3d", "../../framework/WebGLUtils", "./skybox", "./roam", "./pony", "./textureField", "./light", "./sword", "../../3rd-party/MV", "../../3rd-party/initShaders"], function (require, exports, WebGLHelper3d_1, WebGLUtils, skybox_1, roam_1, pony_1, textureField_1, light_1, sword_1) {
     "use strict";
     Object.defineProperty(exports, "__esModule", { value: true });
     WebGLUtils = __importStar(WebGLUtils);
@@ -52,7 +52,7 @@ define(["require", "exports", "../../framework/3d/WebGLHelper3d", "../../framewo
     var gl = canvasDOM.getContext('webgl');
     var helper;
     var PROGRAMS = {
-        SKYBOX: 0, PONY: 1, LAPPLAND: 2
+        SKYBOX: 0, PONY: 1, SWORD: 2
     };
     var lightBulbPosition = vec3(0.5, 0.5, 0.0); // 光源位置
     // 材质分配
@@ -68,6 +68,7 @@ define(["require", "exports", "../../framework/3d/WebGLHelper3d", "../../framewo
                     helper = new WebGLHelper3d_1.WebGLHelper3d(canvasDOM, gl, [
                         WebGLUtils.initializeShaders(gl, './shader/SkyBox.glslv', './shader/SkyBox.glslf'),
                         WebGLUtils.initializeShaders(gl, './shader/Pony.glslv', './shader/Pony.glslf'),
+                        WebGLUtils.initializeShaders(gl, './shader/Sword.glslv', './shader/Sword.glslf'),
                     ]);
                     gl.enable(gl.DEPTH_TEST);
                     return [4 /*yield*/, skybox_1.initSkyBox(helper, PROGRAMS.SKYBOX)];
@@ -78,6 +79,9 @@ define(["require", "exports", "../../framework/3d/WebGLHelper3d", "../../framewo
                     _a.sent();
                     return [4 /*yield*/, textureField_1.initTF(helper, PROGRAMS.SKYBOX)];
                 case 3:
+                    _a.sent();
+                    return [4 /*yield*/, sword_1.initSword(helper, lightBulbPosition, PROGRAMS.SWORD)];
+                case 4:
                     _a.sent();
                     roam_1.enableRoaming(canvasDOM);
                     light_1.startLightBulbAutoRotate(100);
@@ -96,9 +100,11 @@ define(["require", "exports", "../../framework/3d/WebGLHelper3d", "../../framewo
     // 全局统一重新渲染
     var reRender = function () {
         pony_1.PonyModifyLightBuldPosition(light_1.getLightBulbPosition());
+        sword_1.SwordModifyLightBulbPosition(light_1.getLightBulbPosition());
         pony_1.renderPony(helper, roam_1.getLookAt(), roam_1.preCalculatedCPM, PROGRAMS.PONY);
         skybox_1.renderSkyBox(helper, roam_1.getLookAt(), roam_1.preCalculatedCPM, PROGRAMS.SKYBOX);
         textureField_1.renderTF(helper, roam_1.getLookAt(), roam_1.preCalculatedCPM, PROGRAMS.SKYBOX);
+        sword_1.renderSword(helper, roam_1.getLookAt(), PROGRAMS.SWORD);
     };
     main();
 });

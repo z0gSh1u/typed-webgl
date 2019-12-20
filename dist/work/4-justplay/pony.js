@@ -61,6 +61,7 @@ define(["require", "exports", "../../framework/3d/DrawingPackage3d", "../../fram
         specularMaterial: [200, 200, 200],
         materialShiness: 30.0
     });
+    // TODO: 仅Analyze一次fs, fns, fts
     function PonyModifyLightBuldPosition(newPos) {
         lightBulbPosition = newPos;
     }

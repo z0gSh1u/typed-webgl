@@ -9,6 +9,7 @@ import { enableRoaming, preCalculatedCPM, getLookAt } from './roam'
 import { initPony, renderPony, PonyModifyLightBuldPosition } from './pony'
 import { initTF, renderTF, stepTFStatus } from './textureField'
 import { startLightBulbAutoRotate, getLightBulbPosition } from './light'
+import { initSword, renderSword, SwordModifyLightBulbPosition } from './sword'
 
 // ==================================
 // 主要变量
@@ -17,7 +18,7 @@ let canvasDOM: HTMLCanvasElement = document.querySelector('#cvs') as HTMLCanvasE
 let gl: WebGLRenderingContext = canvasDOM.getContext('webgl') as WebGLRenderingContext
 let helper: WebGLHelper3d
 let PROGRAMS = {
-  SKYBOX: 0, PONY: 1, LAPPLAND: 2
+  SKYBOX: 0, PONY: 1, SWORD: 2
 }
 
 let lightBulbPosition = vec3(0.5, 0.5, 0.0) // 光源位置
@@ -33,13 +34,15 @@ let main = async () => {
   helper = new WebGLHelper3d(canvasDOM, gl, [
     WebGLUtils.initializeShaders(gl, './shader/SkyBox.glslv', './shader/SkyBox.glslf'),
     WebGLUtils.initializeShaders(gl, './shader/Pony.glslv', './shader/Pony.glslf'),
-
+    WebGLUtils.initializeShaders(gl, './shader/Sword.glslv', './shader/Sword.glslf'),
+    
   ])
   gl.enable(gl.DEPTH_TEST)
 
   await initSkyBox(helper, PROGRAMS.SKYBOX)
   await initPony(helper, lightBulbPosition, PROGRAMS.PONY)
   await initTF(helper, PROGRAMS.SKYBOX)
+  await initSword(helper, lightBulbPosition, PROGRAMS.SWORD)
   enableRoaming(canvasDOM)
   startLightBulbAutoRotate(100)
 
@@ -47,21 +50,20 @@ let main = async () => {
   window.setInterval(() => {
     stepTFStatus()
   }, 150)
-
   // 全局统一重新渲染
   window.setInterval(() => {
     reRender()
   }, 30) // 60 fps
-
 }
-
 
 // 全局统一重新渲染
 let reRender = () => {
   PonyModifyLightBuldPosition(getLightBulbPosition())
+  SwordModifyLightBulbPosition(getLightBulbPosition())
   renderPony(helper, getLookAt(), preCalculatedCPM, PROGRAMS.PONY)
   renderSkyBox(helper, getLookAt(), preCalculatedCPM, PROGRAMS.SKYBOX)
   renderTF(helper, getLookAt(), preCalculatedCPM, PROGRAMS.SKYBOX)
+  renderSword(helper, getLookAt(), PROGRAMS.SWORD)
 }
 
 main()
