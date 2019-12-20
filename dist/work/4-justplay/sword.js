@@ -48,6 +48,7 @@ define(["require", "exports", "../../framework/3d/DrawingPackage3d", "../../fram
     var Sword;
     var vs;
     var vns;
+    var waveLock = false;
     var lightBulbPosition = [0.0, 0.0, 0.0];
     var SwordMaterial = new PhongLightModel_1.PhongLightModel({
         lightPosition: lightBulbPosition,
@@ -73,7 +74,7 @@ define(["require", "exports", "../../framework/3d/DrawingPackage3d", "../../fram
                 initSwordMat = mat4();
                 initSwordMat = mult(initSwordMat, rotateX(90));
                 initSwordMat = mult(initSwordMat, rotateZ(60));
-                initSwordMat = mult(translate(0.99, -0.9, 1.0), initSwordMat);
+                initSwordMat = mult(translate(0.85, -0.9, 0.9), initSwordMat);
                 Sword = new (DrawingPackage3d_1.DrawingPackage3d.bind.apply(DrawingPackage3d_1.DrawingPackage3d, __spreadArrays([void 0, initSwordMat], [
                     new DrawingObject3d_1.DrawingObject3d('sword', './model/normed/minecraft_sword.obj')
                 ])))();
@@ -116,11 +117,21 @@ define(["require", "exports", "../../framework/3d/DrawingPackage3d", "../../fram
                     { buffer: nBuffer, data: flatten(vns), varName: 'aNormal', attrPer: 3, type: gl.FLOAT },
                 ],
                 uniforms: [
-                    { varName: 'uColor', data: WebGLUtils_1.normalize8bitColor([205, 201, 201]), method: '4fv' }
+                    { varName: 'uColor', data: WebGLUtils_1.normalize8bitColor([255, 222, 13]), method: '4fv' }
                 ]
             });
             helper.drawArrays(gl.TRIANGLES, 0, obj.objProcessor.getEffectiveVertexCount());
         });
     }
     exports.renderSword = renderSword;
+    function waveSword() {
+        if (waveLock) {
+            return;
+        }
+        waveLock = true;
+        var old = Sword.modelMat;
+        Sword.setModelMat(mult(old, rotateX(10)));
+        window.setTimeout(function () { Sword.setModelMat(old); waveLock = false; }, 150);
+    }
+    exports.waveSword = waveSword;
 });

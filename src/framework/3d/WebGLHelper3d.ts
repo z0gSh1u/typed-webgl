@@ -170,9 +170,9 @@ export class WebGLHelper3d {
     }
     let tex; let gl = this.gl
     for (let i = posFrom; i < posTo; i++) {
-      tex = gl.createTexture() as WebGLTexture;
+      tex = gl.createTexture() as WebGLTexture
       eval(`gl.activeTexture(gl.TEXTURE${i});`)
-      gl.bindTexture(gl.TEXTURE_2D, tex);
+      gl.bindTexture(gl.TEXTURE_2D, tex)
       eval(`gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, images[${i - posFrom}]);`)
       gl.generateMipmap(gl.TEXTURE_2D);
     }

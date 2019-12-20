@@ -1,4 +1,4 @@
-define(["require", "exports", "./roam"], function (require, exports, roam_1) {
+define(["require", "exports", "../../framework/WebGLUtils", "./roam"], function (require, exports, WebGLUtils_1, roam_1) {
     "use strict";
     Object.defineProperty(exports, "__esModule", { value: true });
     // 魔法方块
@@ -60,23 +60,50 @@ define(["require", "exports", "./roam"], function (require, exports, roam_1) {
         gl.texParameteri(gl.TEXTURE_CUBE_MAP, gl.TEXTURE_MIN_FILTER, gl.LINEAR_MIPMAP_LINEAR);
     }
     exports.initMagicCube = initMagicCube;
-    function renderMagicCube(helper, programIndex, theta) {
+    var then = 0;
+    var modelXRotationRadians = 0;
+    var modelYRotationRadians = 0;
+    var ped = false;
+    function renderMagicCube(helper, programIndex, time) {
         helper.switchProgram(programIndex);
         var gl = helper.glContext;
-        var modelViewMat = roam_1.getLookAt();
+        // convert to seconds
+        time *= 0.001;
+        // Subtract the previous time from the current time
+        var deltaTime = time - then;
+        // Remember the current time for the next frame.
+        then = time;
+        // Animate the rotation
+        modelYRotationRadians += -0.7 * deltaTime;
+        modelXRotationRadians += -0.4 * deltaTime;
+        // Compute the camera's matrix using look at.
+        //  let cameraMatrix = getLookAt()
+        // Make a view matrix from the camera matrix.
+        // let viewMatrix = inverse(cameraMatrix)
+        var viewMatrix = inverse(roam_1.getLookAt());
+        viewMatrix = mult(WebGLUtils_1.scaleMat(0.5, 0.5, 0.5), viewMatrix);
+        var worldMatrix = mat4();
+        if (!ped)
+            printm(worldMatrix);
+        ped = true;
+        // printm(viewMatrix)
+        // printm(cameraMatrix)
+        // printm(worldMatrix)
         helper.prepare({
             attributes: [
-                { buffer: vBuffer, data: positions, varName: 'vPoition', attrPer: 3, type: gl.FLOAT },
-                { buffer: nBuffer, data: normals, varName: 'Normal', attrPer: 3, type: gl.FLOAT },
+                { buffer: vBuffer, data: positions, varName: 'a_position', attrPer: 3, type: gl.FLOAT },
+                { buffer: nBuffer, data: normals, varName: 'a_normal', attrPer: 3, type: gl.FLOAT },
             ],
             uniforms: [
-                { varName: 'theta', data: vec3(theta, theta, theta), method: '3fv' },
-                { varName: 'texMap', data: 20, method: '1i' },
-                { varName: 'loca', data: flatten(modelViewMat), method: 'Matrix4fv' },
+                { varName: 'u_projection', data: flatten(mat4()), method: 'Matrix4fv' },
+                { varName: 'u_view', data: flatten(viewMatrix), method: 'Matrix4fv' },
+                { varName: 'u_world', data: flatten(worldMatrix), method: 'Matrix4fv' },
+                { varName: 'u_worldCameraPosition', data: roam_1.cameraPos, method: '3fv' },
+                { varName: 'u_texture', data: 20, method: '1i' }
             ]
         });
         // Draw the geometry.
-        helper.drawArrays(gl.TRIANGLES, 0, 6 * 6);
+        gl.drawArrays(gl.TRIANGLES, 0, 6 * 6);
     }
     exports.renderMagicCube = renderMagicCube;
     var positions = new Float32Array([

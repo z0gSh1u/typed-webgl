@@ -9,7 +9,7 @@ var __spreadArrays = (this && this.__spreadArrays) || function () {
             r[k] = a[j];
     return r;
 };
-define(["require", "exports", "../../3rd-party/MV"], function (require, exports) {
+define(["require", "exports", "./sword", "../../3rd-party/MV"], function (require, exports, sword_1) {
     "use strict";
     Object.defineProperty(exports, "__esModule", { value: true });
     // ==================================
@@ -79,6 +79,7 @@ define(["require", "exports", "../../3rd-party/MV"], function (require, exports)
         };
         // 如果想要不按住也可以鼠标观察，则注释下列钩子
         canvasDOM.onmouseup = function () {
+            sword_1.waveSword();
             canvasDOM.onmousemove = function () { };
         };
     };

@@ -4,6 +4,7 @@
 // ==================================
 
 import '../../3rd-party/MV'
+import { waveSword } from './sword'
 
 // ==================================
 // 观察相机
@@ -71,6 +72,7 @@ let listenMouseToTurnCamera = () => {
   }
   // 如果想要不按住也可以鼠标观察，则注释下列钩子
   canvasDOM.onmouseup = () => {
+    waveSword()
     canvasDOM.onmousemove = () => { }
   }
 }

@@ -41,7 +41,7 @@ var __importStar = (this && this.__importStar) || function (mod) {
     result["default"] = mod;
     return result;
 };
-define(["require", "exports", "../../framework/3d/WebGLHelper3d", "../../framework/WebGLUtils", "./skybox", "./roam", "./pony", "./textureField", "./light", "./sword", "../../3rd-party/MV", "../../3rd-party/initShaders"], function (require, exports, WebGLHelper3d_1, WebGLUtils, skybox_1, roam_1, pony_1, textureField_1, light_1, sword_1) {
+define(["require", "exports", "../../framework/3d/WebGLHelper3d", "../../framework/WebGLUtils", "./skybox", "./roam", "./pony", "./textureField", "./light", "./sword", "./magicCube", "../../3rd-party/MV", "../../3rd-party/initShaders"], function (require, exports, WebGLHelper3d_1, WebGLUtils, skybox_1, roam_1, pony_1, textureField_1, light_1, sword_1, magicCube_1) {
     "use strict";
     Object.defineProperty(exports, "__esModule", { value: true });
     WebGLUtils = __importStar(WebGLUtils);
@@ -52,13 +52,14 @@ define(["require", "exports", "../../framework/3d/WebGLHelper3d", "../../framewo
     var gl = canvasDOM.getContext('webgl');
     var helper;
     var PROGRAMS = {
-        SKYBOX: 0, PONY: 1, SWORD: 2
+        SKYBOX: 0, PONY: 1, SWORD: 2, CUBE: 3
     };
     var lightBulbPosition = vec3(0.5, 0.5, 0.0); // 光源位置
     // 材质分配
     /**
      * 0~5：天空盒，其中5为纹理场
      * 6~14：小马
+     * 20
      */
     var main = function () { return __awaiter(void 0, void 0, void 0, function () {
         return __generator(this, function (_a) {
@@ -69,6 +70,7 @@ define(["require", "exports", "../../framework/3d/WebGLHelper3d", "../../framewo
                         WebGLUtils.initializeShaders(gl, './shader/SkyBox.glslv', './shader/SkyBox.glslf'),
                         WebGLUtils.initializeShaders(gl, './shader/Pony.glslv', './shader/Pony.glslf'),
                         WebGLUtils.initializeShaders(gl, './shader/Sword.glslv', './shader/Sword.glslf'),
+                        WebGLUtils.initializeShaders(gl, './shader/Cube.glslv', './shader/Cube.glslf'),
                     ]);
                     gl.enable(gl.DEPTH_TEST);
                     return [4 /*yield*/, skybox_1.initSkyBox(helper, PROGRAMS.SKYBOX)];
@@ -83,20 +85,19 @@ define(["require", "exports", "../../framework/3d/WebGLHelper3d", "../../framewo
                     return [4 /*yield*/, sword_1.initSword(helper, lightBulbPosition, PROGRAMS.SWORD)];
                 case 4:
                     _a.sent();
+                    magicCube_1.initMagicCube(canvasDOM, helper, PROGRAMS.CUBE);
                     roam_1.enableRoaming(canvasDOM);
                     light_1.startLightBulbAutoRotate(100);
                     // 纹理场行动
                     window.setInterval(function () {
                         textureField_1.stepTFStatus();
-                    }, 150);
-                    // 全局统一重新渲染
-                    window.setInterval(function () {
-                        reRender();
-                    }, 30); // 60 fps
+                    }, 100);
+                    requestAnimationFrame(reRender);
                     return [2 /*return*/];
             }
         });
     }); };
+    var theta = 0;
     // 全局统一重新渲染
     var reRender = function () {
         pony_1.PonyModifyLightBuldPosition(light_1.getLightBulbPosition());
@@ -105,6 +106,9 @@ define(["require", "exports", "../../framework/3d/WebGLHelper3d", "../../framewo
         skybox_1.renderSkyBox(helper, roam_1.getLookAt(), roam_1.preCalculatedCPM, PROGRAMS.SKYBOX);
         textureField_1.renderTF(helper, roam_1.getLookAt(), roam_1.preCalculatedCPM, PROGRAMS.SKYBOX);
         sword_1.renderSword(helper, roam_1.getLookAt(), PROGRAMS.SWORD);
+        // renderMagicCube(helper, PROGRAMS.CUBE, theta)
+        theta = (theta + 2) % 360;
+        requestAnimationFrame(reRender);
     };
     main();
 });

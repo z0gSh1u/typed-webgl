@@ -10,6 +10,8 @@ let Sword: DrawingPackage3d
 let vs: Vec3[]
 let vns: Vec3[]
 
+let waveLock = false
+
 let lightBulbPosition: Vec3 = [0.0, 0.0, 0.0]
 const SwordMaterial = new PhongLightModel({ // 光照参数
   lightPosition: lightBulbPosition, // @deprecated
@@ -32,11 +34,10 @@ export async function initSword(helper: WebGLHelper3d, _lightBulbPosition: Vec3,
   vBuffer = helper.createBuffer()
   nBuffer = helper.createBuffer()
 
-  // TODO: 
   let initSwordMat = mat4()
   initSwordMat = mult(initSwordMat, rotateX(90)) as Mat
   initSwordMat = mult(initSwordMat, rotateZ(60)) as Mat
-  initSwordMat = mult(translate(0.99, -0.9, 1.0), initSwordMat) as Mat
+  initSwordMat = mult(translate(0.85, -0.9, 0.9), initSwordMat) as Mat
 
   Sword = new DrawingPackage3d(initSwordMat as Mat, ...[
     new DrawingObject3d('sword', './model/normed/minecraft_sword.obj')
@@ -83,9 +84,19 @@ export function renderSword(helper: WebGLHelper3d, ctm: Mat, swordProgram: numbe
         { buffer: nBuffer, data: flatten(vns), varName: 'aNormal', attrPer: 3, type: gl.FLOAT },
       ],
       uniforms: [
-        { varName: 'uColor', data: normalize8bitColor([205, 201, 201]), method: '4fv' }
+        { varName: 'uColor', data: normalize8bitColor([255, 222, 13]), method: '4fv' }
       ]
     })
     helper.drawArrays(gl.TRIANGLES, 0, obj.objProcessor.getEffectiveVertexCount())
   })
+}
+
+export function waveSword() {
+  if (waveLock) {
+    return
+  }
+  waveLock = true
+  let old = Sword.modelMat
+  Sword.setModelMat(mult(old, rotateX(10)) as Mat)
+  window.setTimeout(() => { Sword.setModelMat(old); waveLock = false }, 150)
 }
