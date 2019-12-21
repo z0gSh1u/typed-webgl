@@ -68,7 +68,7 @@ export function initMagicCube(canvasDOM: HTMLCanvasElement, helper: WebGLHelper3
   gl.texParameteri(gl.TEXTURE_CUBE_MAP, gl.TEXTURE_MIN_FILTER, gl.LINEAR_MIPMAP_LINEAR);
 }
 
-export function renderMagicCube(helper: WebGLHelper3d, programIndex: number, theta: number) {
+export function renderMagicCube(helper: WebGLHelper3d, perspectiveMat: Mat, programIndex: number, theta: number) {
   helper.switchProgram(programIndex)
   let gl = helper.glContext
 
@@ -83,7 +83,7 @@ export function renderMagicCube(helper: WebGLHelper3d, programIndex: number, the
       { varName: 'texMap', data: 20, method: '1i' },
       { varName: 'uWorldMatrix', data: flatten(ctm), method: 'Matrix4fv' },
       { varName: 'uModelMatrix', data: flatten(translate(0.2,0.2,0.2)), method: 'Matrix4fv' },
-      { varName: 'uProjectionMatrix', data: flatten(mat4()), method: 'Matrix4fv' },
+      { varName: 'uProjectionMatrix', data: flatten(perspectiveMat), method: 'Matrix4fv' },
     ]
   })
 

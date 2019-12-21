@@ -60,7 +60,7 @@ define(["require", "exports", "./roam"], function (require, exports, roam_1) {
         gl.texParameteri(gl.TEXTURE_CUBE_MAP, gl.TEXTURE_MIN_FILTER, gl.LINEAR_MIPMAP_LINEAR);
     }
     exports.initMagicCube = initMagicCube;
-    function renderMagicCube(helper, programIndex, theta) {
+    function renderMagicCube(helper, perspectiveMat, programIndex, theta) {
         helper.switchProgram(programIndex);
         var gl = helper.glContext;
         var ctm = roam_1.getLookAt();
@@ -73,7 +73,7 @@ define(["require", "exports", "./roam"], function (require, exports, roam_1) {
                 { varName: 'texMap', data: 20, method: '1i' },
                 { varName: 'uWorldMatrix', data: flatten(ctm), method: 'Matrix4fv' },
                 { varName: 'uModelMatrix', data: flatten(translate(0.2, 0.2, 0.2)), method: 'Matrix4fv' },
-                { varName: 'uProjectionMatrix', data: flatten(mat4()), method: 'Matrix4fv' },
+                { varName: 'uProjectionMatrix', data: flatten(perspectiveMat), method: 'Matrix4fv' },
             ]
         });
         // Draw the geometry.

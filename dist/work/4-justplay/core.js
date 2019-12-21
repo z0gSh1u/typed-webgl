@@ -145,7 +145,7 @@ define(["require", "exports", "../../framework/3d/WebGLHelper3d", "../../framewo
         skybox_1.renderSkyBox(helper, wrappedGetLookAt(), roam_1.preCalculatedCPM, PROGRAMS.SKYBOX);
         textureField_1.renderTF(helper, wrappedGetLookAt(), roam_1.preCalculatedCPM, PROGRAMS.SKYBOX);
         sword_1.renderSword(helper, wrappedGetLookAt(), PROGRAMS.SWORD);
-        magicCube_1.renderMagicCube(helper, PROGRAMS.CUBE, theta);
+        magicCube_1.renderMagicCube(helper, roam_1.preCalculatedCPM, PROGRAMS.CUBE, theta);
         theta = (theta + 2) % 360;
         requestAnimationFrame(reRender);
     };
