@@ -110,7 +110,7 @@ let reRender = () => {
   renderSkyBox(helper, wrappedGetLookAt(), preCalculatedCPM, PROGRAMS.SKYBOX)
   renderTF(helper, wrappedGetLookAt(), preCalculatedCPM, PROGRAMS.SKYBOX)
   renderSword(helper, wrappedGetLookAt(), PROGRAMS.SWORD)
-  renderMagicCube(helper, PROGRAMS.CUBE, theta)
+  renderMagicCube(helper, preCalculatedCPM, PROGRAMS.CUBE, theta)
   theta = (theta + 2) % 360
   requestAnimationFrame(reRender)
 }

@@ -23,6 +23,17 @@ define(["require", "exports", "./sword", "../../3rd-party/MV"], function (requir
     var ANGLE_DOWN_MAX = -120;
     var VEC_UP_MAX = vec4(0.0, Math.sin(ANGLE_UP_MAX), Math.cos(ANGLE_UP_MAX), 1);
     var VEC_DOWN_MAX = vec4(0.0, Math.sin(ANGLE_DOWN_MAX), Math.cos(ANGLE_DOWN_MAX), 1);
+    var POS_MIN = vec3(-0.9, 0, -0.9); //相机位置边界，分别为XZ坐标的最小值，第二个分量无效
+    var POS_MAX = vec3(0.9, 0, 0.9); //相机位置边界，分别为XZ坐标的最大值，第二个分量无效
+    var GRAVITY = -0.02; // 重力加速度
+    var GETUP_SPEED = 0.1; // 起身速度
+    var CEIL = 0.8; // 天花板坐标
+    var FLOOR_STAND = -0.5; // 站立时地板坐标
+    var FLOOR_SQUAT = -0.8; // 蹲下时地板坐标
+    var JUMP_SPEED = 0.15; // 起跳速度
+    var floor = FLOOR_STAND; // 相机Y坐标最小值，可变以实现下蹲
+    var isOnFloor = false; // 是否站在地板上
+    var verticalSpeed = 0; // 垂直方向速度，主要用于跳跃
     exports.cameraPos = vec3(0.0, 0.0, 0.0);
     exports.cameraFront = vec3(0.1, 0.0, 0.0);
     var cameraSpeed = 0.04;
@@ -93,6 +104,9 @@ define(["require", "exports", "./sword", "../../3rd-party/MV"], function (requir
         '16' /*Shift*/: false
     };
     var listenKeyboardFPV = function () {
+        if (cameraMoveId == 0) {
+            cameraMoveId = window.setInterval(moveCamera, INTERVAL);
+        }
         isKeyDown['87'] = isKeyDown['65'] = isKeyDown['83'] = isKeyDown['68'] = isKeyDown['32'] = isKeyDown['16'] = false;
         window.onkeydown = function (e) {
             if (e && e.keyCode) {
@@ -102,9 +116,6 @@ define(["require", "exports", "./sword", "../../3rd-party/MV"], function (requir
                 // if (cameraPos.some(v => Math.abs(v) >= 0.88)) {
                 //   return
                 // }
-                if (cameraMoveId == 0) {
-                    cameraMoveId = window.setInterval(moveCamera, INTERVAL);
-                }
             }
         };
         window.onkeyup = function (e) {
@@ -117,37 +128,68 @@ define(["require", "exports", "./sword", "../../3rd-party/MV"], function (requir
         var cameraMoveSpeed = vec3(0, 0, 0);
         var frontVec = normalize(vec3(exports.cameraFront[0], 0, exports.cameraFront[2]), false);
         var leftVec = normalize(cross(exports.VEC_Y, exports.cameraFront), false);
-        var moveFlag = false;
+        // let moveFlag = false
         if (isKeyDown['87' /*W*/]) {
             cameraMoveSpeed = add(cameraMoveSpeed, mult(mat3(cameraSpeed), frontVec));
-            moveFlag = true;
+            // moveFlag = true
         }
         if (isKeyDown['83' /*S*/]) {
             cameraMoveSpeed = add(cameraMoveSpeed, mult(mat3(-cameraSpeed), frontVec));
-            moveFlag = true;
+            // moveFlag = true
         }
         if (isKeyDown['65' /*A*/]) {
             cameraMoveSpeed = add(cameraMoveSpeed, mult(mat3(-cameraSpeed), leftVec));
-            moveFlag = true;
+            // moveFlag = true
         }
         if (isKeyDown['68' /*D*/]) {
             cameraMoveSpeed = add(cameraMoveSpeed, mult(mat3(cameraSpeed), leftVec));
-            moveFlag = true;
+            // moveFlag = true
         }
         if (isKeyDown['32' /*Space*/]) {
-            cameraMoveSpeed = add(cameraMoveSpeed, mult(mat3(cameraSpeed), exports.VEC_Y));
-            moveFlag = true;
+            if (isOnFloor) {
+                verticalSpeed = JUMP_SPEED;
+            }
+            // cameraMoveSpeed = add(cameraMoveSpeed, mult(mat3(cameraSpeed), VEC_Y)) as Vec3
+            // moveFlag = true
         }
         if (isKeyDown['16' /*Shift*/]) {
-            cameraMoveSpeed = add(cameraMoveSpeed, mult(mat3(-cameraSpeed), exports.VEC_Y));
-            moveFlag = true;
+            floor = FLOOR_SQUAT;
+            // cameraMoveSpeed = add(cameraMoveSpeed, mult(mat3(-cameraSpeed), VEC_Y)) as Vec3
+            // moveFlag = true
         }
-        if (!moveFlag) {
-            clearInterval(cameraMoveId);
-            cameraMoveId = 0;
-            return;
+        else {
+            floor = FLOOR_STAND;
         }
+        // if (!moveFlag) {
+        //   clearInterval(cameraMoveId)
+        //   cameraMoveId = 0
+        //   return
+        // }
+        if (!isOnFloor) {
+            verticalSpeed += GRAVITY;
+        }
+        cameraMoveSpeed[1] += verticalSpeed;
         exports.cameraPos = add(exports.cameraPos, cameraMoveSpeed);
+        if (!isOnFloor && exports.cameraPos[1] > CEIL) {
+            exports.cameraPos[1] = CEIL;
+            verticalSpeed = 0;
+        }
+        if (!isOnFloor && exports.cameraPos[1] <= floor) {
+            exports.cameraPos[1] = floor;
+            verticalSpeed = 0;
+            isOnFloor = true;
+        }
+        if (isOnFloor && exports.cameraPos[1] < floor) {
+            exports.cameraPos[1] = Math.min(exports.cameraPos[1] + GETUP_SPEED, floor);
+        }
+        if (exports.cameraPos[1] > floor) {
+            isOnFloor = false;
+        }
+        //简单粗暴的水平方向空气墙实现
+        [0, 2].forEach(function (v) {
+            exports.cameraPos[v] = Math.min(exports.cameraPos[v], POS_MAX[v]);
+            exports.cameraPos[v] = Math.max(exports.cameraPos[v], POS_MIN[v]);
+        });
     };
     // ==================================
     // 透视
