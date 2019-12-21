@@ -152,7 +152,7 @@ define(["require", "exports", "./sword", "../../3rd-party/MV"], function (requir
     // ==================================
     // 透视
     // ==================================
-    var fovy = 90.0;
+    var fovy = 119;
     var aspect = -16 / 9;
     var near = 0.05;
     var far = 2.8; // 越小越好（房间就显得越大），经过精密的调试，这个参数最棒
