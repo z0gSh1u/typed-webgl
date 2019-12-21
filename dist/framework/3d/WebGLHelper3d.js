@@ -26,6 +26,16 @@ define(["require", "exports"], function (require, exports) {
             enumerable: true,
             configurable: true
         });
+        Object.defineProperty(WebGLHelper3d.prototype, "glContext", {
+            get: function () {
+                return this.gl;
+            },
+            enumerable: true,
+            configurable: true
+        });
+        WebGLHelper3d.prototype.getProgram = function (index) {
+            return this.programList[index];
+        };
         /**
          * Switch to another program.
          */
@@ -67,7 +77,7 @@ define(["require", "exports"], function (require, exports) {
         WebGLHelper3d.prototype.getUniformLocation = function (variableName) {
             var pos = this.gl.getUniformLocation(this.program, variableName);
             if (pos == null) {
-                alert('null uniform.');
+                alert('[getUniformLocation] Null uniform. Name = ' + variableName);
             }
             return pos;
         };
@@ -147,6 +157,20 @@ define(["require", "exports"], function (require, exports) {
                 eval("gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, images[" + (i - posFrom) + "]);");
                 gl.generateMipmap(gl.TEXTURE_2D);
             }
+        };
+        /**
+         * Send cubemap texture image to GPU.
+         */
+        WebGLHelper3d.prototype.sendCubeMapTextureToGPU = function (image, position) {
+            var pos = position.replace('x', 'X').replace('y', 'Y').replace('z', 'Z')
+                .replace('+', 'POSITIVE_').replace('-', 'NEGATIVE_');
+            var tex;
+            var gl = this.gl;
+            var target = eval("gl.TEXTURE_CUBE_MAP_" + pos);
+            tex = gl.createTexture();
+            gl.bindTexture(gl.TEXTURE_CUBE_MAP, tex);
+            gl.texImage2D(target, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, image);
+            gl.generateMipmap(gl.TEXTURE_CUBE_MAP);
         };
         /**
          * Analyze f?s to v?s.

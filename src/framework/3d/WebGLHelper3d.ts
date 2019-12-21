@@ -16,6 +16,14 @@ export class WebGLHelper3d {
     return this.program
   }
 
+  get glContext() {
+    return this.gl
+  }
+
+  public getProgram(index:number ) {
+    return this.programList[index]
+  }
+
   constructor(_canvasDOM: HTMLCanvasElement, _gl: WebGLRenderingContext, _programs: Array<WebGLProgram>) {
     this.canvasDOM = _canvasDOM
     this.gl = _gl
@@ -68,7 +76,7 @@ export class WebGLHelper3d {
    */
   public getUniformLocation(variableName: string): WebGLUniformLocation | null {
     let pos = this.gl.getUniformLocation(this.program, variableName)
-    if (pos == null) { alert('null uniform.') }
+    if (pos == null) { alert('[getUniformLocation] Null uniform. Name = ' + variableName) }
     return pos
   }
 
@@ -162,12 +170,26 @@ export class WebGLHelper3d {
     }
     let tex; let gl = this.gl
     for (let i = posFrom; i < posTo; i++) {
-      tex = gl.createTexture() as WebGLTexture;
+      tex = gl.createTexture() as WebGLTexture
       eval(`gl.activeTexture(gl.TEXTURE${i});`)
-      gl.bindTexture(gl.TEXTURE_2D, tex);
+      gl.bindTexture(gl.TEXTURE_2D, tex)
       eval(`gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, images[${i - posFrom}]);`)
       gl.generateMipmap(gl.TEXTURE_2D);
     }
+  }
+
+  /**
+   * Send cubemap texture image to GPU.
+   */
+  public sendCubeMapTextureToGPU(image: HTMLImageElement, position: '+x' | '+y' | '+z' | '-x' | '-y' | '-z') {
+    let pos = position.replace('x', 'X').replace('y', 'Y').replace('z', 'Z')
+      .replace('+', 'POSITIVE_').replace('-', 'NEGATIVE_')
+    let tex; let gl = this.gl
+    let target: number = eval(`gl.TEXTURE_CUBE_MAP_${pos}`)
+    tex = gl.createTexture() as WebGLTexture
+    gl.bindTexture(gl.TEXTURE_CUBE_MAP, tex)
+    gl.texImage2D(target, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, image)
+    gl.generateMipmap(gl.TEXTURE_CUBE_MAP)
   }
 
   /**

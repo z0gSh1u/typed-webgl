@@ -96,4 +96,44 @@ define(["require", "exports", "../3rd-party/MV", "../3rd-party/initShaders"], fu
         return mat4(a11, a12, a13, a14, a21, a22, a23, a24, a31, a32, a33, a34, 0, 0, 0, 1.0);
     }
     exports.rotateByAxis = rotateByAxis;
+    /**
+       * Get the point after rotating theta (DEG) to center.
+       */
+    function getRotatedPoint(canvasDOM, point, center, theta) {
+        var row = canvasDOM.height, col = canvasDOM.width;
+        var x1 = point[0], y1 = row - point[1], x2 = center[0], y2 = row - center[1];
+        var rt = radians(theta);
+        var x = (x1 - x2) * Math.cos(rt) - (y1 - y2) * Math.sin(rt) + x2;
+        var y = (x1 - x2) * Math.sin(rt) + (y1 - y2) * Math.cos(rt) + y2;
+        x = x;
+        y = row - y;
+        return [x, y];
+    }
+    exports.getRotatedPoint = getRotatedPoint;
+    /**
+     * Get the point after moving deltaX and deltaY
+     */
+    function getMovedPoint(point, delta) {
+        // !!! same as getTurnedPoint
+        if (point.length == 2) {
+            var x = point[0] + delta[0];
+            var y = point[1] + delta[1];
+            return [x, y];
+        }
+        return point;
+    }
+    exports.getMovedPoint = getMovedPoint;
+    /**
+     * Mirror a point.
+     */
+    function getTurnedPoint(point, axis) {
+        // !!! note that there might be something not point Vec2 in data (like Oval)
+        if (point.length == 2) {
+            var x = 2 * axis - point[0];
+            var y = point[1];
+            return [x, y];
+        }
+        return point;
+    }
+    exports.getTurnedPoint = getTurnedPoint;
 });

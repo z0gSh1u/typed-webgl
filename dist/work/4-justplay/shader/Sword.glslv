@@ -4,17 +4,10 @@
 attribute vec4 aPosition;
 // normal vector
 attribute vec4 aNormal;
-// texture using
-attribute vec2 aTexCoord;
-varying vec2 vTexCoord;
 // transformation matrix under world coordinate system
 uniform mat4 uWorldMatrix;
 // transformation matrix under self coordinate system
 uniform mat4 uModelMatrix;
-// transformation matrix under view coordinate system
-uniform mat4 uViewMatrix;
-// transformation matrix for toushi
-uniform mat4 uProjectionMatrix;
 // light position
 uniform vec4 uLightPosition;
 // specular shiness
@@ -23,13 +16,16 @@ uniform float uShiness;
 uniform vec4 uAmbientProduct, uDiffuseProduct, uSpecularProduct;
 // convery light result to fShader
 varying vec4 vLight;
-
+// to avoid normal changes when scaling
 uniform mat3 uWorldMatrixTransInv;
+// [a temporary work-around] frontend use lookAt to override global ctm, but light calculation need the original ctm
+uniform mat4 uLightCtm;
 
 void main() {
 
 	// vertex position
-	vec3 posToWorld = (uWorldMatrix * aPosition).xyz;
+	vec3 posToWorld = (uLightCtm * aPosition).xyz;
+	
 	// light calculation
 	vec3 lightPos = uLightPosition.xyz;
 	vec3 L = normalize(lightPos - posToWorld);
@@ -48,9 +44,8 @@ void main() {
 		specular = vec4(0.0, 0.0, 0.0, 1.0);
 	}
 
-	gl_Position = uProjectionMatrix * uWorldMatrix * uModelMatrix * aPosition;
+	gl_Position = uWorldMatrix * uModelMatrix * aPosition;
 
-	vTexCoord = aTexCoord;
 	vLight = vec4((ambient + diffuse + specular).rgb, 1.0);
 	
 }

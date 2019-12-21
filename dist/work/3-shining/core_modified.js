@@ -127,8 +127,9 @@ define(["require", "exports", "../../framework/3d/WebGLHelper3d", "../../framewo
     var VEC_DOWN_MAX = vec4(0.0, Math.sin(ANGLE_DOWN_MAX), Math.cos(ANGLE_DOWN_MAX), 1);
     var cameraPos = vec3(0.0, 0.0, -3.0);
     var cameraFront = vec3(0.0, 0.0, 1.0);
-    var cameraSpeed = 0.04;
+    var cameraSpeed = 0.02;
     var cameraMoveId = 0; // 相机移动计时器编号
+    var INTERVAL_FPV = 10;
     // ==================================
     // 跟踪球使用
     // ==================================
@@ -531,7 +532,6 @@ define(["require", "exports", "../../framework/3d/WebGLHelper3d", "../../framewo
                 }
                 var newZ = tempVec[2];
                 cameraFront = vec3(cameraFront[0] * newZ / initZ, tempVec[1], cameraFront[2] * newZ / initZ);
-                reRender(ctm, true, true);
             };
         };
         // 如果想要不按住也可以鼠标观察，则注释下列钩子
@@ -553,9 +553,6 @@ define(["require", "exports", "../../framework/3d/WebGLHelper3d", "../../framewo
         window.onkeydown = function (e) {
             if (e && e.keyCode) {
                 isKeyDown[e.keyCode] = true;
-                if (cameraMoveId == 0) {
-                    cameraMoveId = window.setInterval(moveCamera, INTERVAL);
-                }
             }
         };
         window.onkeyup = function (e) {
@@ -563,40 +560,31 @@ define(["require", "exports", "../../framework/3d/WebGLHelper3d", "../../framewo
                 isKeyDown[e.keyCode] = false;
             }
         };
+        if (cameraMoveId == 0) {
+            cameraMoveId = window.setInterval(moveCamera, INTERVAL_FPV);
+        }
     };
     var moveCamera = function () {
         var cameraMoveSpeed = vec3(0, 0, 0);
         var frontVec = normalize(vec3(cameraFront[0], 0, cameraFront[2]), false);
         var leftVec = normalize(cross(VEC_Y, cameraFront), false);
-        var moveFlag = false;
         if (isKeyDown['87' /*W*/]) {
             cameraMoveSpeed = add(cameraMoveSpeed, mult(mat3(cameraSpeed), frontVec));
-            moveFlag = true;
         }
         if (isKeyDown['83' /*S*/]) {
             cameraMoveSpeed = add(cameraMoveSpeed, mult(mat3(-cameraSpeed), frontVec));
-            moveFlag = true;
         }
         if (isKeyDown['65' /*A*/]) {
             cameraMoveSpeed = add(cameraMoveSpeed, mult(mat3(-cameraSpeed), leftVec));
-            moveFlag = true;
         }
         if (isKeyDown['68' /*D*/]) {
             cameraMoveSpeed = add(cameraMoveSpeed, mult(mat3(cameraSpeed), leftVec));
-            moveFlag = true;
         }
         if (isKeyDown['32' /*Space*/]) {
             cameraMoveSpeed = add(cameraMoveSpeed, mult(mat3(cameraSpeed), VEC_Y));
-            moveFlag = true;
         }
         if (isKeyDown['16' /*Shift*/]) {
             cameraMoveSpeed = add(cameraMoveSpeed, mult(mat3(-cameraSpeed), VEC_Y));
-            moveFlag = true;
-        }
-        if (!moveFlag) {
-            clearInterval(cameraMoveId);
-            cameraMoveId = 0;
-            return;
         }
         cameraPos = add(cameraPos, cameraMoveSpeed);
         reRender(ctm);

@@ -99,3 +99,43 @@ export function rotateByAxis(v1: Vec3, v2: Vec3, angle: number) {
     0, 0, 0, 1.0
   )
 }
+
+/**
+   * Get the point after rotating theta (DEG) to center.
+   */
+export function getRotatedPoint(canvasDOM: HTMLCanvasElement, point: Vec2, center: Vec2, theta: number): Vec2 {
+  let row = canvasDOM.height, col = canvasDOM.width
+  let x1 = point[0], y1 = row - point[1], x2 = center[0], y2 = row - center[1]
+  let rt = radians(theta)
+  let x = (x1 - x2) * Math.cos(rt) - (y1 - y2) * Math.sin(rt) + x2
+  let y = (x1 - x2) * Math.sin(rt) + (y1 - y2) * Math.cos(rt) + y2
+  x = x
+  y = row - y
+  return [x, y]
+}
+
+/**
+ * Get the point after moving deltaX and deltaY
+ */
+export function getMovedPoint(point: any, delta: Vec2): Vec2 {
+  // !!! same as getTurnedPoint
+  if (point.length == 2) {
+    let x = point[0] + delta[0]
+    let y = point[1] + delta[1]
+    return [x, y]
+  }
+  return point
+}
+
+/**
+ * Mirror a point.
+ */
+export function getTurnedPoint(point: any, axis: number): Vec2 {
+  // !!! note that there might be something not point Vec2 in data (like Oval)
+  if (point.length == 2) {
+    let x = 2 * axis - point[0]
+    let y = point[1]
+    return [x, y]
+  }
+  return point
+}

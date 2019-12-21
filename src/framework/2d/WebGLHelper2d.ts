@@ -29,6 +29,10 @@ export class WebGLHelper2d {
   private lastRenderTick: number
   private INTERVAL_MIN: number
 
+  get __waitingQueue() {
+    return this.waitingQueue
+  }
+
   constructor(_canvasDOM: HTMLCanvasElement, _gl: WebGLRenderingContext, _program: WebGLProgram) {
     this.canvasDOM = _canvasDOM
     this.gl = _gl
