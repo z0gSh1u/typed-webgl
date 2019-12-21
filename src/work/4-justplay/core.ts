@@ -9,8 +9,9 @@ import { enableRoaming, preCalculatedCPM, getLookAt } from './roam'
 import { initPony, renderPony, PonyModifyLightBuldPosition } from './pony'
 import { initTF, renderTF, stepTFStatus } from './textureField'
 import { startLightBulbAutoRotate, getLightBulbPosition } from './light'
-import { initSword, renderSword, SwordModifyLightBulbPosition } from './sword'
+import { initSword, renderSword, SwordModifyLightBulbPosition, SwordMaterial } from './sword'
 import { initMagicCube, renderMagicCube } from './magicCube'
+import { playNewIsland } from './extra'
 
 // ==================================
 // 主要变量
@@ -56,19 +57,60 @@ let main = async () => {
     stepTFStatus()
   }, 100)
   requestAnimationFrame(reRender)
+
+  // startShake()
+  // playNewIsland()
+}
+
+(document.querySelector('#btn_playNewIsland') as HTMLButtonElement).onclick = async () => {
+
+  // todo:
+
+  await playNewIsland()
+  startShake()
+
+  window.setTimeout(() => {
+    startShake()
+    SwordMaterial.diffuseMaterial = WebGLUtils.normalize8bitColor([255, 0, 0])
+    SwordMaterial.ambientMaterial = WebGLUtils.normalize8bitColor([255, 0, 0])
+    SwordMaterial.reCalculateProducts()
+    window.setTimeout(() => {
+      SwordMaterial.diffuseMaterial = WebGLUtils.normalize8bitColor([0, 255, 0])
+      SwordMaterial.ambientMaterial = WebGLUtils.normalize8bitColor([0, 255, 0])
+      SwordMaterial.reCalculateProducts()
+    }, 5000)
+  }, 2000)
+
 }
 
 let theta = 0
+
+let shakeCTM = false
+
+let wrappedGetLookAt = () => {
+  if (!shakeCTM) {
+    return getLookAt()
+  }
+  let tmp = getLookAt()
+  let x = (Math.random() - 0.5) / 30
+  let y = (Math.random() - 0.5) / 30
+  let z = (Math.random() - 0.5) / 30
+  return mult(translate(x, y, z), tmp) as Mat
+}
+
+let startShake = () => {
+  shakeCTM = !shakeCTM
+}
 
 // 全局统一重新渲染
 let reRender = () => {
   PonyModifyLightBuldPosition(getLightBulbPosition())
   SwordModifyLightBulbPosition(getLightBulbPosition())
-  renderPony(helper, getLookAt(), preCalculatedCPM, PROGRAMS.PONY)
-  renderSkyBox(helper, getLookAt(), preCalculatedCPM, PROGRAMS.SKYBOX)
-  renderTF(helper, getLookAt(), preCalculatedCPM, PROGRAMS.SKYBOX)
-  renderSword(helper, getLookAt(), PROGRAMS.SWORD)
-  // renderMagicCube(helper, PROGRAMS.CUBE, theta)
+  renderPony(helper, wrappedGetLookAt(), preCalculatedCPM, PROGRAMS.PONY)
+  renderSkyBox(helper, wrappedGetLookAt(), preCalculatedCPM, PROGRAMS.SKYBOX)
+  renderTF(helper, wrappedGetLookAt(), preCalculatedCPM, PROGRAMS.SKYBOX)
+  renderSword(helper, wrappedGetLookAt(), PROGRAMS.SWORD)
+  renderMagicCube(helper, PROGRAMS.CUBE, theta)
   theta = (theta + 2) % 360
   requestAnimationFrame(reRender)
 }

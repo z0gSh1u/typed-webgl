@@ -63,16 +63,17 @@ define(["require", "exports", "./roam"], function (require, exports, roam_1) {
     function renderMagicCube(helper, programIndex, theta) {
         helper.switchProgram(programIndex);
         var gl = helper.glContext;
-        var modelViewMat = roam_1.getLookAt();
+        var ctm = roam_1.getLookAt();
         helper.prepare({
             attributes: [
                 { buffer: vBuffer, data: positions, varName: 'vPoition', attrPer: 3, type: gl.FLOAT },
                 { buffer: nBuffer, data: normals, varName: 'Normal', attrPer: 3, type: gl.FLOAT },
             ],
             uniforms: [
-                { varName: 'theta', data: vec3(theta, theta, theta), method: '3fv' },
                 { varName: 'texMap', data: 20, method: '1i' },
-                { varName: 'loca', data: flatten(modelViewMat), method: 'Matrix4fv' },
+                { varName: 'uWorldMatrix', data: flatten(ctm), method: 'Matrix4fv' },
+                { varName: 'uModelMatrix', data: flatten(translate(0.2, 0.2, 0.2)), method: 'Matrix4fv' },
+                { varName: 'uProjectionMatrix', data: flatten(mat4()), method: 'Matrix4fv' },
             ]
         });
         // Draw the geometry.
@@ -80,24 +81,24 @@ define(["require", "exports", "./roam"], function (require, exports, roam_1) {
     }
     exports.renderMagicCube = renderMagicCube;
     var positions = new Float32Array([
-        -0.5, -0.5, -0.5, -0.5, 0.5, -0.5,
-        0.5, -0.5, -0.5, -0.5, 0.5, -0.5,
-        0.5, 0.5, -0.5, 0.5, -0.5, -0.5,
-        -0.5, -0.5, 0.5, 0.5, -0.5, 0.5,
-        -0.5, 0.5, 0.5, -0.5, 0.5, 0.5,
-        0.5, -0.5, 0.5, 0.5, 0.5, 0.5,
-        -0.5, 0.5, -0.5, -0.5, 0.5, 0.5,
-        0.5, 0.5, -0.5, -0.5, 0.5, 0.5,
-        0.5, 0.5, 0.5, 0.5, 0.5, -0.5,
-        -0.5, -0.5, -0.5, 0.5, -0.5, -0.5,
-        -0.5, -0.5, 0.5, -0.5, -0.5, 0.5,
-        0.5, -0.5, -0.5, 0.5, -0.5, 0.5,
-        -0.5, -0.5, -0.5, -0.5, -0.5, 0.5,
-        -0.5, 0.5, -0.5, -0.5, -0.5, 0.5,
-        -0.5, 0.5, 0.5, -0.5, 0.5, -0.5,
-        0.5, -0.5, -0.5, 0.5, 0.5, -0.5,
-        0.5, -0.5, 0.5, 0.5, -0.5, 0.5,
-        0.5, 0.5, -0.5, 0.5, 0.5, 0.5,
+        -0.2, -0.2, -0.2, -0.2, 0.2, -0.2,
+        0.2, -0.2, -0.2, -0.2, 0.2, -0.2,
+        0.2, 0.2, -0.2, 0.2, -0.2, -0.2,
+        -0.2, -0.2, 0.2, 0.2, -0.2, 0.2,
+        -0.2, 0.2, 0.2, -0.2, 0.2, 0.2,
+        0.2, -0.2, 0.2, 0.2, 0.2, 0.2,
+        -0.2, 0.2, -0.2, -0.2, 0.2, 0.2,
+        0.2, 0.2, -0.2, -0.2, 0.2, 0.2,
+        0.2, 0.2, 0.2, 0.2, 0.2, -0.2,
+        -0.2, -0.2, -0.2, 0.2, -0.2, -0.2,
+        -0.2, -0.2, 0.2, -0.2, -0.2, 0.2,
+        0.2, -0.2, -0.2, 0.2, -0.2, 0.2,
+        -0.2, -0.2, -0.2, -0.2, -0.2, 0.2,
+        -0.2, 0.2, -0.2, -0.2, -0.2, 0.2,
+        -0.2, 0.2, 0.2, -0.2, 0.2, -0.2,
+        0.2, -0.2, -0.2, 0.2, 0.2, -0.2,
+        0.2, -0.2, 0.2, 0.2, -0.2, 0.2,
+        0.2, 0.2, -0.2, 0.2, 0.2, 0.2,
     ]);
     var normals = new Float32Array([
         0, 0, -1, 0, 0, -1,

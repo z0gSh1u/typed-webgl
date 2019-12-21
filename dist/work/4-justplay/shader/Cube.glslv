@@ -1,35 +1,14 @@
 varying vec3 R;
-attribute vec4 vPoition;
+attribute vec3 vPoition;
 attribute vec4 Normal;
-
-uniform mat4 loca;
-
-
-uniform mat4 ModelView;
-uniform vec3 theta;
-
+uniform mat4 uProjectionMatrix;
+uniform mat4 uModelMatrix;
+uniform mat4 uWorldMatrix;
 
 void main() {
-  vec3 angles = radians(theta);
-  vec3 c = cos(angles);
-  vec3 s = sin(angles);
-
-  mat4 rx = mat4(1.0, 0.0, 0.0, 0.0,
-                 0.0, c.x, s.x, 0.0,
-                 0.0,-s.x, c.x, 0.0,
-                 0.0, 0.0, 0.0, 1.0);
-  mat4 ry = mat4(c.y, 0.0, -s.y, 0.0,
-                 0.0, 1.0, 0.0, 0.0,
-                 s.y, 0.0, c.y, 0.0,
-                 0.0, 0.0, 0.0, 1.0);
-  mat4 rz = mat4(c.z, -s.z,0.0, 0.0,
-                 s.z, c.z, 0.0, 0.0,
-                 0.0, 0.0, 1.0, 0.0,
-                 0.0, 0.0, 0.0, 1.0);
-
-  mat4 ModelView = rz * ry * rx;
-  vec4 eyePos = ModelView * vPoition;
-  vec4 N = ModelView * Normal;
+  vec4 pos = vec4(vPoition, 1.0);
+  vec4 eyePos = uWorldMatrix * pos;
+  vec4 N = uWorldMatrix * Normal;
   R = reflect(eyePos.xyz, N.xyz);
-  gl_Position = ModelView * vPoition * loca;
+  gl_Position =uProjectionMatrix * uWorldMatrix * uModelMatrix * pos;
 }

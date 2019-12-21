@@ -50,7 +50,7 @@ define(["require", "exports", "../../framework/3d/DrawingPackage3d", "../../fram
     var vns;
     var waveLock = false;
     var lightBulbPosition = [0.0, 0.0, 0.0];
-    var SwordMaterial = new PhongLightModel_1.PhongLightModel({
+    exports.SwordMaterial = new PhongLightModel_1.PhongLightModel({
         lightPosition: lightBulbPosition,
         ambientColor: [255, 255, 255],
         ambientMaterial: [200, 200, 200],
@@ -101,10 +101,10 @@ define(["require", "exports", "../../framework/3d/DrawingPackage3d", "../../fram
                 { varName: 'uModelMatrix', data: flatten(Sword.modelMat), method: 'Matrix4fv' },
                 { varName: 'uLightCtm', data: flatten(ctm), method: 'Matrix4fv' },
                 { varName: 'uLightPosition', data: __spreadArrays(lightBulbPosition, [1.0]), method: '4fv' },
-                { varName: 'uShiness', data: SwordMaterial.materialShiness, method: '1f' },
-                { varName: 'uAmbientProduct', data: SwordMaterial.ambientProduct, method: '4fv' },
-                { varName: 'uDiffuseProduct', data: SwordMaterial.diffuseProduct, method: '4fv' },
-                { varName: 'uSpecularProduct', data: SwordMaterial.specularProduct, method: '4fv' },
+                { varName: 'uShiness', data: exports.SwordMaterial.materialShiness, method: '1f' },
+                { varName: 'uAmbientProduct', data: exports.SwordMaterial.ambientProduct, method: '4fv' },
+                { varName: 'uDiffuseProduct', data: exports.SwordMaterial.diffuseProduct, method: '4fv' },
+                { varName: 'uSpecularProduct', data: exports.SwordMaterial.specularProduct, method: '4fv' },
                 {
                     varName: 'uWorldMatrixTransInv', data: flatten(transpose(inverse(mat3(Sword.modelMat[0][0], Sword.modelMat[0][1], Sword.modelMat[0][2], Sword.modelMat[1][0], Sword.modelMat[1][1], Sword.modelMat[1][2], Sword.modelMat[2][0], Sword.modelMat[2][1], Sword.modelMat[2][2])))), method: 'Matrix3fv'
                 },

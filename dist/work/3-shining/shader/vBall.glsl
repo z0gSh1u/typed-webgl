@@ -3,9 +3,7 @@
 attribute vec3 aPosition;
 
 uniform mat4 uWorldMat;
-
 uniform mat4 uModelMat;
-
 
 void main() {
 

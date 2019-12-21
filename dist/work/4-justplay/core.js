@@ -41,7 +41,7 @@ var __importStar = (this && this.__importStar) || function (mod) {
     result["default"] = mod;
     return result;
 };
-define(["require", "exports", "../../framework/3d/WebGLHelper3d", "../../framework/WebGLUtils", "./skybox", "./roam", "./pony", "./textureField", "./light", "./sword", "./magicCube", "../../3rd-party/MV", "../../3rd-party/initShaders"], function (require, exports, WebGLHelper3d_1, WebGLUtils, skybox_1, roam_1, pony_1, textureField_1, light_1, sword_1, magicCube_1) {
+define(["require", "exports", "../../framework/3d/WebGLHelper3d", "../../framework/WebGLUtils", "./skybox", "./roam", "./pony", "./textureField", "./light", "./sword", "./magicCube", "./extra", "../../3rd-party/MV", "../../3rd-party/initShaders"], function (require, exports, WebGLHelper3d_1, WebGLUtils, skybox_1, roam_1, pony_1, textureField_1, light_1, sword_1, magicCube_1, extra_1) {
     "use strict";
     Object.defineProperty(exports, "__esModule", { value: true });
     WebGLUtils = __importStar(WebGLUtils);
@@ -97,16 +97,55 @@ define(["require", "exports", "../../framework/3d/WebGLHelper3d", "../../framewo
             }
         });
     }); };
+    document.querySelector('#btn_playNewIsland').onclick = function () { return __awaiter(void 0, void 0, void 0, function () {
+        return __generator(this, function (_a) {
+            switch (_a.label) {
+                case 0: 
+                // todo:
+                return [4 /*yield*/, extra_1.playNewIsland()];
+                case 1:
+                    // todo:
+                    _a.sent();
+                    startShake();
+                    window.setTimeout(function () {
+                        startShake();
+                        sword_1.SwordMaterial.diffuseMaterial = WebGLUtils.normalize8bitColor([255, 0, 0]);
+                        sword_1.SwordMaterial.ambientMaterial = WebGLUtils.normalize8bitColor([255, 0, 0]);
+                        sword_1.SwordMaterial.reCalculateProducts();
+                        window.setTimeout(function () {
+                            sword_1.SwordMaterial.diffuseMaterial = WebGLUtils.normalize8bitColor([0, 255, 0]);
+                            sword_1.SwordMaterial.ambientMaterial = WebGLUtils.normalize8bitColor([0, 255, 0]);
+                            sword_1.SwordMaterial.reCalculateProducts();
+                        }, 5000);
+                    }, 2000);
+                    return [2 /*return*/];
+            }
+        });
+    }); };
     var theta = 0;
+    var shakeCTM = false;
+    var wrappedGetLookAt = function () {
+        if (!shakeCTM) {
+            return roam_1.getLookAt();
+        }
+        var tmp = roam_1.getLookAt();
+        var x = (Math.random() - 0.5) / 30;
+        var y = (Math.random() - 0.5) / 30;
+        var z = (Math.random() - 0.5) / 30;
+        return mult(translate(x, y, z), tmp);
+    };
+    var startShake = function () {
+        shakeCTM = !shakeCTM;
+    };
     // 全局统一重新渲染
     var reRender = function () {
         pony_1.PonyModifyLightBuldPosition(light_1.getLightBulbPosition());
         sword_1.SwordModifyLightBulbPosition(light_1.getLightBulbPosition());
-        pony_1.renderPony(helper, roam_1.getLookAt(), roam_1.preCalculatedCPM, PROGRAMS.PONY);
-        skybox_1.renderSkyBox(helper, roam_1.getLookAt(), roam_1.preCalculatedCPM, PROGRAMS.SKYBOX);
-        textureField_1.renderTF(helper, roam_1.getLookAt(), roam_1.preCalculatedCPM, PROGRAMS.SKYBOX);
-        sword_1.renderSword(helper, roam_1.getLookAt(), PROGRAMS.SWORD);
-        // renderMagicCube(helper, PROGRAMS.CUBE, theta)
+        pony_1.renderPony(helper, wrappedGetLookAt(), roam_1.preCalculatedCPM, PROGRAMS.PONY);
+        skybox_1.renderSkyBox(helper, wrappedGetLookAt(), roam_1.preCalculatedCPM, PROGRAMS.SKYBOX);
+        textureField_1.renderTF(helper, wrappedGetLookAt(), roam_1.preCalculatedCPM, PROGRAMS.SKYBOX);
+        sword_1.renderSword(helper, wrappedGetLookAt(), PROGRAMS.SWORD);
+        magicCube_1.renderMagicCube(helper, PROGRAMS.CUBE, theta);
         theta = (theta + 2) % 360;
         requestAnimationFrame(reRender);
     };

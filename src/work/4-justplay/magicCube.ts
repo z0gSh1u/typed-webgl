@@ -72,7 +72,7 @@ export function renderMagicCube(helper: WebGLHelper3d, programIndex: number, the
   helper.switchProgram(programIndex)
   let gl = helper.glContext
 
-  let modelViewMat = getLookAt()
+  let ctm = getLookAt()
 
   helper.prepare({
     attributes: [
@@ -80,10 +80,10 @@ export function renderMagicCube(helper: WebGLHelper3d, programIndex: number, the
       { buffer: nBuffer, data: normals, varName: 'Normal', attrPer: 3, type: gl.FLOAT },
     ],
     uniforms: [
-      { varName: 'theta', data: vec3(theta, theta, theta), method: '3fv' },
       { varName: 'texMap', data: 20, method: '1i' },
-      { varName: 'loca', data: flatten(modelViewMat), method: 'Matrix4fv' },
-
+      { varName: 'uWorldMatrix', data: flatten(ctm), method: 'Matrix4fv' },
+      { varName: 'uModelMatrix', data: flatten(translate(0.2,0.2,0.2)), method: 'Matrix4fv' },
+      { varName: 'uProjectionMatrix', data: flatten(mat4()), method: 'Matrix4fv' },
     ]
   })
 
@@ -91,26 +91,25 @@ export function renderMagicCube(helper: WebGLHelper3d, programIndex: number, the
   helper.drawArrays(gl.TRIANGLES, 0, 6 * 6)
 
 }
-
 let positions = new Float32Array([
-  -0.5, -0.5, -0.5, -0.5, 0.5, -0.5,
-  0.5, -0.5, -0.5, -0.5, 0.5, -0.5,
-  0.5, 0.5, -0.5, 0.5, -0.5, -0.5,
-  -0.5, -0.5, 0.5, 0.5, -0.5, 0.5,
-  -0.5, 0.5, 0.5, -0.5, 0.5, 0.5,
-  0.5, -0.5, 0.5, 0.5, 0.5, 0.5,
-  -0.5, 0.5, -0.5, -0.5, 0.5, 0.5,
-  0.5, 0.5, -0.5, -0.5, 0.5, 0.5,
-  0.5, 0.5, 0.5, 0.5, 0.5, -0.5,
-  -0.5, -0.5, -0.5, 0.5, -0.5, -0.5,
-  -0.5, -0.5, 0.5, -0.5, -0.5, 0.5,
-  0.5, -0.5, -0.5, 0.5, -0.5, 0.5,
-  -0.5, -0.5, -0.5, -0.5, -0.5, 0.5,
-  -0.5, 0.5, -0.5, -0.5, -0.5, 0.5,
-  -0.5, 0.5, 0.5, -0.5, 0.5, -0.5,
-  0.5, -0.5, -0.5, 0.5, 0.5, -0.5,
-  0.5, -0.5, 0.5, 0.5, -0.5, 0.5,
-  0.5, 0.5, -0.5, 0.5, 0.5, 0.5,
+  -0.2, -0.2, -0.2, -0.2, 0.2, -0.2,
+  0.2, -0.2, -0.2, -0.2, 0.2, -0.2,
+  0.2, 0.2, -0.2, 0.2, -0.2, -0.2,
+  -0.2, -0.2, 0.2, 0.2, -0.2, 0.2,
+  -0.2, 0.2, 0.2, -0.2, 0.2, 0.2,
+  0.2, -0.2, 0.2, 0.2, 0.2, 0.2,
+  -0.2, 0.2, -0.2, -0.2, 0.2, 0.2,
+  0.2, 0.2, -0.2, -0.2, 0.2, 0.2,
+  0.2, 0.2, 0.2, 0.2, 0.2, -0.2,
+  -0.2, -0.2, -0.2, 0.2, -0.2, -0.2,
+  -0.2, -0.2, 0.2, -0.2, -0.2, 0.2,
+  0.2, -0.2, -0.2, 0.2, -0.2, 0.2,
+  -0.2, -0.2, -0.2, -0.2, -0.2, 0.2,
+  -0.2, 0.2, -0.2, -0.2, -0.2, 0.2,
+  -0.2, 0.2, 0.2, -0.2, 0.2, -0.2,
+  0.2, -0.2, -0.2, 0.2, 0.2, -0.2,
+  0.2, -0.2, 0.2, 0.2, -0.2, 0.2,
+  0.2, 0.2, -0.2, 0.2, 0.2, 0.2,
 ])
 let normals = new Float32Array([
   0, 0, -1, 0, 0, -1,

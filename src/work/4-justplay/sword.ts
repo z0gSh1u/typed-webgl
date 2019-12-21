@@ -13,7 +13,7 @@ let vns: Vec3[]
 let waveLock = false
 
 let lightBulbPosition: Vec3 = [0.0, 0.0, 0.0]
-const SwordMaterial = new PhongLightModel({ // 光照参数
+export let SwordMaterial = new PhongLightModel({ // 光照参数
   lightPosition: lightBulbPosition, // @deprecated
   ambientColor: [255, 255, 255],
   ambientMaterial: [200, 200, 200],
