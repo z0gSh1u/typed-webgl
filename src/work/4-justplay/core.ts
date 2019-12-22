@@ -29,7 +29,7 @@ let lightBulbPosition = vec3(0.5, 0.5, 0.0) // 光源位置
 /**
  * 0~5：天空盒，其中5为纹理场
  * 6~14：小马
- * 20
+ * 20: CubeMap
  */
 
 let main = async () => {
@@ -57,7 +57,6 @@ let main = async () => {
     stepTFStatus()
   }, 100)
   requestAnimationFrame(reRender)
-
   // startShake()
   // playNewIsland()
 }

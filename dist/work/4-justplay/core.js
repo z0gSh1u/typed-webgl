@@ -59,7 +59,7 @@ define(["require", "exports", "../../framework/3d/WebGLHelper3d", "../../framewo
     /**
      * 0~5：天空盒，其中5为纹理场
      * 6~14：小马
-     * 20
+     * 20: CubeMap
      */
     var main = function () { return __awaiter(void 0, void 0, void 0, function () {
         return __generator(this, function (_a) {

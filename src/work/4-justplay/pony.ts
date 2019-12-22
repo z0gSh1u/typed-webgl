@@ -83,8 +83,8 @@ export function renderPony(helper: WebGLHelper3d, ctm: Mat, perspectiveMat: Mat,
   })
   Pony.innerList.forEach(obj => {
     let vs = helper.analyzeFtoV(obj, 'fs'),
-    vts = helper.analyzeFtoV(obj, 'fts'),
-    vns = helper.analyzeFtoV(obj, 'fns')    
+      vts = helper.analyzeFtoV(obj, 'fts'),
+      vns = helper.analyzeFtoV(obj, 'fns')
     helper.prepare({
       attributes: [
         { buffer: vBuffer, data: flatten(vs), varName: 'aPosition', attrPer: 3, type: gl.FLOAT },

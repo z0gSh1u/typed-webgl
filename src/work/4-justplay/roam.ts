@@ -17,8 +17,8 @@ const ANGLE_UP_MAX = 120
 const ANGLE_DOWN_MAX = -120
 const VEC_UP_MAX = vec4(0.0, Math.sin(ANGLE_UP_MAX), Math.cos(ANGLE_UP_MAX), 1)
 const VEC_DOWN_MAX = vec4(0.0, Math.sin(ANGLE_DOWN_MAX), Math.cos(ANGLE_DOWN_MAX), 1)
-const POS_MIN = vec3(-0.9, 0, -0.9)//相机位置边界，分别为XZ坐标的最小值，第二个分量无效
-const POS_MAX = vec3(0.9, 0, 0.9)//相机位置边界，分别为XZ坐标的最大值，第二个分量无效
+const POS_MIN = vec3(-0.82, 0, -0.82)// 相机位置边界，分别为XZ坐标的最小值，第二个分量无效
+const POS_MAX = vec3(0.82, 0, 0.82)// 相机位置边界，分别为XZ坐标的最大值，第二个分量无效
 const GRAVITY = -0.02 // 重力加速度
 const GETUP_SPEED = 0.1 // 起身速度
 const CEIL = 0.8 // 天花板坐标
@@ -104,11 +104,6 @@ let listenKeyboardFPV = () => {
   window.onkeydown = (e: KeyboardEvent) => {
     if (e && e.keyCode) {
       isKeyDown[e.keyCode] = true
-      // TODO: 空气墙
-      // 这种写法不对
-      // if (cameraPos.some(v => Math.abs(v) >= 0.88)) {
-      //   return
-      // }
     }
   }
   window.onkeyup = (e: KeyboardEvent) => {
@@ -122,68 +117,53 @@ let moveCamera = () => {
   let cameraMoveSpeed = vec3(0, 0, 0)
   let frontVec = normalize(vec3(cameraFront[0], 0, cameraFront[2]), false)
   let leftVec = normalize(cross(VEC_Y, cameraFront), false)
-  // let moveFlag = false
   if (isKeyDown['87'/*W*/]) {
     cameraMoveSpeed = add(cameraMoveSpeed, mult(mat3(cameraSpeed), frontVec)) as Vec3
-    // moveFlag = true
   }
   if (isKeyDown['83'/*S*/]) {
     cameraMoveSpeed = add(cameraMoveSpeed, mult(mat3(-cameraSpeed), frontVec)) as Vec3
-    // moveFlag = true
   }
   if (isKeyDown['65'/*A*/]) {
     cameraMoveSpeed = add(cameraMoveSpeed, mult(mat3(-cameraSpeed), leftVec)) as Vec3
-    // moveFlag = true
   }
   if (isKeyDown['68'/*D*/]) {
     cameraMoveSpeed = add(cameraMoveSpeed, mult(mat3(cameraSpeed), leftVec)) as Vec3
-    // moveFlag = true
   }
   if (isKeyDown['32'/*Space*/]) {
-    if(isOnFloor) {
+    if (isOnFloor) {
       verticalSpeed = JUMP_SPEED
     }
-    // cameraMoveSpeed = add(cameraMoveSpeed, mult(mat3(cameraSpeed), VEC_Y)) as Vec3
-    // moveFlag = true
   }
   if (isKeyDown['16'/*Shift*/]) {
     floor = FLOOR_SQUAT
-    // cameraMoveSpeed = add(cameraMoveSpeed, mult(mat3(-cameraSpeed), VEC_Y)) as Vec3
-    // moveFlag = true
   } else {
     floor = FLOOR_STAND
   }
-  // if (!moveFlag) {
-  //   clearInterval(cameraMoveId)
-  //   cameraMoveId = 0
-  //   return
-  // }
-  if(!isOnFloor) {
+  if (!isOnFloor) {
     verticalSpeed += GRAVITY
   }
   cameraMoveSpeed[1] += verticalSpeed
   cameraPos = add(cameraPos, cameraMoveSpeed) as Vec3
-  if(!isOnFloor && cameraPos[1] > CEIL) {
+  if (!isOnFloor && cameraPos[1] > CEIL) {
     cameraPos[1] = CEIL
     verticalSpeed = 0
   }
-  if(!isOnFloor && cameraPos[1] <= floor) {
+  if (!isOnFloor && cameraPos[1] <= floor) {
     cameraPos[1] = floor
     verticalSpeed = 0
     isOnFloor = true
   }
-  if(isOnFloor && cameraPos[1] < floor) {
+  if (isOnFloor && cameraPos[1] < floor) {
     cameraPos[1] = Math.min(cameraPos[1] + GETUP_SPEED, floor)
   }
-  if(cameraPos[1] > floor) {
+  if (cameraPos[1] > floor) {
     isOnFloor = false
   }
-  //简单粗暴的水平方向空气墙实现
+  // 简单粗暴的水平方向空气墙实现
   [0, 2].forEach(v => {
     cameraPos[v] = Math.min(cameraPos[v], POS_MAX[v])
     cameraPos[v] = Math.max(cameraPos[v], POS_MIN[v])
-  });
-
+  })
 }
 
 // ==================================

@@ -23,8 +23,8 @@ define(["require", "exports", "./sword", "../../3rd-party/MV"], function (requir
     var ANGLE_DOWN_MAX = -120;
     var VEC_UP_MAX = vec4(0.0, Math.sin(ANGLE_UP_MAX), Math.cos(ANGLE_UP_MAX), 1);
     var VEC_DOWN_MAX = vec4(0.0, Math.sin(ANGLE_DOWN_MAX), Math.cos(ANGLE_DOWN_MAX), 1);
-    var POS_MIN = vec3(-0.9, 0, -0.9); //相机位置边界，分别为XZ坐标的最小值，第二个分量无效
-    var POS_MAX = vec3(0.9, 0, 0.9); //相机位置边界，分别为XZ坐标的最大值，第二个分量无效
+    var POS_MIN = vec3(-0.82, 0, -0.82); // 相机位置边界，分别为XZ坐标的最小值，第二个分量无效
+    var POS_MAX = vec3(0.82, 0, 0.82); // 相机位置边界，分别为XZ坐标的最大值，第二个分量无效
     var GRAVITY = -0.02; // 重力加速度
     var GETUP_SPEED = 0.1; // 起身速度
     var CEIL = 0.8; // 天花板坐标
@@ -111,11 +111,6 @@ define(["require", "exports", "./sword", "../../3rd-party/MV"], function (requir
         window.onkeydown = function (e) {
             if (e && e.keyCode) {
                 isKeyDown[e.keyCode] = true;
-                // TODO: 空气墙
-                // 这种写法不对
-                // if (cameraPos.some(v => Math.abs(v) >= 0.88)) {
-                //   return
-                // }
             }
         };
         window.onkeyup = function (e) {
@@ -128,43 +123,29 @@ define(["require", "exports", "./sword", "../../3rd-party/MV"], function (requir
         var cameraMoveSpeed = vec3(0, 0, 0);
         var frontVec = normalize(vec3(exports.cameraFront[0], 0, exports.cameraFront[2]), false);
         var leftVec = normalize(cross(exports.VEC_Y, exports.cameraFront), false);
-        // let moveFlag = false
         if (isKeyDown['87' /*W*/]) {
             cameraMoveSpeed = add(cameraMoveSpeed, mult(mat3(cameraSpeed), frontVec));
-            // moveFlag = true
         }
         if (isKeyDown['83' /*S*/]) {
             cameraMoveSpeed = add(cameraMoveSpeed, mult(mat3(-cameraSpeed), frontVec));
-            // moveFlag = true
         }
         if (isKeyDown['65' /*A*/]) {
             cameraMoveSpeed = add(cameraMoveSpeed, mult(mat3(-cameraSpeed), leftVec));
-            // moveFlag = true
         }
         if (isKeyDown['68' /*D*/]) {
             cameraMoveSpeed = add(cameraMoveSpeed, mult(mat3(cameraSpeed), leftVec));
-            // moveFlag = true
         }
         if (isKeyDown['32' /*Space*/]) {
             if (isOnFloor) {
                 verticalSpeed = JUMP_SPEED;
             }
-            // cameraMoveSpeed = add(cameraMoveSpeed, mult(mat3(cameraSpeed), VEC_Y)) as Vec3
-            // moveFlag = true
         }
         if (isKeyDown['16' /*Shift*/]) {
             floor = FLOOR_SQUAT;
-            // cameraMoveSpeed = add(cameraMoveSpeed, mult(mat3(-cameraSpeed), VEC_Y)) as Vec3
-            // moveFlag = true
         }
         else {
             floor = FLOOR_STAND;
         }
-        // if (!moveFlag) {
-        //   clearInterval(cameraMoveId)
-        //   cameraMoveId = 0
-        //   return
-        // }
         if (!isOnFloor) {
             verticalSpeed += GRAVITY;
         }
@@ -185,7 +166,7 @@ define(["require", "exports", "./sword", "../../3rd-party/MV"], function (requir
         if (exports.cameraPos[1] > floor) {
             isOnFloor = false;
         }
-        //简单粗暴的水平方向空气墙实现
+        // 简单粗暴的水平方向空气墙实现
         [0, 2].forEach(function (v) {
             exports.cameraPos[v] = Math.min(exports.cameraPos[v], POS_MAX[v]);
             exports.cameraPos[v] = Math.max(exports.cameraPos[v], POS_MIN[v]);
