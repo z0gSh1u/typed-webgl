@@ -10,7 +10,7 @@ let SkyBoxVBuffer: WebGLBuffer
 let SkyBoxTBuffer: WebGLBuffer
 
 /**
- * 初始化天空盒，发送相关信息，不会自动渲染
+ * 初始化天空盒，发送相关信息
  */
 export async function initSkyBox(helper: WebGLHelper3d, skyBoxProgram: number) {
   SkyBoxVBuffer = helper.createBuffer()

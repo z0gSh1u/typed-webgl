@@ -35,6 +35,7 @@ let cameraMoveId: number = 0 // 相机移动计时器编号
 const INTERVAL = 40 // 速度降低的毫秒间隔
 let lastTick: number
 let canvasDOM: HTMLCanvasElement
+
 /**
  * 开始监听鼠标键盘
  */
@@ -43,12 +44,14 @@ export function enableRoaming(_canvasDOM: HTMLCanvasElement) {
   listenMouseToTurnCamera()
   listenKeyboardFPV()
 }
+
 /**
  * 获取当前lookAt
  */
 export function getLookAt() {
   return lookAt(cameraPos, add(cameraPos, cameraFront) as Vec3, VEC_Y)
 }
+
 // 鼠标侦听
 let listenMouseToTurnCamera = () => {
   canvasDOM.onmousedown = (evt: MouseEvent) => {
@@ -164,6 +167,10 @@ let moveCamera = () => {
     cameraPos[v] = Math.min(cameraPos[v], POS_MAX[v])
     cameraPos[v] = Math.max(cameraPos[v], POS_MIN[v])
   })
+}
+
+export function forceSetCamera(pos: Vec3, front: Vec3) {
+  cameraPos = pos; cameraFront = front
 }
 
 // ==================================

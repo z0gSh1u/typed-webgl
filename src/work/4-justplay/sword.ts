@@ -34,16 +34,13 @@ export async function initSword(helper: WebGLHelper3d, _lightBulbPosition: Vec3,
   helper.switchProgram(swordProgram)
   vBuffer = helper.createBuffer()
   nBuffer = helper.createBuffer()
-
   let initSwordMat = mat4()
   initSwordMat = mult(initSwordMat, rotateX(90)) as Mat
   initSwordMat = mult(initSwordMat, rotateZ(60)) as Mat
   initSwordMat = mult(translate(0.85, -0.9, 0.9), initSwordMat) as Mat
-
   Sword = new DrawingPackage3d(initSwordMat as Mat, ...[
     new DrawingObject3d('sword', './model/normed/minecraft_sword.obj')
   ])
-
   vs = helper.analyzeFtoV(Sword.getObjectByName('sword') as DrawingObject3d, 'fs') as Vec3[]
   vns = helper.analyzeFtoV(Sword.getObjectByName('sword') as DrawingObject3d, 'fns') as Vec3[]
   vns = vns.map(v3 => {
@@ -92,9 +89,7 @@ export function renderSword(helper: WebGLHelper3d, ctm: Mat, swordProgram: numbe
 }
 
 export function waveSword() {
-  if (waveLock) {
-    return
-  }
+  if (waveLock) { return }
   waveLock = true
   let old = Sword.modelMat
   Sword.setModelMat(mult(old, rotateX(10)) as Mat)

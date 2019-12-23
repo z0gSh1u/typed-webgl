@@ -24,7 +24,6 @@ const PonyMaterial = new PhongLightModel({ // 小马光照参数
 })
 
 // TODO: 仅Analyze一次fs, fns, fts
-
 export function PonyModifyLightBuldPosition(newPos: Vec3) {
   lightBulbPosition = newPos
 }

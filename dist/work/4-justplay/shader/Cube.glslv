@@ -1,14 +1,18 @@
-varying vec3 R;
-attribute vec3 vPoition;
-attribute vec4 Normal;
+attribute vec3 aPoition;
+attribute vec3 aNormal;
+
 uniform mat4 uProjectionMatrix;
 uniform mat4 uModelMatrix;
 uniform mat4 uWorldMatrix;
+uniform mat4 uModelInvTransMatrix;
+
+varying vec3 vFragPos;
+varying vec3 vFragNormal;
 
 void main() {
-  vec4 pos = vec4(vPoition, 1.0);
-  vec4 eyePos = uWorldMatrix * pos;
-  vec4 N = uWorldMatrix * Normal;
-  R = reflect(eyePos.xyz, N.xyz);
-  gl_Position =uProjectionMatrix * uWorldMatrix * uModelMatrix * pos;
+  vec4 pos = vec4(aPoition, 1.0);
+  gl_Position = uProjectionMatrix * uWorldMatrix * uModelMatrix * pos;
+  vFragPos = vec3(uModelMatrix * pos);
+  mat3 normalMatrix = mat3(uModelInvTransMatrix);
+  vFragNormal = normalMatrix * aNormal;
 }

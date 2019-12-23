@@ -172,6 +172,11 @@ define(["require", "exports", "./sword", "../../3rd-party/MV"], function (requir
             exports.cameraPos[v] = Math.max(exports.cameraPos[v], POS_MIN[v]);
         });
     };
+    function forceSetCamera(pos, front) {
+        exports.cameraPos = pos;
+        exports.cameraFront = front;
+    }
+    exports.forceSetCamera = forceSetCamera;
     // ==================================
     // 透视
     // ==================================

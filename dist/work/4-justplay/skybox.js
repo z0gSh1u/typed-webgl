@@ -44,7 +44,7 @@ define(["require", "exports", "../../framework/WebGLUtils"], function (require, 
     var SkyBoxVBuffer;
     var SkyBoxTBuffer;
     /**
-     * 初始化天空盒，发送相关信息，不会自动渲染
+     * 初始化天空盒，发送相关信息
      */
     function initSkyBox(helper, skyBoxProgram) {
         return __awaiter(this, void 0, void 0, function () {

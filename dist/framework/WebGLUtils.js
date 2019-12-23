@@ -136,4 +136,22 @@ define(["require", "exports", "../3rd-party/MV", "../3rd-party/initShaders"], fu
         return point;
     }
     exports.getTurnedPoint = getTurnedPoint;
+    /**
+     * Sync wait.
+     */
+    function waitSync(msPeriod) {
+        return new Promise(function (resolve, reject) {
+            window.setTimeout(function () { resolve(); }, msPeriod);
+        });
+    }
+    exports.waitSync = waitSync;
+    /**
+     * My setTimeout with Promise.
+     */
+    function mySetTimeout(dowhat, howlong) {
+        return new Promise(function (resolve, reject) {
+            window.setTimeout(function () { dowhat(); resolve(); }, howlong);
+        });
+    }
+    exports.mySetTimeout = mySetTimeout;
 });
