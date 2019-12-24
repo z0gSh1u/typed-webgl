@@ -11,6 +11,8 @@ import { PhongLightModel } from "../../framework/3d/PhongLightModel";
 
 let vBuffer: WebGLBuffer, nBuffer: WebGLBuffer
 let Sword: DrawingPackage3d
+export let SwordCtm: Mat = mat4()
+export function setSwordCtm(ctm: Mat) { SwordCtm = ctm }
 let vs: Vec3[]
 let vns: Vec3[]
 let waveLock = false
@@ -57,7 +59,7 @@ export function renderSword(helper: WebGLHelper3d, ctm: Mat, swordProgram: numbe
   helper.prepare({
     attributes: [],
     uniforms: [
-      { varName: 'uWorldMatrix', data: flatten(mat4()), method: 'Matrix4fv' },
+      { varName: 'uWorldMatrix', data: flatten(SwordCtm), method: 'Matrix4fv' },
       { varName: 'uModelMatrix', data: flatten(Sword.modelMat), method: 'Matrix4fv' },
       { varName: 'uLightCtm', data: flatten(ctm), method: 'Matrix4fv' },
       { varName: 'uLightPosition', data: [...lightBulbPosition, 1.0], method: '4fv' },

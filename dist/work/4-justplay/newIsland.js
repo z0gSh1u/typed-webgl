@@ -38,7 +38,14 @@ var __generator = (this && this.__generator) || function (thisArg, body) {
         if (op[0] & 5) throw op[1]; return { value: op[0] ? op[1] : void 0, done: true };
     }
 };
-define(["require", "exports", "./roam", "./sword", "../../framework/WebGLUtils"], function (require, exports, roam_1, sword_1, WebGLUtils_1) {
+var __spreadArrays = (this && this.__spreadArrays) || function () {
+    for (var s = 0, i = 0, il = arguments.length; i < il; i++) s += arguments[i].length;
+    for (var r = Array(s), k = 0, i = 0; i < il; i++)
+        for (var a = arguments[i], j = 0, jl = a.length; j < jl; j++, k++)
+            r[k] = a[j];
+    return r;
+};
+define(["require", "exports", "./roam", "./sword", "../../framework/WebGLUtils", "./pony"], function (require, exports, roam_1, sword_1, WebGLUtils_1, pony_1) {
     "use strict";
     Object.defineProperty(exports, "__esModule", { value: true });
     // ==================================
@@ -78,45 +85,145 @@ define(["require", "exports", "./roam", "./sword", "../../framework/WebGLUtils"]
         sword_1.SwordMaterial.diffuseMaterial = color;
         sword_1.SwordMaterial.reCalculateProducts();
     };
-    var insertSwordUponMagicCube = function () {
-        // TODO: HOW?
-    };
     var RED = vec4(1.0, 0.0, 0.0, 1.0), GREEN = vec4(0.0, 1.0, 0.0, 1.0), YELLOW = vec4(1.0, 1.0, 0.0, 1.0);
-    var gotoAndLookAt = function (goto, look) {
-        roam_1.forceSetCamera(goto, look);
-    };
-    var zoomIn = function (howmuch) {
-    };
-    var upDownWave = function () {
-    };
-    var leftRightWave = function () {
-    };
     var colorList = [RED, GREEN, YELLOW];
     var colorPointer = 0;
-    var cameraPosition = {
-        'lookPony': [
-            vec3(0.521367, -0.5, -0.362234),
-            vec3(0.39602, 0.07533, 0.91515) // front
-        ]
+    function smoothZoom(from, to, front, msPeriod) {
+        if (msPeriod === void 0) { msPeriod = 50; }
+        var points = [];
+        var _loop_1 = function (alpha) {
+            // 二维凸组合
+            points.push(add(__spreadArrays(from.map(function (_) { return _ * (1 - alpha); })), __spreadArrays(to.map(function (_) { return _ * alpha; }))));
+        };
+        for (var alpha = 0; alpha < 1; alpha += 0.08) {
+            _loop_1(alpha);
+        }
+        var len = points.length, p = 0;
+        return new Promise(function (resolve, reject) {
+            var timer = window.setInterval(function () {
+                roam_1.forceSetCamera(points[p], front);
+                p += 1;
+                if (p == len) {
+                    clearInterval(timer);
+                    resolve();
+                }
+            }, msPeriod);
+        });
+    }
+    function smoothUpDown(from, to, eye, msPeriod) {
+        if (msPeriod === void 0) { msPeriod = 50; }
+        var points = [];
+        var _loop_2 = function (alpha) {
+            points.push(add(__spreadArrays(from.map(function (_) { return _ * (1 - alpha); })), __spreadArrays(to.map(function (_) { return _ * alpha; }))));
+        };
+        for (var alpha = 0; alpha < 1; alpha += 0.08) {
+            _loop_2(alpha);
+        }
+        var len = points.length, p = 0;
+        return new Promise(function (resolve, reject) {
+            var timer = window.setInterval(function () {
+                roam_1.forceSetCamera(eye, points[p]);
+                p += 1;
+                if (p == len) {
+                    clearInterval(timer);
+                    resolve();
+                }
+            }, msPeriod);
+        });
+    }
+    var PonyRandomMove = function (msPeriod) {
+        if (msPeriod === void 0) { msPeriod = 50; }
+        var moveSequence = [
+            translate(0.05, 0, 0),
+            translate(0.05, 0, 0),
+            translate(0.05, 0, 0),
+            translate(0.05, 0, 0),
+        ], p = 0, len = moveSequence.length;
+        return new Promise(function (resolve, reject) {
+            var timer = window.setInterval(function () {
+                pony_1.Pony.setModelMat(mult(pony_1.Pony.modelMat, moveSequence[p]));
+                p += 1;
+                if (p == len) {
+                    clearInterval(timer);
+                    resolve();
+                }
+            }, msPeriod);
+        });
     };
     function performNewIsland() {
         return __awaiter(this, void 0, void 0, function () {
             return __generator(this, function (_a) {
                 switch (_a.label) {
-                    case 0: return [4 /*yield*/, playNewIsland()];
+                    case 0: 
+                    // 放音乐
+                    return [4 /*yield*/, playNewIsland()
+                        // 振动
+                    ];
                     case 1:
+                        // 放音乐
                         _a.sent();
-                        insertSwordUponMagicCube();
+                        // 振动
                         startShakingCTM();
-                        return [4 /*yield*/, WebGLUtils_1.mySetTimeout(function () { stopShakingCTM(); }, 3200)]; // 模拟抖动3200ms
+                        // 模拟抖动3200ms
+                        return [4 /*yield*/, WebGLUtils_1.mySetTimeout(function () { stopShakingCTM(); }, 3200)
+                            // 变色剑
+                        ];
                     case 2:
-                        _a.sent(); // 模拟抖动3200ms
-                        window.setInterval(function () { changeSwordColorTo(colorList[colorPointer]); colorPointer += 1; colorPointer %= 3; }, 200); // 剑持续换色
+                        // 模拟抖动3200ms
+                        _a.sent();
+                        // 变色剑
+                        window.setInterval(function () { changeSwordColorTo(colorList[colorPointer]); colorPointer += 1; colorPointer %= 3; }, 200);
+                        // 机位行动
                         roam_1.forceSetCamera.apply(void 0, cameraPosition['lookPony']);
+                        // 等待1秒
+                        return [4 /*yield*/, WebGLUtils_1.mySetTimeout(function () { }, 1000)
+                            // 远近拉一次
+                        ];
+                    case 3:
+                        // 等待1秒
+                        _a.sent();
+                        // 远近拉一次
+                        return [4 /*yield*/, smoothZoom(cameraPosition['lookPony'][0], cameraPosition['nearPony'][0], cameraPosition['lookPony'][1])];
+                    case 4:
+                        // 远近拉一次
+                        _a.sent();
+                        return [4 /*yield*/, WebGLUtils_1.mySetTimeout(function () { }, 200)];
+                    case 5:
+                        _a.sent();
+                        return [4 /*yield*/, smoothZoom(cameraPosition['nearPony'][0], cameraPosition['lookPony'][0], cameraPosition['lookPony'][1])];
+                    case 6:
+                        _a.sent();
+                        return [4 /*yield*/, smoothUpDown(cameraPosition['lookPony'][1], cameraPosition['lookUp'][1], cameraPosition['lookPony'][0])];
+                    case 7:
+                        _a.sent();
+                        return [4 /*yield*/, smoothUpDown(cameraPosition['lookPony'][1], cameraPosition['lookUp'][1], cameraPosition['lookPony'][0])];
+                    case 8:
+                        _a.sent();
+                        return [4 /*yield*/, PonyRandomMove()];
+                    case 9:
+                        _a.sent();
                         return [2 /*return*/];
                 }
             });
         });
     }
     exports.performNewIsland = performNewIsland;
+    var cameraPosition = {
+        'lookPony': [
+            vec3(0.521367, -0.5, -0.362234),
+            vec3(0.3738316, -0.026115, 0.927129) // front
+        ],
+        'nearPony': [
+            vec3(0.45905, -0.5, -0.05723),
+            vec3(0.3738316, -0.026115, 0.927129)
+        ],
+        'lookUp': [
+            vec3(0.521367, -0.5, -0.362234),
+            vec3(0.4891365, 0.481753, 0.727089) // front
+        ],
+        'lookDown': [
+            vec3(0.521367, -0.5, -0.362234),
+            vec3(0.4891365, 0.481753, 0.727089) // front
+        ],
+    };
 });

@@ -50,6 +50,9 @@ define(["require", "exports", "../../framework/3d/DrawingPackage3d", "../../fram
     Object.defineProperty(exports, "__esModule", { value: true });
     var vBuffer, nBuffer;
     var Sword;
+    exports.SwordCtm = mat4();
+    function setSwordCtm(ctm) { exports.SwordCtm = ctm; }
+    exports.setSwordCtm = setSwordCtm;
     var vs;
     var vns;
     var waveLock = false;
@@ -101,7 +104,7 @@ define(["require", "exports", "../../framework/3d/DrawingPackage3d", "../../fram
         helper.prepare({
             attributes: [],
             uniforms: [
-                { varName: 'uWorldMatrix', data: flatten(mat4()), method: 'Matrix4fv' },
+                { varName: 'uWorldMatrix', data: flatten(exports.SwordCtm), method: 'Matrix4fv' },
                 { varName: 'uModelMatrix', data: flatten(Sword.modelMat), method: 'Matrix4fv' },
                 { varName: 'uLightCtm', data: flatten(ctm), method: 'Matrix4fv' },
                 { varName: 'uLightPosition', data: __spreadArrays(lightBulbPosition, [1.0]), method: '4fv' },

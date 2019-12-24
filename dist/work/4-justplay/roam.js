@@ -88,9 +88,9 @@ define(["require", "exports", "./sword", "../../3rd-party/MV"], function (requir
                 exports.cameraFront = vec3(exports.cameraFront[0] * newZ / initZ, tempVec[1], exports.cameraFront[2] * newZ / initZ);
             };
         };
-        // 如果想要不按住也可以鼠标观察，则注释下列钩子
         canvasDOM.onmouseup = function () {
             sword_1.waveSword();
+            // 如果想要不按住也可以鼠标观察，则注释下列钩子
             canvasDOM.onmousemove = function () { };
         };
     };

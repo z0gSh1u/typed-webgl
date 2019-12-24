@@ -84,9 +84,9 @@ let listenMouseToTurnCamera = () => {
       cameraFront = vec3(cameraFront[0] * newZ / initZ, tempVec[1], cameraFront[2] * newZ / initZ)
     }
   }
-  // 如果想要不按住也可以鼠标观察，则注释下列钩子
   canvasDOM.onmouseup = () => {
     waveSword()
+    // 如果想要不按住也可以鼠标观察，则注释下列钩子
     canvasDOM.onmousemove = () => { }
   }
 }

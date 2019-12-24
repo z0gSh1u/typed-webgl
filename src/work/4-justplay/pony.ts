@@ -9,7 +9,7 @@ import { scaleMat, loadImageAsync } from "../../framework/WebGLUtils";
 import { DrawingObject3d } from "../../framework/3d/DrawingObject3d";
 import { PhongLightModel } from "../../framework/3d/PhongLightModel";
 
-let Pony: DrawingPackage3d // 小马全身
+export let Pony: DrawingPackage3d // 小马全身
 let vBuffer: WebGLBuffer, nBuffer: WebGLBuffer, tBuffer: WebGLBuffer
 let lightBulbPosition: Vec3 = [0.0, 0.0, 0.0]
 const PonyMaterial = new PhongLightModel({ // 小马光照参数
