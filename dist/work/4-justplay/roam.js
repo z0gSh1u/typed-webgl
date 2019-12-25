@@ -9,7 +9,7 @@ var __spreadArrays = (this && this.__spreadArrays) || function () {
             r[k] = a[j];
     return r;
 };
-define(["require", "exports", "./sword", "../../3rd-party/MV"], function (require, exports, sword_1) {
+define(["require", "exports", "./sword", "./magicCube", "./newIsland", "./blocks", "../../3rd-party/MV"], function (require, exports, sword_1, magicCube_1, newIsland_1, blocks_1) {
     "use strict";
     Object.defineProperty(exports, "__esModule", { value: true });
     // ==================================
@@ -23,17 +23,18 @@ define(["require", "exports", "./sword", "../../3rd-party/MV"], function (requir
     var ANGLE_DOWN_MAX = -120;
     var VEC_UP_MAX = vec4(0.0, Math.sin(ANGLE_UP_MAX), Math.cos(ANGLE_UP_MAX), 1);
     var VEC_DOWN_MAX = vec4(0.0, Math.sin(ANGLE_DOWN_MAX), Math.cos(ANGLE_DOWN_MAX), 1);
-    var POS_MIN = vec3(-0.82, 0, -0.82); // 相机位置边界，分别为XZ坐标的最小值，第二个分量无效
-    var POS_MAX = vec3(0.82, 0, 0.82); // 相机位置边界，分别为XZ坐标的最大值，第二个分量无效
     var GRAVITY = -0.02; // 重力加速度
     var GETUP_SPEED = 0.1; // 起身速度
-    var CEIL = 0.8; // 天花板坐标
-    var FLOOR_STAND = -0.5; // 站立时地板坐标
-    var FLOOR_SQUAT = -0.8; // 蹲下时地板坐标
-    var JUMP_SPEED = 0.15; // 起跳速度
-    var floor = FLOOR_STAND; // 相机Y坐标最小值，可变以实现下蹲
+    var HEAD_SIZE = 0.2; // 
+    var BODY_WIDTH = 0.18; // 
+    var STAND_HEIGHT = 0.5; // 
+    var SQUAT_HEIGHT = 0.2; // 
+    var legHeight = STAND_HEIGHT; // 
+    var JUMP_SPEED = 0.2; // 起跳速度
     var isOnFloor = false; // 是否站在地板上
+    var isGettingUp = false; // 是否正在起身
     var verticalSpeed = 0; // 垂直方向速度，主要用于跳跃
+    var actDistance = 0.32; // 最远互动距离
     exports.cameraPos = vec3(0.0, 0.0, 0.0);
     exports.cameraFront = vec3(0.1, 0.0, 0.0);
     var cameraSpeed = 0.04;
@@ -101,7 +102,8 @@ define(["require", "exports", "./sword", "../../3rd-party/MV"], function (requir
         '83' /*S*/: false,
         '68' /*D*/: false,
         '32' /*Space*/: false,
-        '16' /*Shift*/: false
+        '16' /*Shift*/: false,
+        '69' /*E*/: false
     };
     function setSpaceStatus(down) {
         isKeyDown['32'] = down;
@@ -114,6 +116,9 @@ define(["require", "exports", "./sword", "../../3rd-party/MV"], function (requir
         isKeyDown['87'] = isKeyDown['65'] = isKeyDown['83'] = isKeyDown['68'] = isKeyDown['32'] = isKeyDown['16'] = false;
         window.onkeydown = function (e) {
             if (e && e.keyCode) {
+                if (e.keyCode == 69 && !isKeyDown['69'] && isActing(magicCube_1.MagicCubeActBox)) {
+                    launchNewIsland();
+                }
                 isKeyDown[e.keyCode] = true;
             }
         };
@@ -122,6 +127,29 @@ define(["require", "exports", "./sword", "../../3rd-party/MV"], function (requir
                 isKeyDown[e.keyCode] = false;
             }
         };
+    };
+    //判断互动时镜头朝向与距离是否正确
+    var isActing = function (actBox) {
+        var lookat = exports.cameraFront;
+        lookat = lookat.map(function (v) { return actDistance * v; });
+        lookat = add(lookat, exports.cameraPos);
+        var res = exports.cameraPos.map(function (v, i) { return v >= actBox[0][i] && v <= actBox[1][i]; });
+        if (res[0] && res[1] && res[2]) {
+            return true;
+        }
+        res = lookat.map(function (v, i) { return v >= actBox[0][i] && v <= actBox[1][i]; });
+        if (res[0] && res[1] && res[2]) {
+            return true;
+        }
+        return false;
+    };
+    //判断当前位置是否在障碍物内
+    var isInBlock = function (block, pos) {
+        return block[0][0] < pos[0] && block[1][0] > pos[0] && block[0][2] < pos[2] && block[1][2] > pos[2] && block[0][1] < pos[1] && block[1][1] > pos[1];
+    };
+    //判断是否站在某个障碍物商
+    var isOnBlock = function (block) {
+        return block[0][0] < exports.cameraPos[0] && block[1][0] > exports.cameraPos[0] && block[0][2] < exports.cameraPos[2] && block[1][2] > exports.cameraPos[2] && block[1][1] == exports.cameraPos[1];
     };
     var moveCamera = function () {
         var cameraMoveSpeed = vec3(0, 0, 0);
@@ -142,39 +170,137 @@ define(["require", "exports", "./sword", "../../3rd-party/MV"], function (requir
         if (isKeyDown['32' /*Space*/]) {
             if (isOnFloor) {
                 verticalSpeed = JUMP_SPEED;
+                isOnFloor = false;
             }
         }
         if (isKeyDown['16' /*Shift*/]) {
-            floor = FLOOR_SQUAT;
+            legHeight = SQUAT_HEIGHT;
         }
         else {
-            floor = FLOOR_STAND;
+            if (legHeight == SQUAT_HEIGHT) {
+                isGettingUp = true;
+            }
+            legHeight = STAND_HEIGHT;
         }
+        var vBlocks = blocks_1.blocks.map(function (v) { return [add(v[0], vec3(-BODY_WIDTH, -HEAD_SIZE, -BODY_WIDTH)), add(v[1], vec3(BODY_WIDTH, legHeight, BODY_WIDTH))]; });
         if (!isOnFloor) {
             verticalSpeed += GRAVITY;
         }
+        else {
+            verticalSpeed = Math.max(0, verticalSpeed);
+        }
         cameraMoveSpeed[1] += verticalSpeed;
+        var lastPos = exports.cameraPos;
         exports.cameraPos = add(exports.cameraPos, cameraMoveSpeed);
-        if (!isOnFloor && exports.cameraPos[1] > CEIL) {
-            exports.cameraPos[1] = CEIL;
-            verticalSpeed = 0;
+        var isIn = vBlocks.map(function (v) { return isInBlock(v, exports.cameraPos); });
+        if (isGettingUp) {
+            vBlocks.map(function (v, i) {
+                if (isIn[i]) {
+                    exports.cameraPos[1] = Math.min(exports.cameraPos[1] + GETUP_SPEED, v[1][1]);
+                    if (exports.cameraPos[1] == v[1][1]) {
+                        isGettingUp = false;
+                        isIn[i] = false;
+                    }
+                }
+            });
         }
-        if (!isOnFloor && exports.cameraPos[1] <= floor) {
-            exports.cameraPos[1] = floor;
-            verticalSpeed = 0;
-            isOnFloor = true;
+        if (exports.cameraPos[1] < lastPos[1]) {
+            vBlocks.map(function (v, i) {
+                if (isIn[i]) {
+                    if (lastPos[1] >= v[1][1]) {
+                        exports.cameraPos[1] = v[1][1];
+                        isIn[i] = false;
+                        isGettingUp = false;
+                        isOnFloor = true;
+                    }
+                    if (v[1][1] - exports.cameraPos[1] <= GETUP_SPEED) {
+                        exports.cameraPos[1] = v[1][1];
+                        isIn[i] = false;
+                        isGettingUp = false;
+                        isOnFloor = true;
+                    }
+                }
+            });
         }
-        if (isOnFloor && exports.cameraPos[1] < floor) {
-            exports.cameraPos[1] = Math.min(exports.cameraPos[1] + GETUP_SPEED, floor);
+        else if (exports.cameraPos[1] > lastPos[1]) {
+            vBlocks.map(function (v, i) {
+                if (isIn[i]) {
+                    if (lastPos[1] <= v[0][1]) {
+                        exports.cameraPos[1] = v[0][1];
+                        isIn[i] = false;
+                        verticalSpeed = 0;
+                    }
+                    else if (v[1][1] - exports.cameraPos[1] <= GETUP_SPEED) {
+                        exports.cameraPos[1] = v[1][1];
+                        isIn[i] = false;
+                        isGettingUp = false;
+                        isOnFloor = true;
+                    }
+                }
+                else {
+                }
+            });
         }
-        if (exports.cameraPos[1] > floor) {
+        if (exports.cameraPos[0] < lastPos[0]) {
+            vBlocks.map(function (v, i) {
+                if (isIn[i]) {
+                    if (lastPos[0] >= v[1][0]) {
+                        exports.cameraPos[0] = v[1][0];
+                        isIn[i] = false;
+                    }
+                }
+            });
+        }
+        else if (exports.cameraPos[0] > lastPos[0]) {
+            vBlocks.map(function (v, i) {
+                if (isIn[i]) {
+                    if (lastPos[0] <= v[0][0]) {
+                        exports.cameraPos[0] = v[0][0];
+                        isIn[i] = false;
+                    }
+                }
+            });
+        }
+        if (exports.cameraPos[2] < lastPos[2]) {
+            vBlocks.map(function (v, i) {
+                if (isIn[i]) {
+                    if (lastPos[2] >= v[1][2]) {
+                        exports.cameraPos[2] = v[1][2];
+                        isIn[i] = false;
+                    }
+                }
+            });
+        }
+        else if (exports.cameraPos[2] > lastPos[2]) {
+            vBlocks.map(function (v, i) {
+                if (isIn[i]) {
+                    if (lastPos[2] <= v[0][2]) {
+                        exports.cameraPos[2] = v[0][2];
+                        isIn[i] = false;
+                    }
+                }
+            });
+        }
+        var flag = false;
+        vBlocks.map(function (v, i) {
+            if (isOnBlock(v)) {
+                flag = true;
+                isOnFloor = true;
+                isGettingUp = false;
+            }
+            else if (isIn[i]) {
+                flag = true;
+                isOnFloor = true;
+            }
+        });
+        if (!flag) {
             isOnFloor = false;
         }
-        // 简单粗暴的水平方向空气墙实现
-        [0, 2].forEach(function (v) {
-            exports.cameraPos[v] = Math.min(exports.cameraPos[v], POS_MAX[v]);
-            exports.cameraPos[v] = Math.max(exports.cameraPos[v], POS_MIN[v]);
-        });
+    };
+    //启动新宝岛的代码写在这里
+    var launchNewIsland = function () {
+        newIsland_1.performNewIsland();
+        // alert("久等了")
     };
     function forceSetCamera(pos, front) {
         exports.cameraPos = pos;
@@ -184,7 +310,7 @@ define(["require", "exports", "./sword", "../../3rd-party/MV"], function (requir
     // ==================================
     // 透视
     // ==================================
-    var fovy = 119;
+    var fovy = 90;
     var aspect = -16 / 9;
     var near = 0.05;
     var far = 2.8; // 越小越好（房间就显得越大），经过精密的调试，这个参数最棒

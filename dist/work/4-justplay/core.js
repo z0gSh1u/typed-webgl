@@ -101,7 +101,7 @@ define(["require", "exports", "../../framework/3d/WebGLHelper3d", "../../framewo
                         newIsland_1.performNewIsland();
                     };
                     document.querySelector('#btn_getCamera').onclick = function () {
-                        var s = "Pos = " + roam_1.cameraPos + ", Front = " + roam_1.cameraFront;
+                        var s = "Pos = " + roam_1.cameraPos + "\nFront = " + roam_1.cameraFront + "\nLookAt = " + add(roam_1.cameraPos, roam_1.cameraFront);
                         alert(s);
                     };
                     // 全局重渲染
