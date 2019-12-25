@@ -99,6 +99,9 @@ let isKeyDown: { [key: string]: boolean } = {
   '32'/*Space*/: false,
   '16'/*Shift*/: false
 }
+export function setSpaceStatus(down: boolean) {
+  isKeyDown['32'] = down
+}
 let listenKeyboardFPV = () => {
   if (cameraMoveId == 0) {
     cameraMoveId = window.setInterval(moveCamera, INTERVAL)

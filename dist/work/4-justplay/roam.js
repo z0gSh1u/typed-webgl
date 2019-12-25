@@ -103,6 +103,10 @@ define(["require", "exports", "./sword", "../../3rd-party/MV"], function (requir
         '32' /*Space*/: false,
         '16' /*Shift*/: false
     };
+    function setSpaceStatus(down) {
+        isKeyDown['32'] = down;
+    }
+    exports.setSpaceStatus = setSpaceStatus;
     var listenKeyboardFPV = function () {
         if (cameraMoveId == 0) {
             cameraMoveId = window.setInterval(moveCamera, INTERVAL);

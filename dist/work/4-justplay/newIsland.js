@@ -110,7 +110,7 @@ define(["require", "exports", "./roam", "./sword", "../../framework/WebGLUtils",
             }, msPeriod);
         });
     }
-    function smoothUpDown(from, to, eye, msPeriod) {
+    function smoothMove(from, to, eye, msPeriod) {
         if (msPeriod === void 0) { msPeriod = 50; }
         var points = [];
         var _loop_2 = function (alpha) {
@@ -131,14 +131,9 @@ define(["require", "exports", "./roam", "./sword", "../../framework/WebGLUtils",
             }, msPeriod);
         });
     }
-    var PonyRandomMove = function (msPeriod) {
+    var PonyRandomMove = function (moveSequence, msPeriod) {
         if (msPeriod === void 0) { msPeriod = 50; }
-        var moveSequence = [
-            translate(0.05, 0, 0),
-            translate(0.05, 0, 0),
-            translate(0.05, 0, 0),
-            translate(0.05, 0, 0),
-        ], p = 0, len = moveSequence.length;
+        var p = 0, len = moveSequence.length;
         return new Promise(function (resolve, reject) {
             var timer = window.setInterval(function () {
                 pony_1.Pony.setModelMat(mult(pony_1.Pony.modelMat, moveSequence[p]));
@@ -150,8 +145,24 @@ define(["require", "exports", "./roam", "./sword", "../../framework/WebGLUtils",
             }, msPeriod);
         });
     };
+    var simulateSpacePress = function (howlong) {
+        if (howlong === void 0) { howlong = 200; }
+        return __awaiter(void 0, void 0, void 0, function () {
+            return __generator(this, function (_a) {
+                switch (_a.label) {
+                    case 0:
+                        roam_1.setSpaceStatus(true);
+                        return [4 /*yield*/, WebGLUtils_1.mySetTimeout(function () { roam_1.setSpaceStatus(false); }, howlong)];
+                    case 1:
+                        _a.sent();
+                        return [2 /*return*/];
+                }
+            });
+        });
+    };
     function performNewIsland() {
         return __awaiter(this, void 0, void 0, function () {
+            var p, ms2len, ms2timer;
             return __generator(this, function (_a) {
                 switch (_a.label) {
                     case 0: 
@@ -164,17 +175,17 @@ define(["require", "exports", "./roam", "./sword", "../../framework/WebGLUtils",
                         _a.sent();
                         // 振动
                         startShakingCTM();
+                        // 变色剑
+                        window.setInterval(function () { changeSwordColorTo(colorList[colorPointer]); colorPointer += 1; colorPointer %= 3; }, 200);
                         // 模拟抖动3200ms
                         return [4 /*yield*/, WebGLUtils_1.mySetTimeout(function () { stopShakingCTM(); }, 3200)
-                            // 变色剑
+                            // 机位行动
                         ];
                     case 2:
                         // 模拟抖动3200ms
                         _a.sent();
-                        // 变色剑
-                        window.setInterval(function () { changeSwordColorTo(colorList[colorPointer]); colorPointer += 1; colorPointer %= 3; }, 200);
                         // 机位行动
-                        roam_1.forceSetCamera.apply(void 0, cameraPosition['lookPony']);
+                        roam_1.forceSetCamera.apply(void 0, cp['lookPony']);
                         // 等待1秒
                         return [4 /*yield*/, WebGLUtils_1.mySetTimeout(function () { }, 1000)
                             // 远近拉一次
@@ -183,32 +194,187 @@ define(["require", "exports", "./roam", "./sword", "../../framework/WebGLUtils",
                         // 等待1秒
                         _a.sent();
                         // 远近拉一次
-                        return [4 /*yield*/, smoothZoom(cameraPosition['lookPony'][0], cameraPosition['nearPony'][0], cameraPosition['lookPony'][1])];
+                        return [4 /*yield*/, smoothZoom(cp['lookPony'][0], cp['nearPony'][0], cp['lookPony'][1])];
                     case 4:
                         // 远近拉一次
                         _a.sent();
                         return [4 /*yield*/, WebGLUtils_1.mySetTimeout(function () { }, 200)];
                     case 5:
                         _a.sent();
-                        return [4 /*yield*/, smoothZoom(cameraPosition['nearPony'][0], cameraPosition['lookPony'][0], cameraPosition['lookPony'][1])];
+                        return [4 /*yield*/, smoothZoom(cp['nearPony'][0], cp['lookPony'][0], cp['lookPony'][1])
+                            // ----------- 对齐线 --------------
+                            // 左右摇
+                        ];
                     case 6:
                         _a.sent();
-                        return [4 /*yield*/, smoothUpDown(cameraPosition['lookPony'][1], cameraPosition['lookUp'][1], cameraPosition['lookPony'][0])];
+                        // ----------- 对齐线 --------------
+                        // 左右摇
+                        return [4 /*yield*/, smoothMove(cp['lookLeft'][1], cp['lookRight'][1], cp['lookLeft'][0])];
                     case 7:
+                        // ----------- 对齐线 --------------
+                        // 左右摇
                         _a.sent();
-                        return [4 /*yield*/, smoothUpDown(cameraPosition['lookPony'][1], cameraPosition['lookUp'][1], cameraPosition['lookPony'][0])];
+                        return [4 /*yield*/, smoothMove(cp['lookRight'][1], cp['lookLeft'][1], cp['lookLeft'][0])];
                     case 8:
                         _a.sent();
-                        return [4 /*yield*/, PonyRandomMove()];
+                        return [4 /*yield*/, smoothMove(cp['lookLeft'][1], cp['lookRight'][1], cp['lookLeft'][0])];
                     case 9:
                         _a.sent();
+                        return [4 /*yield*/, smoothMove(cp['lookRight'][1], cp['lookLeft'][1], cp['lookLeft'][0])];
+                    case 10:
+                        _a.sent();
+                        roam_1.forceSetCamera.apply(void 0, cp['lookPony']);
+                        return [4 /*yield*/, WebGLUtils_1.mySetTimeout(function () { }, 2900)]; // zu ki to~~
+                    case 11:
+                        _a.sent(); // zu ki to~~
+                        return [4 /*yield*/, PonyRandomMove(moveSequence1, 100)
+                            // 跳一下
+                        ]; // sono zu ki to~
+                    case 12:
+                        _a.sent(); // sono zu ki to~
+                        // 跳一下
+                        return [4 /*yield*/, WebGLUtils_1.mySetTimeout(function () { }, 2000)]; // zu ki to~~  
+                    case 13:
+                        // 跳一下
+                        _a.sent(); // zu ki to~~  
+                        return [4 /*yield*/, simulateSpacePress()];
+                    case 14:
+                        _a.sent();
+                        return [4 /*yield*/, WebGLUtils_1.mySetTimeout(function () { simulateSpacePress(); }, 500)]; // zu ki to~~
+                    case 15:
+                        _a.sent(); // zu ki to~~
+                        return [4 /*yield*/, WebGLUtils_1.mySetTimeout(function () { }, 1000)];
+                    case 16:
+                        _a.sent();
+                        return [4 /*yield*/, PonyRandomMove(moveSequence1, 100)];
+                    case 17:
+                        _a.sent();
+                        return [4 /*yield*/, WebGLUtils_1.mySetTimeout(function () { }, 300)];
+                    case 18:
+                        _a.sent();
+                        return [4 /*yield*/, PonyRandomMove(moveSequence1, 100)];
+                    case 19:
+                        _a.sent();
+                        return [4 /*yield*/, WebGLUtils_1.mySetTimeout(function () { }, 3000)];
+                    case 20:
+                        _a.sent();
+                        roam_1.forceSetCamera.apply(void 0, cp['lookUp']);
+                        return [4 /*yield*/, WebGLUtils_1.mySetTimeout(function () { }, 5)];
+                    case 21:
+                        _a.sent();
+                        p = 0, ms2len = moveSequence2.length;
+                        ms2timer = window.setInterval(function () {
+                            pony_1.Pony.setModelMat(mult(pony_1.Pony.modelMat, moveSequence2[p]));
+                            p += 1;
+                            p %= ms2len;
+                        }, 50);
+                        return [4 /*yield*/, smoothMove(cp['lookUp'][1], cp['lookDown'][1], cp['lookUp'][0], 60)];
+                    case 22:
+                        _a.sent();
+                        return [4 /*yield*/, smoothMove(cp['lookDown'][1], cp['lookUp'][1], cp['lookUp'][0], 60)];
+                    case 23:
+                        _a.sent();
+                        return [4 /*yield*/, smoothMove(cp['lookUp'][1], cp['lookDown'][1], cp['lookUp'][0], 50)];
+                    case 24:
+                        _a.sent();
+                        return [4 /*yield*/, smoothMove(cp['lookDown'][1], cp['lookUp'][1], cp['lookUp'][0], 40)];
+                    case 25:
+                        _a.sent();
+                        return [4 /*yield*/, smoothMove(cp['lookUp'][1], cp['lookDown'][1], cp['lookUp'][0], 20)];
+                    case 26:
+                        _a.sent();
+                        return [4 /*yield*/, smoothMove(cp['lookDown'][1], cp['lookUp'][1], cp['lookUp'][0], 20)];
+                    case 27:
+                        _a.sent();
+                        return [4 /*yield*/, smoothMove(cp['lookUp'][1], cp['lookDown'][1], cp['lookUp'][0], 20)];
+                    case 28:
+                        _a.sent();
+                        return [4 /*yield*/, smoothMove(cp['lookDown'][1], cp['lookUp'][1], cp['lookUp'][0], 20)];
+                    case 29:
+                        _a.sent();
+                        return [4 /*yield*/, smoothMove(cp['lookUp'][1], cp['lookDown'][1], cp['lookUp'][0], 20)];
+                    case 30:
+                        _a.sent();
+                        return [4 /*yield*/, smoothMove(cp['lookDown'][1], cp['lookUp'][1], cp['lookUp'][0], 10)];
+                    case 31:
+                        _a.sent();
+                        return [4 /*yield*/, smoothMove(cp['lookUp'][1], cp['lookDown'][1], cp['lookUp'][0], 10)];
+                    case 32:
+                        _a.sent();
+                        return [4 /*yield*/, smoothMove(cp['lookDown'][1], cp['lookUp'][1], cp['lookUp'][0], 10)];
+                    case 33:
+                        _a.sent();
+                        return [4 /*yield*/, smoothMove(cp['lookUp'][1], cp['lookDown'][1], cp['lookUp'][0], 10)];
+                    case 34:
+                        _a.sent();
+                        return [4 /*yield*/, smoothMove(cp['lookDown'][1], cp['lookUp'][1], cp['lookUp'][0], 10)];
+                    case 35:
+                        _a.sent();
+                        return [4 /*yield*/, smoothMove(cp['lookUp'][1], cp['lookDown'][1], cp['lookUp'][0], 10)];
+                    case 36:
+                        _a.sent();
+                        return [4 /*yield*/, smoothMove(cp['lookDown'][1], cp['lookUp'][1], cp['lookUp'][0], 10)];
+                    case 37:
+                        _a.sent();
+                        return [4 /*yield*/, smoothMove(cp['lookUp'][1], cp['lookDown'][1], cp['lookUp'][0], 10)];
+                    case 38:
+                        _a.sent();
+                        return [4 /*yield*/, smoothMove(cp['lookDown'][1], cp['lookUp'][1], cp['lookUp'][0], 7)];
+                    case 39:
+                        _a.sent();
+                        return [4 /*yield*/, smoothMove(cp['lookUp'][1], cp['lookDown'][1], cp['lookUp'][0], 7)];
+                    case 40:
+                        _a.sent();
+                        return [4 /*yield*/, smoothMove(cp['lookDown'][1], cp['lookUp'][1], cp['lookUp'][0], 7)];
+                    case 41:
+                        _a.sent();
+                        return [4 /*yield*/, smoothMove(cp['lookUp'][1], cp['lookDown'][1], cp['lookUp'][0], 7)];
+                    case 42:
+                        _a.sent();
+                        return [4 /*yield*/, smoothMove(cp['lookDown'][1], cp['lookUp'][1], cp['lookUp'][0], 7)];
+                    case 43:
+                        _a.sent();
+                        return [4 /*yield*/, smoothMove(cp['lookUp'][1], cp['lookDown'][1], cp['lookUp'][0], 7)];
+                    case 44:
+                        _a.sent();
+                        return [4 /*yield*/, smoothMove(cp['lookDown'][1], cp['lookUp'][1], cp['lookUp'][0], 7)];
+                    case 45:
+                        _a.sent();
+                        return [4 /*yield*/, smoothMove(cp['lookUp'][1], cp['lookDown'][1], cp['lookUp'][0], 7)];
+                    case 46:
+                        _a.sent();
+                        return [4 /*yield*/, smoothMove(cp['lookDown'][1], cp['lookUp'][1], cp['lookUp'][0], 7)];
+                    case 47:
+                        _a.sent();
+                        return [4 /*yield*/, smoothMove(cp['lookUp'][1], cp['lookDown'][1], cp['lookUp'][0], 7)];
+                    case 48:
+                        _a.sent();
+                        clearInterval(ms2timer);
                         return [2 /*return*/];
                 }
             });
         });
     }
     exports.performNewIsland = performNewIsland;
-    var cameraPosition = {
+    // 前段随机移动序列
+    var moveSequence1 = [
+        translate(0.07, 0, 0),
+        translate(0.07, 0, -0.03),
+        translate(-0.07, 0, 0),
+        translate(0.05, 0, 0),
+        translate(-0.05, 0, 0.03),
+        translate(-0.05, 0, 0),
+        translate(-0.05, 0, 0),
+        translate(0.05, 0, 0),
+    ];
+    // 高潮左右横跳序列
+    var moveSequence2 = [
+        translate(0.12, 0, 0),
+        translate(0.09, 0, 0),
+        translate(-0.12, 0, 0),
+        translate(-0.09, 0, 0),
+    ];
+    var cp = {
         'lookPony': [
             vec3(0.521367, -0.5, -0.362234),
             vec3(0.3738316, -0.026115, 0.927129) // front
@@ -218,12 +384,20 @@ define(["require", "exports", "./roam", "./sword", "../../framework/WebGLUtils",
             vec3(0.3738316, -0.026115, 0.927129)
         ],
         'lookUp': [
-            vec3(0.521367, -0.5, -0.362234),
-            vec3(0.4891365, 0.481753, 0.727089) // front
+            vec3(0.439758, -0.5, -0.2916108),
+            vec3(0.1475383, 0.5806111, 0.800701)
         ],
         'lookDown': [
-            vec3(0.521367, -0.5, -0.362234),
-            vec3(0.4891365, 0.481753, 0.727089) // front
+            vec3(0.439758, -0.5, -0.2916108),
+            vec3(0.110558, -0.426309, 0.897796)
+        ],
+        'lookLeft': [
+            vec3(0.439758, -0.5, -0.2916108),
+            vec3(-0.68392, 0.1465398, 0.7146887),
+        ],
+        'lookRight': [
+            vec3(0.439758, -0.5, -0.2916108),
+            vec3(0.825318, 0.102904, 0.555212)
         ],
     };
 });
