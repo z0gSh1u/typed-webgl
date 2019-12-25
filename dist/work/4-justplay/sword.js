@@ -1,3 +1,7 @@
+// ==================================
+// 黄金剑相关代码
+// by Twi & z0gSh1u
+// ==================================
 var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, generator) {
     function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
     return new (P || (P = Promise))(function (resolve, reject) {
@@ -46,6 +50,9 @@ define(["require", "exports", "../../framework/3d/DrawingPackage3d", "../../fram
     Object.defineProperty(exports, "__esModule", { value: true });
     var vBuffer, nBuffer;
     var Sword;
+    exports.SwordCtm = mat4();
+    function setSwordCtm(ctm) { exports.SwordCtm = ctm; }
+    exports.setSwordCtm = setSwordCtm;
     var vs;
     var vns;
     var waveLock = false;
@@ -97,7 +104,7 @@ define(["require", "exports", "../../framework/3d/DrawingPackage3d", "../../fram
         helper.prepare({
             attributes: [],
             uniforms: [
-                { varName: 'uWorldMatrix', data: flatten(mat4()), method: 'Matrix4fv' },
+                { varName: 'uWorldMatrix', data: flatten(exports.SwordCtm), method: 'Matrix4fv' },
                 { varName: 'uModelMatrix', data: flatten(Sword.modelMat), method: 'Matrix4fv' },
                 { varName: 'uLightCtm', data: flatten(ctm), method: 'Matrix4fv' },
                 { varName: 'uLightPosition', data: __spreadArrays(lightBulbPosition, [1.0]), method: '4fv' },

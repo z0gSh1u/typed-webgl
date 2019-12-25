@@ -1,17 +1,18 @@
 // Core code of 4-JustPlay.
-// by z0gSh1u
+// by z0gSh1u, LongChen and Twi.
+
 import '../../3rd-party/MV'
 import '../../3rd-party/initShaders'
 import { WebGLHelper3d } from '../../framework/3d/WebGLHelper3d'
 import * as WebGLUtils from '../../framework/WebGLUtils'
 import { initSkyBox, renderSkyBox } from './skybox'
-import { enableRoaming, preCalculatedCPM, getLookAt } from './roam'
+import { enableRoaming, preCalculatedCPM, getLookAt, cameraPos, cameraFront } from './roam'
 import { initPony, renderPony, PonyModifyLightBuldPosition } from './pony'
 import { initTF, renderTF, stepTFStatus } from './textureField'
 import { startLightBulbAutoRotate, getLightBulbPosition } from './light'
 import { initSword, renderSword, SwordModifyLightBulbPosition, SwordMaterial } from './sword'
-import { initMagicCube, renderMagicCube } from './magicCube'
-import { playNewIsland } from './extra'
+import { initMagicCube, renderMagicCube, startMagicCubeAutoRotate } from './magicCube'
+import { playNewIsland, shakedCTM, wrappedGetLookAt, performNewIsland } from './newIsland'
 
 // ==================================
 // 主要变量
@@ -22,15 +23,7 @@ let helper: WebGLHelper3d
 let PROGRAMS = {
   SKYBOX: 0, PONY: 1, SWORD: 2, CUBE: 3
 }
-
 let lightBulbPosition = vec3(0.5, 0.5, 0.0) // 光源位置
-
-// 材质分配
-/**
- * 0~5：天空盒，其中5为纹理场
- * 6~14：小马
- * 20
- */
 
 let main = async () => {
   WebGLUtils.initializeCanvas(gl, canvasDOM)
@@ -39,67 +32,35 @@ let main = async () => {
     WebGLUtils.initializeShaders(gl, './shader/Pony.glslv', './shader/Pony.glslf'),
     WebGLUtils.initializeShaders(gl, './shader/Sword.glslv', './shader/Sword.glslf'),
     WebGLUtils.initializeShaders(gl, './shader/Cube.glslv', './shader/Cube.glslf'),
-
   ])
   gl.enable(gl.DEPTH_TEST)
-
+  // 初始化各个部件
   await initSkyBox(helper, PROGRAMS.SKYBOX)
   await initPony(helper, lightBulbPosition, PROGRAMS.PONY)
   await initTF(helper, PROGRAMS.SKYBOX)
   await initSword(helper, lightBulbPosition, PROGRAMS.SWORD)
-  initMagicCube(canvasDOM, helper, PROGRAMS.CUBE)
-
+  await initMagicCube(canvasDOM, helper, PROGRAMS.CUBE)
+  // FPV漫游
   enableRoaming(canvasDOM)
-  startLightBulbAutoRotate(100)
-
+  // 自动旋转光源
+  startLightBulbAutoRotate(50)
+  startMagicCubeAutoRotate(50)
   // 纹理场行动
   window.setInterval(() => {
     stepTFStatus()
-  }, 100)
-  requestAnimationFrame(reRender)
-
-  // startShake()
-  // playNewIsland()
-}
-
-(document.querySelector('#btn_playNewIsland') as HTMLButtonElement).onclick = async () => {
-
-  // todo:
-
-  await playNewIsland()
-  startShake()
-
-  window.setTimeout(() => {
-    startShake()
-    SwordMaterial.diffuseMaterial = WebGLUtils.normalize8bitColor([255, 0, 0])
-    SwordMaterial.ambientMaterial = WebGLUtils.normalize8bitColor([255, 0, 0])
-    SwordMaterial.reCalculateProducts()
-    window.setTimeout(() => {
-      SwordMaterial.diffuseMaterial = WebGLUtils.normalize8bitColor([0, 255, 0])
-      SwordMaterial.ambientMaterial = WebGLUtils.normalize8bitColor([0, 255, 0])
-      SwordMaterial.reCalculateProducts()
-    }, 5000)
-  }, 2000)
-
-}
-
-let theta = 0
-
-let shakeCTM = false
-
-let wrappedGetLookAt = () => {
-  if (!shakeCTM) {
-    return getLookAt()
+  }, 100);
+  
+  (document.querySelector('#btn_playNewIsland') as HTMLButtonElement).onclick = () => {
+    performNewIsland()
   }
-  let tmp = getLookAt()
-  let x = (Math.random() - 0.5) / 30
-  let y = (Math.random() - 0.5) / 30
-  let z = (Math.random() - 0.5) / 30
-  return mult(translate(x, y, z), tmp) as Mat
-}
+  (document.querySelector('#btn_getCamera') as HTMLButtonElement).onclick = () => {
+    let s = "Pos = " + cameraPos + ", Front = " + cameraFront
+    alert(s)
+  }
 
-let startShake = () => {
-  shakeCTM = !shakeCTM
+  
+  // 全局重渲染
+  requestAnimationFrame(reRender)
 }
 
 // 全局统一重新渲染
@@ -110,9 +71,15 @@ let reRender = () => {
   renderSkyBox(helper, wrappedGetLookAt(), preCalculatedCPM, PROGRAMS.SKYBOX)
   renderTF(helper, wrappedGetLookAt(), preCalculatedCPM, PROGRAMS.SKYBOX)
   renderSword(helper, wrappedGetLookAt(), PROGRAMS.SWORD)
-  renderMagicCube(helper, preCalculatedCPM, PROGRAMS.CUBE, theta)
-  theta = (theta + 2) % 360
+  renderMagicCube(helper, preCalculatedCPM, PROGRAMS.CUBE)
   requestAnimationFrame(reRender)
 }
 
+// Just play!
 main()
+
+// ==========材质分配==========
+// 0~5：天空盒，其中5为纹理场
+// 6~14：小马
+// 20: CubeMap
+// ===========================

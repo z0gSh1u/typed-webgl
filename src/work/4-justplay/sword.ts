@@ -1,3 +1,8 @@
+// ==================================
+// 黄金剑相关代码
+// by Twi & z0gSh1u
+// ==================================
+
 import { DrawingPackage3d } from "../../framework/3d/DrawingPackage3d";
 import { DrawingObject3d } from "../../framework/3d/DrawingObject3d";
 import { WebGLHelper3d } from "../../framework/3d/WebGLHelper3d";
@@ -6,12 +11,11 @@ import { PhongLightModel } from "../../framework/3d/PhongLightModel";
 
 let vBuffer: WebGLBuffer, nBuffer: WebGLBuffer
 let Sword: DrawingPackage3d
-
+export let SwordCtm: Mat = mat4()
+export function setSwordCtm(ctm: Mat) { SwordCtm = ctm }
 let vs: Vec3[]
 let vns: Vec3[]
-
 let waveLock = false
-
 let lightBulbPosition: Vec3 = [0.0, 0.0, 0.0]
 export let SwordMaterial = new PhongLightModel({ // 光照参数
   lightPosition: lightBulbPosition, // @deprecated
@@ -24,7 +28,6 @@ export let SwordMaterial = new PhongLightModel({ // 光照参数
   materialShiness: 90.0
 })
 
-
 export function SwordModifyLightBulbPosition(newPos: Vec3) {
   lightBulbPosition = newPos
 }
@@ -33,16 +36,13 @@ export async function initSword(helper: WebGLHelper3d, _lightBulbPosition: Vec3,
   helper.switchProgram(swordProgram)
   vBuffer = helper.createBuffer()
   nBuffer = helper.createBuffer()
-
   let initSwordMat = mat4()
   initSwordMat = mult(initSwordMat, rotateX(90)) as Mat
   initSwordMat = mult(initSwordMat, rotateZ(60)) as Mat
   initSwordMat = mult(translate(0.85, -0.9, 0.9), initSwordMat) as Mat
-
   Sword = new DrawingPackage3d(initSwordMat as Mat, ...[
     new DrawingObject3d('sword', './model/normed/minecraft_sword.obj')
   ])
-
   vs = helper.analyzeFtoV(Sword.getObjectByName('sword') as DrawingObject3d, 'fs') as Vec3[]
   vns = helper.analyzeFtoV(Sword.getObjectByName('sword') as DrawingObject3d, 'fns') as Vec3[]
   vns = vns.map(v3 => {
@@ -51,7 +51,6 @@ export async function initSword(helper: WebGLHelper3d, _lightBulbPosition: Vec3,
     v4 = mult(translate(...shaker), v4) as Vec4
     return vec3(...v4)
   })
-
 }
 
 export function renderSword(helper: WebGLHelper3d, ctm: Mat, swordProgram: number) {
@@ -60,7 +59,7 @@ export function renderSword(helper: WebGLHelper3d, ctm: Mat, swordProgram: numbe
   helper.prepare({
     attributes: [],
     uniforms: [
-      { varName: 'uWorldMatrix', data: flatten(mat4()), method: 'Matrix4fv' },
+      { varName: 'uWorldMatrix', data: flatten(SwordCtm), method: 'Matrix4fv' },
       { varName: 'uModelMatrix', data: flatten(Sword.modelMat), method: 'Matrix4fv' },
       { varName: 'uLightCtm', data: flatten(ctm), method: 'Matrix4fv' },
       { varName: 'uLightPosition', data: [...lightBulbPosition, 1.0], method: '4fv' },
@@ -92,9 +91,7 @@ export function renderSword(helper: WebGLHelper3d, ctm: Mat, swordProgram: numbe
 }
 
 export function waveSword() {
-  if (waveLock) {
-    return
-  }
+  if (waveLock) { return }
   waveLock = true
   let old = Sword.modelMat
   Sword.setModelMat(mult(old, rotateX(10)) as Mat)

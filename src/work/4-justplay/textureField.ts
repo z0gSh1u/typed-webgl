@@ -15,7 +15,7 @@ export async function initTF(helper: WebGLHelper3d, skyBoxProgram: number) {
   helper.switchProgram(skyBoxProgram)
   helper.sendTextureImageToGPU(await loadImageAsync([
     './model/texture/SkyBox/front.png',
-  ]), 5, 6) // 0~5 texture
+  ]), 5, 6) // 5 texture
 }
 
 const n = 1.0

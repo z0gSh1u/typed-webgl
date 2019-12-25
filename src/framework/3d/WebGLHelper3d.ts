@@ -20,7 +20,7 @@ export class WebGLHelper3d {
     return this.gl
   }
 
-  public getProgram(index:number ) {
+  public getProgram(index: number) {
     return this.programList[index]
   }
 
@@ -181,15 +181,25 @@ export class WebGLHelper3d {
   /**
    * Send cubemap texture image to GPU.
    */
-  public sendCubeMapTextureToGPU(image: HTMLImageElement, position: '+x' | '+y' | '+z' | '-x' | '-y' | '-z') {
+  public sendCubeMapTextureToGPU(image: HTMLImageElement, texture: WebGLTexture, position: '+x' | '+y' | '+z' | '-x' | '-y' | '-z', wh: number = 512, activeTexture: number = this.gl.TEXTURE20) {
+    let gl = this.gl
     let pos = position.replace('x', 'X').replace('y', 'Y').replace('z', 'Z')
       .replace('+', 'POSITIVE_').replace('-', 'NEGATIVE_')
-    let tex; let gl = this.gl
     let target: number = eval(`gl.TEXTURE_CUBE_MAP_${pos}`)
-    tex = gl.createTexture() as WebGLTexture
-    gl.bindTexture(gl.TEXTURE_CUBE_MAP, tex)
+    gl.activeTexture(activeTexture)
+    gl.texImage2D(target, 0, gl.RGBA, wh, wh, 0, gl.RGBA, gl.UNSIGNED_BYTE, null)
+    gl.bindTexture(gl.TEXTURE_CUBE_MAP, texture)
     gl.texImage2D(target, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, image)
     gl.generateMipmap(gl.TEXTURE_CUBE_MAP)
+  }
+
+  /**
+   * Post process after send all cube maps to GPU.
+   */
+  public postProcessCubeMapTexture() {
+    let gl = this.gl
+    gl.generateMipmap(gl.TEXTURE_CUBE_MAP);
+    gl.texParameteri(gl.TEXTURE_CUBE_MAP, gl.TEXTURE_MIN_FILTER, gl.LINEAR_MIPMAP_LINEAR);
   }
 
   /**

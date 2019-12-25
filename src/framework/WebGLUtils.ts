@@ -139,3 +139,21 @@ export function getTurnedPoint(point: any, axis: number): Vec2 {
   }
   return point
 }
+
+/**
+ * Sync wait.
+ */
+export function waitSync(msPeriod: number) {
+  return new Promise((resolve, reject) => {
+    window.setTimeout(() => { resolve() }, msPeriod)
+  })
+}
+
+/**
+ * My setTimeout with Promise.
+ */
+export function mySetTimeout(dowhat: () => void, howlong: number) {
+  return new Promise((resolve, reject) => {
+    window.setTimeout(() => { dowhat(); resolve() }, howlong)
+  })
+}

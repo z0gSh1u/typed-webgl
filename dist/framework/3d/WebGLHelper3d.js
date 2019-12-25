@@ -161,16 +161,26 @@ define(["require", "exports"], function (require, exports) {
         /**
          * Send cubemap texture image to GPU.
          */
-        WebGLHelper3d.prototype.sendCubeMapTextureToGPU = function (image, position) {
+        WebGLHelper3d.prototype.sendCubeMapTextureToGPU = function (image, texture, position, wh, activeTexture) {
+            if (wh === void 0) { wh = 512; }
+            if (activeTexture === void 0) { activeTexture = this.gl.TEXTURE20; }
+            var gl = this.gl;
             var pos = position.replace('x', 'X').replace('y', 'Y').replace('z', 'Z')
                 .replace('+', 'POSITIVE_').replace('-', 'NEGATIVE_');
-            var tex;
-            var gl = this.gl;
             var target = eval("gl.TEXTURE_CUBE_MAP_" + pos);
-            tex = gl.createTexture();
-            gl.bindTexture(gl.TEXTURE_CUBE_MAP, tex);
+            gl.activeTexture(activeTexture);
+            gl.texImage2D(target, 0, gl.RGBA, wh, wh, 0, gl.RGBA, gl.UNSIGNED_BYTE, null);
+            gl.bindTexture(gl.TEXTURE_CUBE_MAP, texture);
             gl.texImage2D(target, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, image);
             gl.generateMipmap(gl.TEXTURE_CUBE_MAP);
+        };
+        /**
+         * Post process after send all cube maps to GPU.
+         */
+        WebGLHelper3d.prototype.postProcessCubeMapTexture = function () {
+            var gl = this.gl;
+            gl.generateMipmap(gl.TEXTURE_CUBE_MAP);
+            gl.texParameteri(gl.TEXTURE_CUBE_MAP, gl.TEXTURE_MIN_FILTER, gl.LINEAR_MIPMAP_LINEAR);
         };
         /**
          * Analyze f?s to v?s.

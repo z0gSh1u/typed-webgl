@@ -48,7 +48,6 @@ var __spreadArrays = (this && this.__spreadArrays) || function () {
 define(["require", "exports", "../../framework/3d/DrawingPackage3d", "../../framework/WebGLUtils", "../../framework/3d/DrawingObject3d", "../../framework/3d/PhongLightModel"], function (require, exports, DrawingPackage3d_1, WebGLUtils_1, DrawingObject3d_1, PhongLightModel_1) {
     "use strict";
     Object.defineProperty(exports, "__esModule", { value: true });
-    var Pony; // 小马全身
     var vBuffer, nBuffer, tBuffer;
     var lightBulbPosition = [0.0, 0.0, 0.0];
     var PonyMaterial = new PhongLightModel_1.PhongLightModel({
@@ -80,7 +79,7 @@ define(["require", "exports", "../../framework/3d/DrawingPackage3d", "../../fram
                         initPonyModelMat = mult(rotateZ(180), rotateX(270));
                         initPonyModelMat = mult(translate(0.7, -1.32, 0.5), initPonyModelMat);
                         initPonyModelMat = mult(WebGLUtils_1.scaleMat(0.75, 0.75, 0.75), initPonyModelMat);
-                        Pony = new (DrawingPackage3d_1.DrawingPackage3d.bind.apply(DrawingPackage3d_1.DrawingPackage3d, __spreadArrays([void 0, initPonyModelMat], [
+                        exports.Pony = new (DrawingPackage3d_1.DrawingPackage3d.bind.apply(DrawingPackage3d_1.DrawingPackage3d, __spreadArrays([void 0, initPonyModelMat], [
                             new DrawingObject3d_1.DrawingObject3d('body', './model/normed/Pony/pony.obj', './model/texture/Pony/pony.png', 6),
                             new DrawingObject3d_1.DrawingObject3d('tail', './model/normed/Pony/tail.obj', './model/texture/Pony/tail.png', 7),
                             new DrawingObject3d_1.DrawingObject3d('hairBack', './model/normed/Pony/hairBack.obj', './model/texture/Pony/hairBack.png', 8),
@@ -92,7 +91,7 @@ define(["require", "exports", "../../framework/3d/DrawingPackage3d", "../../fram
                             new DrawingObject3d_1.DrawingObject3d('eyelashes', './model/normed/Pony/eyelashes.obj', './model/texture/Pony/eyelashes.png', 14),
                         ])))();
                         urls = [];
-                        Pony.innerList.forEach(function (obj) {
+                        exports.Pony.innerList.forEach(function (obj) {
                             urls.push(obj.texturePath);
                         });
                         _b = (_a = helper).sendTextureImageToGPU;
@@ -113,7 +112,7 @@ define(["require", "exports", "../../framework/3d/DrawingPackage3d", "../../fram
             uniforms: [
                 { varName: 'uWorldMatrix', data: flatten(ctm), method: 'Matrix4fv' },
                 { varName: 'uLightCtm', data: flatten(ctm), method: 'Matrix4fv' },
-                { varName: 'uModelMatrix', data: flatten(Pony.modelMat), method: 'Matrix4fv' },
+                { varName: 'uModelMatrix', data: flatten(exports.Pony.modelMat), method: 'Matrix4fv' },
                 { varName: 'uProjectionMatrix', data: flatten(perspectiveMat), method: 'Matrix4fv' },
                 { varName: 'uLightPosition', data: __spreadArrays(lightBulbPosition, [1.0]), method: '4fv' },
                 { varName: 'uShiness', data: PonyMaterial.materialShiness, method: '1f' },
@@ -121,11 +120,11 @@ define(["require", "exports", "../../framework/3d/DrawingPackage3d", "../../fram
                 { varName: 'uDiffuseProduct', data: PonyMaterial.diffuseProduct, method: '4fv' },
                 { varName: 'uSpecularProduct', data: PonyMaterial.specularProduct, method: '4fv' },
                 {
-                    varName: 'uWorldMatrixTransInv', data: flatten(transpose(inverse(mat3(Pony.modelMat[0][0], Pony.modelMat[0][1], Pony.modelMat[0][2], Pony.modelMat[1][0], Pony.modelMat[1][1], Pony.modelMat[1][2], Pony.modelMat[2][0], Pony.modelMat[2][1], Pony.modelMat[2][2])))), method: 'Matrix3fv'
+                    varName: 'uWorldMatrixTransInv', data: flatten(transpose(inverse(mat3(exports.Pony.modelMat[0][0], exports.Pony.modelMat[0][1], exports.Pony.modelMat[0][2], exports.Pony.modelMat[1][0], exports.Pony.modelMat[1][1], exports.Pony.modelMat[1][2], exports.Pony.modelMat[2][0], exports.Pony.modelMat[2][1], exports.Pony.modelMat[2][2])))), method: 'Matrix3fv'
                 },
             ]
         });
-        Pony.innerList.forEach(function (obj) {
+        exports.Pony.innerList.forEach(function (obj) {
             var vs = helper.analyzeFtoV(obj, 'fs'), vts = helper.analyzeFtoV(obj, 'fts'), vns = helper.analyzeFtoV(obj, 'fns');
             helper.prepare({
                 attributes: [

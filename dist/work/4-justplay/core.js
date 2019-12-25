@@ -1,3 +1,5 @@
+// Core code of 4-JustPlay.
+// by z0gSh1u, LongChen and Twi.
 var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, generator) {
     function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
     return new (P || (P = Promise))(function (resolve, reject) {
@@ -41,7 +43,7 @@ var __importStar = (this && this.__importStar) || function (mod) {
     result["default"] = mod;
     return result;
 };
-define(["require", "exports", "../../framework/3d/WebGLHelper3d", "../../framework/WebGLUtils", "./skybox", "./roam", "./pony", "./textureField", "./light", "./sword", "./magicCube", "./extra", "../../3rd-party/MV", "../../3rd-party/initShaders"], function (require, exports, WebGLHelper3d_1, WebGLUtils, skybox_1, roam_1, pony_1, textureField_1, light_1, sword_1, magicCube_1, extra_1) {
+define(["require", "exports", "../../framework/3d/WebGLHelper3d", "../../framework/WebGLUtils", "./skybox", "./roam", "./pony", "./textureField", "./light", "./sword", "./magicCube", "./newIsland", "../../3rd-party/MV", "../../3rd-party/initShaders"], function (require, exports, WebGLHelper3d_1, WebGLUtils, skybox_1, roam_1, pony_1, textureField_1, light_1, sword_1, magicCube_1, newIsland_1) {
     "use strict";
     Object.defineProperty(exports, "__esModule", { value: true });
     WebGLUtils = __importStar(WebGLUtils);
@@ -55,12 +57,6 @@ define(["require", "exports", "../../framework/3d/WebGLHelper3d", "../../framewo
         SKYBOX: 0, PONY: 1, SWORD: 2, CUBE: 3
     };
     var lightBulbPosition = vec3(0.5, 0.5, 0.0); // 光源位置
-    // 材质分配
-    /**
-     * 0~5：天空盒，其中5为纹理场
-     * 6~14：小马
-     * 20
-     */
     var main = function () { return __awaiter(void 0, void 0, void 0, function () {
         return __generator(this, function (_a) {
             switch (_a.label) {
@@ -73,8 +69,10 @@ define(["require", "exports", "../../framework/3d/WebGLHelper3d", "../../framewo
                         WebGLUtils.initializeShaders(gl, './shader/Cube.glslv', './shader/Cube.glslf'),
                     ]);
                     gl.enable(gl.DEPTH_TEST);
+                    // 初始化各个部件
                     return [4 /*yield*/, skybox_1.initSkyBox(helper, PROGRAMS.SKYBOX)];
                 case 1:
+                    // 初始化各个部件
                     _a.sent();
                     return [4 /*yield*/, pony_1.initPony(helper, lightBulbPosition, PROGRAMS.PONY)];
                 case 2:
@@ -85,69 +83,49 @@ define(["require", "exports", "../../framework/3d/WebGLHelper3d", "../../framewo
                     return [4 /*yield*/, sword_1.initSword(helper, lightBulbPosition, PROGRAMS.SWORD)];
                 case 4:
                     _a.sent();
-                    magicCube_1.initMagicCube(canvasDOM, helper, PROGRAMS.CUBE);
+                    return [4 /*yield*/, magicCube_1.initMagicCube(canvasDOM, helper, PROGRAMS.CUBE)
+                        // FPV漫游
+                    ];
+                case 5:
+                    _a.sent();
+                    // FPV漫游
                     roam_1.enableRoaming(canvasDOM);
-                    light_1.startLightBulbAutoRotate(100);
+                    // 自动旋转光源
+                    light_1.startLightBulbAutoRotate(50);
+                    magicCube_1.startMagicCubeAutoRotate(50);
                     // 纹理场行动
                     window.setInterval(function () {
                         textureField_1.stepTFStatus();
                     }, 100);
+                    document.querySelector('#btn_playNewIsland').onclick = function () {
+                        newIsland_1.performNewIsland();
+                    };
+                    document.querySelector('#btn_getCamera').onclick = function () {
+                        var s = "Pos = " + roam_1.cameraPos + ", Front = " + roam_1.cameraFront;
+                        alert(s);
+                    };
+                    // 全局重渲染
                     requestAnimationFrame(reRender);
                     return [2 /*return*/];
             }
         });
     }); };
-    document.querySelector('#btn_playNewIsland').onclick = function () { return __awaiter(void 0, void 0, void 0, function () {
-        return __generator(this, function (_a) {
-            switch (_a.label) {
-                case 0: 
-                // todo:
-                return [4 /*yield*/, extra_1.playNewIsland()];
-                case 1:
-                    // todo:
-                    _a.sent();
-                    startShake();
-                    window.setTimeout(function () {
-                        startShake();
-                        sword_1.SwordMaterial.diffuseMaterial = WebGLUtils.normalize8bitColor([255, 0, 0]);
-                        sword_1.SwordMaterial.ambientMaterial = WebGLUtils.normalize8bitColor([255, 0, 0]);
-                        sword_1.SwordMaterial.reCalculateProducts();
-                        window.setTimeout(function () {
-                            sword_1.SwordMaterial.diffuseMaterial = WebGLUtils.normalize8bitColor([0, 255, 0]);
-                            sword_1.SwordMaterial.ambientMaterial = WebGLUtils.normalize8bitColor([0, 255, 0]);
-                            sword_1.SwordMaterial.reCalculateProducts();
-                        }, 5000);
-                    }, 2000);
-                    return [2 /*return*/];
-            }
-        });
-    }); };
-    var theta = 0;
-    var shakeCTM = false;
-    var wrappedGetLookAt = function () {
-        if (!shakeCTM) {
-            return roam_1.getLookAt();
-        }
-        var tmp = roam_1.getLookAt();
-        var x = (Math.random() - 0.5) / 30;
-        var y = (Math.random() - 0.5) / 30;
-        var z = (Math.random() - 0.5) / 30;
-        return mult(translate(x, y, z), tmp);
-    };
-    var startShake = function () {
-        shakeCTM = !shakeCTM;
-    };
     // 全局统一重新渲染
     var reRender = function () {
         pony_1.PonyModifyLightBuldPosition(light_1.getLightBulbPosition());
         sword_1.SwordModifyLightBulbPosition(light_1.getLightBulbPosition());
-        pony_1.renderPony(helper, wrappedGetLookAt(), roam_1.preCalculatedCPM, PROGRAMS.PONY);
-        skybox_1.renderSkyBox(helper, wrappedGetLookAt(), roam_1.preCalculatedCPM, PROGRAMS.SKYBOX);
-        textureField_1.renderTF(helper, wrappedGetLookAt(), roam_1.preCalculatedCPM, PROGRAMS.SKYBOX);
-        sword_1.renderSword(helper, wrappedGetLookAt(), PROGRAMS.SWORD);
-        magicCube_1.renderMagicCube(helper, roam_1.preCalculatedCPM, PROGRAMS.CUBE, theta);
-        theta = (theta + 2) % 360;
+        pony_1.renderPony(helper, newIsland_1.wrappedGetLookAt(), roam_1.preCalculatedCPM, PROGRAMS.PONY);
+        skybox_1.renderSkyBox(helper, newIsland_1.wrappedGetLookAt(), roam_1.preCalculatedCPM, PROGRAMS.SKYBOX);
+        textureField_1.renderTF(helper, newIsland_1.wrappedGetLookAt(), roam_1.preCalculatedCPM, PROGRAMS.SKYBOX);
+        sword_1.renderSword(helper, newIsland_1.wrappedGetLookAt(), PROGRAMS.SWORD);
+        magicCube_1.renderMagicCube(helper, roam_1.preCalculatedCPM, PROGRAMS.CUBE);
         requestAnimationFrame(reRender);
     };
+    // Just play!
     main();
 });
+// ==========材质分配==========
+// 0~5：天空盒，其中5为纹理场
+// 6~14：小马
+// 20: CubeMap
+// ===========================

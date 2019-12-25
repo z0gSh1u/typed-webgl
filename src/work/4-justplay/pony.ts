@@ -9,7 +9,7 @@ import { scaleMat, loadImageAsync } from "../../framework/WebGLUtils";
 import { DrawingObject3d } from "../../framework/3d/DrawingObject3d";
 import { PhongLightModel } from "../../framework/3d/PhongLightModel";
 
-let Pony: DrawingPackage3d // 小马全身
+export let Pony: DrawingPackage3d // 小马全身
 let vBuffer: WebGLBuffer, nBuffer: WebGLBuffer, tBuffer: WebGLBuffer
 let lightBulbPosition: Vec3 = [0.0, 0.0, 0.0]
 const PonyMaterial = new PhongLightModel({ // 小马光照参数
@@ -24,7 +24,6 @@ const PonyMaterial = new PhongLightModel({ // 小马光照参数
 })
 
 // TODO: 仅Analyze一次fs, fns, fts
-
 export function PonyModifyLightBuldPosition(newPos: Vec3) {
   lightBulbPosition = newPos
 }
@@ -83,8 +82,8 @@ export function renderPony(helper: WebGLHelper3d, ctm: Mat, perspectiveMat: Mat,
   })
   Pony.innerList.forEach(obj => {
     let vs = helper.analyzeFtoV(obj, 'fs'),
-    vts = helper.analyzeFtoV(obj, 'fts'),
-    vns = helper.analyzeFtoV(obj, 'fns')    
+      vts = helper.analyzeFtoV(obj, 'fts'),
+      vns = helper.analyzeFtoV(obj, 'fns')
     helper.prepare({
       attributes: [
         { buffer: vBuffer, data: flatten(vs), varName: 'aPosition', attrPer: 3, type: gl.FLOAT },

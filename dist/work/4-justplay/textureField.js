@@ -57,7 +57,7 @@ define(["require", "exports", "../../framework/WebGLUtils"], function (require, 
                                 './model/texture/SkyBox/front.png',
                             ])];
                     case 1:
-                        _b.apply(_a, [_c.sent(), 5, 6]); // 0~5 texture
+                        _b.apply(_a, [_c.sent(), 5, 6]); // 5 texture
                         return [2 /*return*/];
                 }
             });
