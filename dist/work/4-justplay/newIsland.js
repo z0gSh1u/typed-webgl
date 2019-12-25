@@ -349,6 +349,30 @@ define(["require", "exports", "./roam", "./sword", "../../framework/WebGLUtils",
                         return [4 /*yield*/, smoothMove(cp['lookUp'][1], cp['lookDown'][1], cp['lookUp'][0], 7)];
                     case 48:
                         _a.sent();
+                        return [4 /*yield*/, smoothMove(cp['lookDown'][1], cp['lookUp'][1], cp['lookUp'][0], 7)];
+                    case 49:
+                        _a.sent();
+                        return [4 /*yield*/, smoothMove(cp['lookUp'][1], cp['lookDown'][1], cp['lookUp'][0], 7)];
+                    case 50:
+                        _a.sent();
+                        return [4 /*yield*/, smoothMove(cp['lookDown'][1], cp['lookUp'][1], cp['lookUp'][0], 7)];
+                    case 51:
+                        _a.sent();
+                        return [4 /*yield*/, smoothMove(cp['lookUp'][1], cp['lookDown'][1], cp['lookUp'][0], 7)];
+                    case 52:
+                        _a.sent();
+                        return [4 /*yield*/, smoothMove(cp['lookDown'][1], cp['lookUp'][1], cp['lookUp'][0], 7)];
+                    case 53:
+                        _a.sent();
+                        return [4 /*yield*/, smoothMove(cp['lookUp'][1], cp['lookDown'][1], cp['lookUp'][0], 7)];
+                    case 54:
+                        _a.sent();
+                        return [4 /*yield*/, smoothMove(cp['lookDown'][1], cp['lookUp'][1], cp['lookUp'][0], 7)];
+                    case 55:
+                        _a.sent();
+                        return [4 /*yield*/, smoothMove(cp['lookUp'][1], cp['lookDown'][1], cp['lookUp'][0], 7)];
+                    case 56:
+                        _a.sent();
                         clearInterval(ms2timer);
                         return [2 /*return*/];
                 }

@@ -128,7 +128,7 @@ define(["require", "exports", "./sword", "./magicCube", "./newIsland", "./blocks
             }
         };
     };
-    //判断互动时镜头朝向与距离是否正确
+    // 判断互动时镜头朝向与距离是否正确
     var isActing = function (actBox) {
         var lookat = exports.cameraFront;
         lookat = lookat.map(function (v) { return actDistance * v; });

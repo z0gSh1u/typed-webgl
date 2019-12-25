@@ -49,16 +49,6 @@ let main = async () => {
   window.setInterval(() => {
     stepTFStatus()
   }, 100);
-  
-  (document.querySelector('#btn_playNewIsland') as HTMLButtonElement).onclick = () => {
-    performNewIsland()
-  }
-  (document.querySelector('#btn_getCamera') as HTMLButtonElement).onclick = () => {
-    let s = "Pos = " + cameraPos + "\nFront = " + cameraFront + "\nLookAt = " + add(cameraPos, cameraFront)
-    alert(s)
-  }
-
-  
   // 全局重渲染
   requestAnimationFrame(reRender)
 }

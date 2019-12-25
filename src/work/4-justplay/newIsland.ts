@@ -174,6 +174,14 @@ export async function performNewIsland() {
   await smoothMove(cp['lookUp'][1], cp['lookDown'][1], cp['lookUp'][0], 7)
   await smoothMove(cp['lookDown'][1], cp['lookUp'][1], cp['lookUp'][0], 7)
   await smoothMove(cp['lookUp'][1], cp['lookDown'][1], cp['lookUp'][0], 7)
+  await smoothMove(cp['lookDown'][1], cp['lookUp'][1], cp['lookUp'][0], 7)
+  await smoothMove(cp['lookUp'][1], cp['lookDown'][1], cp['lookUp'][0], 7)
+  await smoothMove(cp['lookDown'][1], cp['lookUp'][1], cp['lookUp'][0], 7)
+  await smoothMove(cp['lookUp'][1], cp['lookDown'][1], cp['lookUp'][0], 7)
+  await smoothMove(cp['lookDown'][1], cp['lookUp'][1], cp['lookUp'][0], 7)
+  await smoothMove(cp['lookUp'][1], cp['lookDown'][1], cp['lookUp'][0], 7)
+  await smoothMove(cp['lookDown'][1], cp['lookUp'][1], cp['lookUp'][0], 7)
+  await smoothMove(cp['lookUp'][1], cp['lookDown'][1], cp['lookUp'][0], 7)
   clearInterval(ms2timer)
   // Fin.
 }

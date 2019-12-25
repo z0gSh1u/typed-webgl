@@ -115,7 +115,7 @@ let listenKeyboardFPV = () => {
   isKeyDown['87'] = isKeyDown['65'] = isKeyDown['83'] = isKeyDown['68'] = isKeyDown['32'] = isKeyDown['16'] = false
   window.onkeydown = (e: KeyboardEvent) => {
     if (e && e.keyCode) {
-      if(e.keyCode == 69 && !isKeyDown['69'] && isActing(MagicCubeActBox)){
+      if (e.keyCode == 69 && !isKeyDown['69'] && isActing(MagicCubeActBox)) {
         launchNewIsland()
       }
       isKeyDown[e.keyCode] = true
@@ -128,17 +128,17 @@ let listenKeyboardFPV = () => {
   }
 }
 
-//判断互动时镜头朝向与距离是否正确
+// 判断互动时镜头朝向与距离是否正确
 let isActing = (actBox: Vec3[]) => {
   let lookat = cameraFront
-  lookat = lookat.map((v) => {return actDistance * v}) as Vec3
+  lookat = lookat.map((v) => { return actDistance * v }) as Vec3
   lookat = add(lookat, cameraPos) as Vec3
-  let res = cameraPos.map((v, i) => {return v >= actBox[0][i] && v <= actBox[1][i]})
-  if(res[0] && res[1] && res[2]){
+  let res = cameraPos.map((v, i) => { return v >= actBox[0][i] && v <= actBox[1][i] })
+  if (res[0] && res[1] && res[2]) {
     return true
   }
-  res = lookat.map((v, i) => {return v >= actBox[0][i] && v <= actBox[1][i]})
-  if(res[0] && res[1] && res[2]){
+  res = lookat.map((v, i) => { return v >= actBox[0][i] && v <= actBox[1][i] })
+  if (res[0] && res[1] && res[2]) {
     return true
   }
   return false
@@ -183,7 +183,7 @@ let moveCamera = () => {
     }
     legHeight = STAND_HEIGHT
   }
-  let vBlocks = blocks.map((v) => {return [add(v[0], vec3(-BODY_WIDTH, -HEAD_SIZE, -BODY_WIDTH)) as Vec3, add(v[1], vec3(BODY_WIDTH, legHeight, BODY_WIDTH)) as Vec3]})
+  let vBlocks = blocks.map((v) => { return [add(v[0], vec3(-BODY_WIDTH, -HEAD_SIZE, -BODY_WIDTH)) as Vec3, add(v[1], vec3(BODY_WIDTH, legHeight, BODY_WIDTH)) as Vec3] })
   if (!isOnFloor) {
     verticalSpeed += GRAVITY
   } else {
@@ -192,12 +192,12 @@ let moveCamera = () => {
   cameraMoveSpeed[1] += verticalSpeed
   let lastPos = cameraPos
   cameraPos = add(cameraPos, cameraMoveSpeed) as Vec3
-  let isIn = vBlocks.map((v) => {return isInBlock(v, cameraPos)})
+  let isIn = vBlocks.map((v) => { return isInBlock(v, cameraPos) })
   if (isGettingUp) {
     vBlocks.map((v, i) => {
-      if(isIn[i]) {
+      if (isIn[i]) {
         cameraPos[1] = Math.min(cameraPos[1] + GETUP_SPEED, v[1][1])
-        if(cameraPos[1] == v[1][1]) {
+        if (cameraPos[1] == v[1][1]) {
           isGettingUp = false
           isIn[i] = false
         }
@@ -206,7 +206,7 @@ let moveCamera = () => {
   }
   if (cameraPos[1] < lastPos[1]) {
     vBlocks.map((v, i) => {
-      if(isIn[i]) {
+      if (isIn[i]) {
         if (lastPos[1] >= v[1][1]) {
           cameraPos[1] = v[1][1]
           isIn[i] = false
@@ -221,7 +221,7 @@ let moveCamera = () => {
         }
       }
     })
-  } else if (cameraPos[1] > lastPos[1]){
+  } else if (cameraPos[1] > lastPos[1]) {
     vBlocks.map((v, i) => {
       if (isIn[i]) {
         if (lastPos[1] <= v[0][1]) {
@@ -235,7 +235,7 @@ let moveCamera = () => {
           isOnFloor = true
         }
       } else {
-        
+
       }
     })
   }
@@ -248,7 +248,7 @@ let moveCamera = () => {
         }
       }
     })
-  } else if (cameraPos[0] > lastPos[0]){
+  } else if (cameraPos[0] > lastPos[0]) {
     vBlocks.map((v, i) => {
       if (isIn[i]) {
         if (lastPos[0] <= v[0][0]) {
@@ -267,7 +267,7 @@ let moveCamera = () => {
         }
       }
     })
-  } else if (cameraPos[2] > lastPos[2]){
+  } else if (cameraPos[2] > lastPos[2]) {
     vBlocks.map((v, i) => {
       if (isIn[i]) {
         if (lastPos[2] <= v[0][2]) {
@@ -279,16 +279,16 @@ let moveCamera = () => {
   }
   let flag = false
   vBlocks.map((v, i) => {
-    if(isOnBlock(v)) {
+    if (isOnBlock(v)) {
       flag = true
       isOnFloor = true
       isGettingUp = false
-    } else if(isIn[i]) {
+    } else if (isIn[i]) {
       flag = true
       isOnFloor = true
     }
   })
-  if(!flag) {
+  if (!flag) {
     isOnFloor = false
   }
 }

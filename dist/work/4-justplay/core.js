@@ -97,13 +97,6 @@ define(["require", "exports", "../../framework/3d/WebGLHelper3d", "../../framewo
                     window.setInterval(function () {
                         textureField_1.stepTFStatus();
                     }, 100);
-                    document.querySelector('#btn_playNewIsland').onclick = function () {
-                        newIsland_1.performNewIsland();
-                    };
-                    document.querySelector('#btn_getCamera').onclick = function () {
-                        var s = "Pos = " + roam_1.cameraPos + "\nFront = " + roam_1.cameraFront + "\nLookAt = " + add(roam_1.cameraPos, roam_1.cameraFront);
-                        alert(s);
-                    };
                     // 全局重渲染
                     requestAnimationFrame(reRender);
                     return [2 /*return*/];
