@@ -54,7 +54,7 @@ let main = async () => {
     performNewIsland()
   }
   (document.querySelector('#btn_getCamera') as HTMLButtonElement).onclick = () => {
-    let s = "Pos = " + cameraPos + ", Front = " + cameraFront
+    let s = "Pos = " + cameraPos + "\nFront = " + cameraFront + "\nLookAt = " + add(cameraPos, cameraFront)
     alert(s)
   }
 

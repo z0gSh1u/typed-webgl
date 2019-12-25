@@ -11,6 +11,7 @@ let vBuffer: WebGLBuffer
 let nBuffer: WebGLBuffer
 let texture: WebGLTexture
 export let MagicCubeModelMat: Mat
+export let MagicCubeActBox = [vec3(-0.16, -0.7, -0.37), vec3(0.16, -0.35, 0.08)]
 
 export async function initMagicCube(canvasDOM: HTMLCanvasElement, helper: WebGLHelper3d, magicCubeProgram: number) {
   helper.switchProgram(magicCubeProgram)
