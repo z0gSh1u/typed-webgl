@@ -5,6 +5,9 @@
 
 import '../../3rd-party/MV'
 import { waveSword } from './sword'
+import { MagicCubeActBox } from './magicCube'
+import { performNewIsland } from './newIsland'
+import { blocks } from './blocks'
 
 // ==================================
 // 观察相机
@@ -17,17 +20,18 @@ const ANGLE_UP_MAX = 120
 const ANGLE_DOWN_MAX = -120
 const VEC_UP_MAX = vec4(0.0, Math.sin(ANGLE_UP_MAX), Math.cos(ANGLE_UP_MAX), 1)
 const VEC_DOWN_MAX = vec4(0.0, Math.sin(ANGLE_DOWN_MAX), Math.cos(ANGLE_DOWN_MAX), 1)
-const POS_MIN = vec3(-0.82, 0, -0.82)// 相机位置边界，分别为XZ坐标的最小值，第二个分量无效
-const POS_MAX = vec3(0.82, 0, 0.82)// 相机位置边界，分别为XZ坐标的最大值，第二个分量无效
 const GRAVITY = -0.02 // 重力加速度
 const GETUP_SPEED = 0.1 // 起身速度
-const CEIL = 0.8 // 天花板坐标
-const FLOOR_STAND = -0.5 // 站立时地板坐标
-const FLOOR_SQUAT = -0.8 // 蹲下时地板坐标
-const JUMP_SPEED = 0.15 // 起跳速度
-let floor = FLOOR_STAND // 相机Y坐标最小值，可变以实现下蹲
+const HEAD_SIZE = 0.2 // 
+const BODY_WIDTH = 0.18 // 
+const STAND_HEIGHT = 0.5 // 
+const SQUAT_HEIGHT = 0.2 // 
+let legHeight = STAND_HEIGHT // 
+const JUMP_SPEED = 0.2 // 起跳速度
 let isOnFloor = false // 是否站在地板上
+let isGettingUp = false // 是否正在起身
 let verticalSpeed = 0 // 垂直方向速度，主要用于跳跃
+const actDistance = 0.32 // 最远互动距离
 export let cameraPos = vec3(0.0, 0.0, 0.0)
 export let cameraFront = vec3(0.1, 0.0, 0.0)
 let cameraSpeed = 0.04
@@ -90,6 +94,7 @@ let listenMouseToTurnCamera = () => {
     canvasDOM.onmousemove = () => { }
   }
 }
+
 // 键盘侦听
 let isKeyDown: { [key: string]: boolean } = {
   '87'/*W*/: false,
@@ -97,7 +102,8 @@ let isKeyDown: { [key: string]: boolean } = {
   '83'/*S*/: false,
   '68'/*D*/: false,
   '32'/*Space*/: false,
-  '16'/*Shift*/: false
+  '16'/*Shift*/: false,
+  '69'/*E*/: false
 }
 let listenKeyboardFPV = () => {
   if (cameraMoveId == 0) {
@@ -106,6 +112,9 @@ let listenKeyboardFPV = () => {
   isKeyDown['87'] = isKeyDown['65'] = isKeyDown['83'] = isKeyDown['68'] = isKeyDown['32'] = isKeyDown['16'] = false
   window.onkeydown = (e: KeyboardEvent) => {
     if (e && e.keyCode) {
+      if(e.keyCode == 69 && !isKeyDown['69'] && isActing(MagicCubeActBox)){
+        launchNewIsland()
+      }
       isKeyDown[e.keyCode] = true
     }
   }
@@ -114,6 +123,31 @@ let listenKeyboardFPV = () => {
       isKeyDown[e.keyCode] = false
     }
   }
+}
+
+//判断互动时镜头朝向与距离是否正确
+let isActing = (actBox: Vec3[]) => {
+  let lookat = cameraFront
+  lookat = lookat.map((v) => {return actDistance * v}) as Vec3
+  lookat = add(lookat, cameraPos) as Vec3
+  let res = cameraPos.map((v, i) => {return v >= actBox[0][i] && v <= actBox[1][i]})
+  if(res[0] && res[1] && res[2]){
+    return true
+  }
+  res = lookat.map((v, i) => {return v >= actBox[0][i] && v <= actBox[1][i]})
+  if(res[0] && res[1] && res[2]){
+    return true
+  }
+  return false
+}
+
+//判断当前位置是否在障碍物内
+let isInBlock = (block: Vec3[], pos: Vec3) => {
+  return block[0][0] < pos[0] && block[1][0] > pos[0] && block[0][2] < pos[2] && block[1][2] > pos[2] && block[0][1] < pos[1] && block[1][1] > pos[1]
+}
+//判断是否站在某个障碍物商
+let isOnBlock = (block: Vec3[]) => {
+  return block[0][0] < cameraPos[0] && block[1][0] > cameraPos[0] && block[0][2] < cameraPos[2] && block[1][2] > cameraPos[2] && block[1][1] == cameraPos[1]
 }
 
 let moveCamera = () => {
@@ -135,38 +169,131 @@ let moveCamera = () => {
   if (isKeyDown['32'/*Space*/]) {
     if (isOnFloor) {
       verticalSpeed = JUMP_SPEED
+      isOnFloor = false
     }
   }
   if (isKeyDown['16'/*Shift*/]) {
-    floor = FLOOR_SQUAT
+    legHeight = SQUAT_HEIGHT
   } else {
-    floor = FLOOR_STAND
+    if (legHeight == SQUAT_HEIGHT) {
+      isGettingUp = true
+    }
+    legHeight = STAND_HEIGHT
   }
+  let vBlocks = blocks.map((v) => {return [add(v[0], vec3(-BODY_WIDTH, -HEAD_SIZE, -BODY_WIDTH)) as Vec3, add(v[1], vec3(BODY_WIDTH, legHeight, BODY_WIDTH)) as Vec3]})
   if (!isOnFloor) {
     verticalSpeed += GRAVITY
+  } else {
+    verticalSpeed = Math.max(0, verticalSpeed)
   }
   cameraMoveSpeed[1] += verticalSpeed
+  let lastPos = cameraPos
   cameraPos = add(cameraPos, cameraMoveSpeed) as Vec3
-  if (!isOnFloor && cameraPos[1] > CEIL) {
-    cameraPos[1] = CEIL
-    verticalSpeed = 0
+  let isIn = vBlocks.map((v) => {return isInBlock(v, cameraPos)})
+  if (isGettingUp) {
+    vBlocks.map((v, i) => {
+      if(isIn[i]) {
+        cameraPos[1] = Math.min(cameraPos[1] + GETUP_SPEED, v[1][1])
+        if(cameraPos[1] == v[1][1]) {
+          isGettingUp = false
+          isIn[i] = false
+        }
+      }
+    })
   }
-  if (!isOnFloor && cameraPos[1] <= floor) {
-    cameraPos[1] = floor
-    verticalSpeed = 0
-    isOnFloor = true
+  if (cameraPos[1] < lastPos[1]) {
+    vBlocks.map((v, i) => {
+      if(isIn[i]) {
+        if (lastPos[1] >= v[1][1]) {
+          cameraPos[1] = v[1][1]
+          isIn[i] = false
+          isGettingUp = false
+          isOnFloor = true
+        }
+        if (v[1][1] - cameraPos[1] <= GETUP_SPEED) {
+          cameraPos[1] = v[1][1]
+          isIn[i] = false
+          isGettingUp = false
+          isOnFloor = true
+        }
+      }
+    })
+  } else if (cameraPos[1] > lastPos[1]){
+    vBlocks.map((v, i) => {
+      if (isIn[i]) {
+        if (lastPos[1] <= v[0][1]) {
+          cameraPos[1] = v[0][1]
+          isIn[i] = false
+          verticalSpeed = 0
+        } else if (v[1][1] - cameraPos[1] <= GETUP_SPEED) {
+          cameraPos[1] = v[1][1]
+          isIn[i] = false
+          isGettingUp = false
+          isOnFloor = true
+        }
+      } else {
+        
+      }
+    })
   }
-  if (isOnFloor && cameraPos[1] < floor) {
-    cameraPos[1] = Math.min(cameraPos[1] + GETUP_SPEED, floor)
+  if (cameraPos[0] < lastPos[0]) {
+    vBlocks.map((v, i) => {
+      if (isIn[i]) {
+        if (lastPos[0] >= v[1][0]) {
+          cameraPos[0] = v[1][0]
+          isIn[i] = false
+        }
+      }
+    })
+  } else if (cameraPos[0] > lastPos[0]){
+    vBlocks.map((v, i) => {
+      if (isIn[i]) {
+        if (lastPos[0] <= v[0][0]) {
+          cameraPos[0] = v[0][0]
+          isIn[i] = false
+        }
+      }
+    })
   }
-  if (cameraPos[1] > floor) {
+  if (cameraPos[2] < lastPos[2]) {
+    vBlocks.map((v, i) => {
+      if (isIn[i]) {
+        if (lastPos[2] >= v[1][2]) {
+          cameraPos[2] = v[1][2]
+          isIn[i] = false
+        }
+      }
+    })
+  } else if (cameraPos[2] > lastPos[2]){
+    vBlocks.map((v, i) => {
+      if (isIn[i]) {
+        if (lastPos[2] <= v[0][2]) {
+          cameraPos[2] = v[0][2]
+          isIn[i] = false
+        }
+      }
+    })
+  }
+  let flag = false
+  vBlocks.map((v, i) => {
+    if(isOnBlock(v)) {
+      flag = true
+      isOnFloor = true
+      isGettingUp = false
+    } else if(isIn[i]) {
+      flag = true
+      isOnFloor = true
+    }
+  })
+  if(!flag) {
     isOnFloor = false
   }
-  // 简单粗暴的水平方向空气墙实现
-  [0, 2].forEach(v => {
-    cameraPos[v] = Math.min(cameraPos[v], POS_MAX[v])
-    cameraPos[v] = Math.max(cameraPos[v], POS_MIN[v])
-  })
+}
+
+//启动新宝岛的代码写在这里
+let launchNewIsland = () => {
+  performNewIsland()
+  // alert("久等了")
 }
 
 export function forceSetCamera(pos: Vec3, front: Vec3) {
@@ -176,7 +303,7 @@ export function forceSetCamera(pos: Vec3, front: Vec3) {
 // ==================================
 // 透视
 // ==================================
-const fovy = 119
+const fovy = 90
 const aspect = -16 / 9
 const near = 0.05
 const far = 2.8 // 越小越好（房间就显得越大），经过精密的调试，这个参数最棒

@@ -44,6 +44,7 @@ define(["require", "exports", "./roam", "../../framework/WebGLUtils"], function 
     var vBuffer;
     var nBuffer;
     var texture;
+    exports.MagicCubeActBox = [vec3(-0.16, -0.7, -0.37), vec3(0.16, -0.35, 0.08)];
     function initMagicCube(canvasDOM, helper, magicCubeProgram) {
         return __awaiter(this, void 0, void 0, function () {
             var gl, texture, _a, _b, _c, _d, _e, _f, _g, _h, _j, _k, _l, _m;
