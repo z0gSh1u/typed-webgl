@@ -2,7 +2,9 @@
 
 本项目为《交互式计算机图形学》（第七版，Edward Angel）自带代码库（`MV.js`，`initShaders.js`）撰写了TypeScript类型描述文件（d.ts），并搭建了简单的开发脚手架。
 
-本项目正在持续更新的部分是东南大学《计算机图形学》课程的实验作业部分。
+~~本项目正在持续更新的部分是东南大学《计算机图形学》课程的实验作业部分。~~
+
+本项目作为东南大学《计算机图形学》课程的实验作业部分已更新结束。祝贺三名组员最终都以极高的得分通过了该课程。
 
 组员的GitHub地址：[Twileon](https://github.com/Twileon)  [LongChen2018](https://github.com/LongChen2018)  [z0gSh1u](https://github.com/z0gSh1u)
 
