@@ -6,7 +6,10 @@
 
 本项目作为东南大学《计算机图形学》课程的实验作业部分已更新结束。祝贺三名组员最终都以极高的得分通过了该课程。
 
+在这儿可以玩到成品：[zxuuu.tech/seucg/](https://zxuuu.tech/seucg/)
+
 组员的GitHub地址：[Twileon](https://github.com/Twileon)  [LongChen2018](https://github.com/LongChen2018)  [z0gSh1u](https://github.com/z0gSh1u)
+
 
 ### 快速入门
 
