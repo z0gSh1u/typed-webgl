@@ -1,5 +1,7 @@
 # Typed-WebGL
 
+<img src="demo.png" style="zoom:67%;align:center;" />
+
 本项目为《交互式计算机图形学》（第七版，Edward Angel）自带代码库（`MV.js`，`initShaders.js`）撰写了TypeScript类型描述文件（d.ts），并搭建了简单的开发脚手架。
 
 ~~本项目正在持续更新的部分是东南大学《计算机图形学》课程的实验作业部分。~~
